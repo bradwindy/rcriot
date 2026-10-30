@@ -1,0 +1,9 @@
+/* Page elements drawn onto the low-res layer by drawPage. The page copy stays for layout and input but is not seen. */
+.pixel-ghost {
+  opacity: 0;
+}
+
+.pixel-label {
+  display: block;
+  pointer-events: none;
+}

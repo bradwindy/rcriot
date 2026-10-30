@@ -13,6 +13,7 @@ import {
   type CarInput,
   type CarSpec,
 } from './car';
+import { botItem, Items, type Field } from './items';
 import { mulberry32 } from './rng';
 import { specOf, type CarModel } from './roster';
 import type { Track } from './track';
@@ -40,8 +41,9 @@ const JUMPED = 1.2;
 const STALL = 0.8;
 const RESTITUTION = 0.35;
 
-export class Race {
+export class Race implements Field {
   readonly racers: Racer[] = [];
+  readonly items: Items;
   tick = 0;
   /** Seconds since the countdown started. The race is on from COUNTDOWN. */
   clock = 0;
@@ -52,6 +54,7 @@ export class Race {
     models: CarModel[],
     playerSlot: number,
     seed = 7,
+    items = true,
   ) {
     const rng = mulberry32(seed);
     models.forEach((model, slot) => {
@@ -68,6 +71,16 @@ export class Race {
         gasAt: null,
       });
     });
+    this.items = new Items(track, this.racers.length, items, seed);
+  }
+
+  get cars(): Car[] {
+    return this.racers.map((r) => r.car);
+  }
+
+  ranks(): number[] {
+    const order = this.standings();
+    return this.racers.map((r) => order.indexOf(r));
   }
 
   get player(): Racer {
@@ -94,9 +107,12 @@ export class Race {
 
     const { track } = this;
     const half = track.length / 2;
+    this.racers.forEach((r, i) => {
+      if (!r.brain) r.input = playerInput;
+      else r.input = { ...botInput(r.car, r.spec, track, r.brain), ...botItem(this, this.items, i) };
+    });
     for (const r of this.racers) {
       const before = r.car.s;
-      r.input = r.brain ? botInput(r.car, r.spec, track, r.brain) : playerInput;
       stepCar(r.car, r.input, r.spec, track, TICK);
       const ds = r.car.s - before;
       if (ds < -half) {
@@ -109,6 +125,7 @@ export class Race {
         r.halfway = true;
       }
     }
+    this.items.step(this, this.racers.map((r) => r.input), TICK);
     this.collide();
   }
 
@@ -135,11 +152,14 @@ export class Race {
         const dx = b.x - a.x;
         const dz = b.z - a.z;
         const d = Math.hypot(dx, dz);
+        // Cars floating in a water bubble are out of the way, so others drive under them.
+        if (a.bubble > 0 || b.bubble > 0) continue;
         if (d >= CAR_RADIUS * 2 || d < 1e-6 || Math.abs(b.y - a.y) > 1.5) continue;
         const nx = dx / d;
         const nz = dz / d;
-        const ia = 1 / rs[i].spec.weight;
-        const ib = 1 / rs[j].spec.weight;
+        // A shielded car barges through, as if it weighed four times as much.
+        const ia = 1 / (rs[i].spec.weight * (a.shield > 0 ? 4 : 1));
+        const ib = 1 / (rs[j].spec.weight * (b.shield > 0 ? 4 : 1));
         const push = (CAR_RADIUS * 2 - d) / (ia + ib);
         a.x -= nx * push * ia;
         a.z -= nz * push * ia;
@@ -165,6 +185,10 @@ export class Race {
   /** Distance covered since the green light, used for standings. */
   progress(r: Racer): number {
     return r.lap * this.track.length + r.car.s;
+  }
+
+  progressOf(i: number): number {
+    return this.progress(this.racers[i]);
   }
 
   standings(): Racer[] {

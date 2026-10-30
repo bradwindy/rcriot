@@ -6,7 +6,9 @@ const LEFT = ['ArrowLeft', 'KeyA'];
 const RIGHT = ['ArrowRight', 'KeyD'];
 const DRIFT = ['Space', 'ShiftLeft', 'ShiftRight'];
 const LOOK_BACK = ['KeyB'];
-const CAPTURED = new Set([...UP, ...DOWN, ...LEFT, ...RIGHT, ...DRIFT]);
+const ITEM = ['KeyE'];
+const ITEM_BACK = ['KeyQ'];
+const CAPTURED = new Set([...UP, ...DOWN, ...LEFT, ...RIGHT, ...DRIFT, ...ITEM, ...ITEM_BACK]);
 
 /** Keyboard driving. Steering eases in and out, since keys are all-or-nothing. */
 export class Keyboard {
@@ -40,6 +42,8 @@ export class Keyboard {
       throttle: (this.any(UP) ? 1 : 0) - (this.any(DOWN) ? 1 : 0),
       steer: this.steer,
       drift: this.any(DRIFT),
+      item: this.any(ITEM),
+      itemBack: this.any(ITEM_BACK),
     };
   }
 }

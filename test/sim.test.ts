@@ -26,14 +26,14 @@ describe('roster', () => {
     const laps: number[] = [];
     const launch: number[] = [];
     for (const model of ROSTER) {
-      const race = new Race(track, [model], -1);
+      const race = new Race(track, [model], -1, 7, false);
       const r = race.racers[0];
       let worst = 0;
       let lapStart = 0;
       let lapTime = 0;
       for (let i = 0; i < BASE_TICKS * 100 && !lapTime; i++) {
         const before = r.lap;
-        race.step({ throttle: 0, steer: 0, drift: false });
+        race.step({ throttle: 0, steer: 0, drift: false, item: false, itemBack: false });
         if (Math.abs(race.clock - COUNTDOWN - 1) < TICK / 2) launch.push(Math.hypot(r.car.vx, r.car.vz));
         worst = Math.max(worst, Math.abs(r.car.offset) - limitOf(sampleAt(track, r.car.s)));
         if (r.lap === 2 && before === 1) lapStart = race.clock;
@@ -54,15 +54,15 @@ describe('drift', () => {
   it('a long drift charges orange sparks, and letting go boosts past top speed', () => {
     const spec = specOf(ROSTER[0].stats);
     const car = spawnCar(track, 30, 0);
-    const arena = driveFor(car, spec, 3, { throttle: 1, steer: 0, drift: false });
-    driveFor(car, spec, 0.05, { throttle: 1, steer: 1, drift: true }, arena);
-    driveFor(car, spec, 1.9, { throttle: 1, steer: 0.5, drift: true }, arena);
+    const arena = driveFor(car, spec, 3, { throttle: 1, steer: 0, drift: false, item: false, itemBack: false });
+    driveFor(car, spec, 0.05, { throttle: 1, steer: 1, drift: true, item: false, itemBack: false }, arena);
+    driveFor(car, spec, 1.9, { throttle: 1, steer: 0.5, drift: true, item: false, itemBack: false }, arena);
     expect(driftLevel(car)).toBe(2);
-    driveFor(car, spec, TICK, { throttle: 1, steer: 0, drift: false }, arena);
+    driveFor(car, spec, TICK, { throttle: 1, steer: 0, drift: false, item: false, itemBack: false }, arena);
     expect(car.boost).toBeCloseTo(BOOST_TIME.orange, 1);
     let fastest = 0;
     for (let i = 0; i < 40; i++) {
-      stepCar(car, { throttle: 1, steer: 0, drift: false }, spec, arena);
+      stepCar(car, { throttle: 1, steer: 0, drift: false, item: false, itemBack: false }, spec, arena);
       fastest = Math.max(fastest, Math.hypot(car.vx, car.vz));
     }
     expect(fastest).toBeGreaterThan(spec.topSpeed);
@@ -72,7 +72,7 @@ describe('drift', () => {
 describe('start', () => {
   const launchWith = (gasFrom: number) => {
     const race = new Race(track, ROSTER.slice(0, 2), 0);
-    while (!race.started) race.step({ throttle: race.clock >= gasFrom ? 1 : 0, steer: 0, drift: false });
+    while (!race.started) race.step({ throttle: race.clock >= gasFrom ? 1 : 0, steer: 0, drift: false, item: false, itemBack: false });
     return race.player.car;
   };
 

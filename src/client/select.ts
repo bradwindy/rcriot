@@ -1,4 +1,5 @@
 import { ROSTER, type CarModel, type Stats } from '../shared/roster';
+import { GOLD, pixelLabel } from './pixel';
 
 const STATS: [keyof Stats, string][] = [
   ['speed', 'SPEED'],
@@ -29,7 +30,7 @@ export class CarSelect {
     private readonly onGo: () => void,
   ) {
     this.root = document.createElement('div');
-    this.root.className = 'select';
+    this.root.className = 'select pixel-ghost';
     host.append(this.root);
     this.render();
   }
@@ -68,21 +69,31 @@ export class CarSelect {
 
   private render(): void {
     const car = this.car;
-    const pips = (n: number) => Array.from({ length: 5 }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
+    const pips = (n: number) => Array.from({ length: 5 }, (_, i) => `<i data-pixel class="${i < n ? 'on' : ''}"></i>`).join('');
     this.root.innerHTML = `
-      <div class="select-title">CHOOSE YOUR CAR</div>
+      <div class="select-title"></div>
       <div class="select-bottom">
         <div class="select-pick">
-          <button class="select-arrow" data-step="-1" aria-label="Previous car">&lt;</button>
-          <div class="select-name"><span>${car.name.toUpperCase()}</span><small>${this.index + 1}/${ROSTER.length}</small></div>
-          <button class="select-arrow" data-step="1" aria-label="Next car">&gt;</button>
+          <button class="select-arrow" data-pixel data-step="-1" aria-label="Previous car"></button>
+          <div class="select-name"><span></span><small></small></div>
+          <button class="select-arrow" data-pixel data-step="1" aria-label="Next car"></button>
         </div>
-        <button class="select-go">RACE!</button>
-        <div class="select-help">ARROWS CHOOSE &nbsp; ENTER RACE</div>
+        <button class="select-go" data-pixel></button>
+        <div class="select-help"></div>
       </div>
-      <div class="select-stats">
-        ${STATS.map(([k, label]) => `<div class="select-stat"><span>${label}</span><b>${pips(car.stats[k])}</b></div>`).join('')}
+      <div class="select-stats" data-pixel>
+        ${STATS.map(([k]) => `<div class="select-stat"><span></span><b>${pips(car.stats[k])}</b></div>`).join('')}
       </div>`;
+    const at = (selector: string) => this.root.querySelector(selector) as HTMLElement;
+    pixelLabel(at('.select-title'), 'CHOOSE YOUR CAR', 14, GOLD);
+    pixelLabel(at('.select-name span'), car.name.toUpperCase(), 13);
+    pixelLabel(at('.select-name small'), `${this.index + 1}/${ROSTER.length}`, 7);
+    const [back, next] = this.root.querySelectorAll<HTMLElement>('.select-arrow');
+    pixelLabel(back, '<', 12, GOLD);
+    pixelLabel(next, '>', 12, GOLD);
+    pixelLabel(at('.select-go'), 'RACE!', 11);
+    pixelLabel(at('.select-help'), 'ARROWS CHOOSE   ENTER RACE', 7);
+    this.root.querySelectorAll<HTMLElement>('.select-stat span').forEach((el, i) => pixelLabel(el, STATS[i][1], 7));
     for (const b of this.root.querySelectorAll<HTMLButtonElement>('[data-step]')) {
       b.addEventListener('click', () => this.step(Number(b.dataset.step)));
     }

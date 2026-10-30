@@ -51,9 +51,12 @@ export interface CarInput {
   steer: number;
   /** Held to hop and drift. */
   drift: boolean;
+  /** Held to use the pick-up forward, or backward. */
+  item: boolean;
+  itemBack: boolean;
 }
 
-export const NO_INPUT: CarInput = { throttle: 0, steer: 0, drift: false };
+export const NO_INPUT: CarInput = { throttle: 0, steer: 0, drift: false, item: false, itemBack: false };
 
 export interface Car {
   x: number;
@@ -91,6 +94,16 @@ export interface Car {
   bump: number;
   landAt: number;
   land: number;
+  /** Seconds left on pick-up effects: immune, oiled (little grip), powerless, floating in a bubble, flung and spinning. */
+  shield: number;
+  slick: number;
+  /** Which way an oiled car's tail swings first. */
+  slickDir: number;
+  stun: number;
+  bubble: number;
+  tumble: number;
+  /** Seconds left of smoking tyres from the Heat Ray, for show. */
+  burn: number;
 }
 
 export function headingOf(tx: number, tz: number): number {
@@ -131,6 +144,13 @@ export function spawnCar(track: Track, s: number, offset: number): Car {
     bump: 0,
     landAt: -1,
     land: 0,
+    shield: 0,
+    slick: 0,
+    slickDir: 1,
+    stun: 0,
+    bubble: 0,
+    tumble: 0,
+    burn: 0,
   };
 }
 
@@ -157,15 +177,25 @@ export function hitCar(car: Car, strength: number): void {
   }
 }
 
-function endDrift(car: Car, cashIn: boolean): void {
+export function endDrift(car: Car, cashIn: boolean): void {
   const level = driftLevel(car);
   if (cashIn && level) startBoost(car, level === 2 ? BOOST_TIME.orange : BOOST_TIME.blue, level);
   car.drift = 0;
   car.driftTime = 0;
 }
 
-export function stepCar(car: Car, input: CarInput, spec: CarSpec, track: Track, dt = TICK): void {
+/** Share of power a car keeps while zapped or shorted out, and of grip while oiled. */
+const STUN_POWER = 0.25;
+const SLICK_GRIP = 0.06;
+/** An oiled car's tail swings side to side this hard, in radians per second, easing off as the oil wears away. */
+const SLICK_FISHTAIL = 2.2;
+/** How high a water bubble floats. */
+const BUBBLE_HEIGHT = 2.8;
+
+export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Track, dt = TICK): void {
   car.age++;
+  const helpless = car.bubble > 0 || car.tumble > 0;
+  const input = helpless ? NO_INPUT : controls;
   const fx = -Math.sin(car.heading);
   const fz = -Math.cos(car.heading);
   const rx = -fz;
@@ -193,13 +223,14 @@ export function stepCar(car: Car, input: CarInput, spec: CarSpec, track: Track, 
 
   if (onGround) {
     const boosting = car.boost > 0;
-    const top = spec.topSpeed * (car.offroad && !boosting ? 0.62 : 1) * (boosting ? BOOST_TOP : 1);
+    const stunned = car.stun > 0 && !boosting;
+    const top = spec.topSpeed * (car.offroad && !boosting ? 0.62 : 1) * (boosting ? BOOST_TOP : 1) * (stunned ? 0.55 : 1);
     const th = car.stall > 0 ? 0 : Math.max(-1, Math.min(1, input.throttle));
     if (boosting) {
       vf = Math.min(top, vf + BOOST_ACCEL * dt);
     } else if (th > 0) {
       if (vf < -0.5) vf = Math.min(0, vf + BRAKE * th * dt);
-      else vf += spec.accel * th * dt * Math.max(0, 1 - vf / top);
+      else vf += spec.accel * (stunned ? STUN_POWER : 1) * (car.slick > 0 ? 0.6 : 1) * th * dt * Math.max(0, 1 - vf / top);
     } else if (th < 0) {
       if (vf > 0.5) vf = Math.max(0, vf + BRAKE * th * dt);
       else vf = Math.max(-REVERSE_TOP, vf + spec.accel * 0.6 * th * dt);
@@ -207,7 +238,7 @@ export function stepCar(car: Car, input: CarInput, spec: CarSpec, track: Track, 
       vf -= Math.sign(vf) * Math.min(Math.abs(vf), COAST * dt);
     }
     if (Math.abs(vf) > top) vf -= (vf - Math.sign(vf) * top) * Math.min(1, 2.5 * dt);
-    vr *= Math.exp(-spec.grip * dt);
+    vr *= Math.exp(-spec.grip * (car.slick > 0 ? SLICK_GRIP : 1) * dt);
     if (car.drift) {
       // A drift carries the car round on its own arc. Steering into it tightens the arc and steering out widens it.
       // Travel turns with the nose, so speed is kept, and the tail drifts a little wide. The angled-in look is drawn.
@@ -223,12 +254,27 @@ export function stepCar(car: Car, input: CarInput, spec: CarSpec, track: Track, 
       car.vx = fx * vf + rx * vr;
       car.vz = fz * vf + rz * vr;
       const pace = Math.min(1, Math.abs(vf) / 5) * (1 - 0.4 * Math.min(1, Math.abs(vf) / spec.topSpeed));
-      car.heading -= steer * spec.turnRate * pace * Math.sign(vf) * dt;
+      car.heading -= steer * spec.turnRate * pace * Math.sign(vf) * (car.slick > 0 ? 0.5 : 1) * dt;
+    }
+    if (car.slick > 0 && Math.abs(vf) > 4) {
+      // Oil: the tail swings one way then the other, so the car slides out without spinning right round.
+      const worn = car.slick / 2.5;
+      car.heading += car.slickDir * SLICK_FISHTAIL * worn * Math.sin((2.5 - car.slick) * 6) * dt;
     }
   } else {
     car.heading -= steer * spec.turnRate * AIR_STEER * dt;
   }
   car.boost = Math.max(0, car.boost - dt);
+  car.shield = Math.max(0, car.shield - dt);
+  car.slick = Math.max(0, car.slick - dt);
+  car.stun = Math.max(0, car.stun - dt);
+  car.bubble = Math.max(0, car.bubble - dt);
+  car.tumble = Math.max(0, car.tumble - dt);
+  car.burn = Math.max(0, car.burn - dt);
+  if (car.bubble > 0) {
+    car.vx *= Math.exp(-2.5 * dt);
+    car.vz *= Math.exp(-2.5 * dt);
+  }
   car.stall = Math.max(0, car.stall - dt);
 
   car.x += car.vx * dt;
@@ -258,9 +304,17 @@ export function stepCar(car: Car, input: CarInput, spec: CarSpec, track: Track, 
 
   const ground = surfaceY(p, loc.offset);
   const rise = Math.max(-20, Math.min(20, (ground - car.ground) / dt));
-  car.vy -= GRAVITY * dt;
-  car.y += car.vy * dt;
-  if (car.y <= ground) {
+  if (car.bubble > 0) {
+    car.y += (ground + BUBBLE_HEIGHT - car.y) * Math.min(1, 4 * dt);
+    car.vy = 0;
+    car.air = 1;
+  } else {
+    car.vy -= GRAVITY * dt;
+    car.y += car.vy * dt;
+  }
+  if (car.bubble > 0) {
+    // Floating: no ground contact until the bubble pops.
+  } else if (car.y <= ground) {
     const impact = rise - car.vy;
     car.y = ground;
     car.vy = rise;

@@ -2,7 +2,7 @@
 
 Low-poly RC car racing in the browser, drawn like a PlayStation 1 game. The influences are Mario Kart, RC Revenge and Re-Volt.
 
-This is round 2 of 4: the controls. You pick one of 10 RC cars and race 7 bots round one track, on a keyboard or a phone. Power-ups and online multiplayer come in later rounds.
+This is round 3 of 4: the power-ups. You pick one of 10 RC cars and race 7 bots round one track, on a keyboard or a phone, with the pick-ups from RC Revenge. Online multiplayer comes in the last round.
 
 ## The track
 
@@ -15,15 +15,35 @@ The cars are light RC cars. They slide a little, bounce off walls and each other
 - **Drift.** Hold Drift while steering at speed. The car hops and slides into the corner. Steering into the drift tightens it and steering out widens it. Hold it and sparks under the rear wheels turn blue, then orange. Let go for a short boost on blue or a longer one on orange. Slowing right down or hitting a wall hard ends the drift with no boost.
 - **Rocket start.** Press the gas just before GO for a boost off the line. Press it too early and the wheels spin for a moment instead.
 
+## Pick-ups
+
+Drive through the spinning blue boxes to collect a pick-up. The slot at the top of the screen spins through the items for a moment before it lands on yours. You carry one at a time and must use it before you can collect another. E (or FIRE on a phone) uses it forward, and Q (or BACK) uses it backward. The list comes from the RC Revenge Pro manual. The effects are this game's own take.
+
+| Pick-up | What it does |
+|---|---|
+| Battery | A big speed boost for about 2 seconds. |
+| Rocket (1 or 3) | Hold the car ahead in your sights until LOCK flashes, then fire and it homes in. Unlocked rockets fly down the track. Fire behind to hit the car on your tail. |
+| Heat Ray | 5 seconds of flame out of your nose. Cars in it lose power and smoke. |
+| Blue Lightning | 10 seconds of charge on your aerial. Anyone who comes close is zapped and loses power. Two charged cars cancel each other out. |
+| Oil Spill | A splat on the track behind you. Cars that drive through it lose their grip for 2.5 seconds and slide out. |
+| Bouncing Mines (1 or 3) | Spiked balls launched behind you. They bounce, hop about on their own, rebound off barriers and walls, and can bounce clean over a barrier out of play. |
+| Shield | 10 seconds of immunity in a green bubble, and you barge other cars aside. |
+| Water Bombs (1 or 3) | Lobbed at the car ahead, or behind you. A car it hits floats high in a bubble for 2 seconds, out of everyone's way. Mash an item button to pop out sooner. |
+| Shockwave | A ring of fire bursts out round you and flings nearby cars away. |
+| Fake | Drops a box behind you that looks like a pick-up but explodes. It flashes as it falls and only arms after about a second, so it can't catch the car right behind you. |
+| Ultimate Weapon | Rare, and only for cars near the back. A thunderbolt shorts out every other car. |
+
+Rockets, Bombs and Mines come in packs of three more often the further back you are. Leaders mostly get Batteries, Shields, Oil, Mines and Fakes, and the back of the pack gets the strong ones. Bots collect and use pick-ups too. A car caught by a rocket, mine, fake or shockwave is flung up spinning flat and lands slowed right down. The Items row in the effects panel turns pick-ups off.
+
 ### Keyboard
 
-- Arrow keys or WASD to drive. Space or Shift to drift.
+- Arrow keys or WASD to drive. Space or Shift to drift. E fires your pick-up ahead and Q fires it behind. Mines, Oil and Fakes always go behind.
 - B looks back, C changes the camera (chase, far chase, bumper), R puts your car back on the track.
 - M mutes, Esc goes back to the car select screen, P opens the effects panel.
 
 ### Phone
 
-Hold the phone sideways. Put your left thumb anywhere on the left half to steer. GAS, BRAKE and DRIFT sit on the right, and RESET, CAM and MENU along the top. The effects panel opens from the car select screen.
+Hold the phone sideways. Put your left thumb anywhere on the left half to steer. GAS, BRAKE, DRIFT, FIRE and BACK sit on the right, and RESET, CAM and MENU along the top. The effects panel opens from the car select screen.
 
 ## The cars
 
@@ -63,7 +83,7 @@ Every effect can be switched off or changed live in the effects panel. Your choi
 
 ## How it works
 
-- `src/shared` holds the parts a server will also run later: the track spline and its queries, the car physics with drifts and boosts, the car roster and stats, the bots, and the race with its countdown. The sim runs on a fixed 1/60 s tick.
+- `src/shared` holds the parts a server will also run later: the track spline and its queries, the car physics with drifts and boosts, the car roster and stats, the pick-ups (`items.ts`: boxes, odds, effects and everything they leave on the track), the bots, and the race with its countdown. The sim runs on a fixed 1/60 s tick.
 - `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer and the dither pass. The world is built in code when the page loads: `terrain.ts` for the island, `road.ts` for the road, pier, cave and wreck (swept along the track spline), and `props.ts` for the palms, rocks and film crew. Static geometry is merged into one mesh per material. `render/cars.ts` builds the ten car bodies. `audio.ts` synthesises the sound, `touch.ts` draws the phone controls and `select.ts` is the car select screen.
 
 ## Development
@@ -82,7 +102,7 @@ npm run dev
 npm run check
 ```
 
-`npm run dev` serves the game at http://localhost:5173. `npm run check` runs the type check, lint and tests. The tests check the drift boost, the rocket start and wheelspin, and that every car laps inside the barriers.
+`npm run dev` serves the game at http://localhost:5173. `npm run check` runs the type check, lint and tests. The tests check the drift boost, the rocket start and wheelspin, that every car laps inside the barriers, the pick-up odds by position, the Shield, Blue Lightning, the Ultimate Weapon and a homing rocket.
 
 ## Licence
 

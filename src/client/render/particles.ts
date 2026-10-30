@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { ps1Material } from './ps1';
 import { tex } from './textures';
 
-const MAX = 240;
+const MAX = 1200;
+/** Pull on debris and spray, in units per second squared. */
+const GRAVITY = 18;
 
 interface Puff {
   x: number;
@@ -17,9 +19,13 @@ interface Puff {
   r: number;
   g: number;
   b: number;
+  fall: number;
 }
 
-/** Camera-facing dust puffs, rebuilt on the CPU each frame into one mesh. */
+/**
+ * Camera-facing puffs, rebuilt on the CPU each frame into one mesh. Dust and smoke grow as they fade. The glowing
+ * kind (sparks, embers, fire) is drawn additively past white so it blooms, and shrinks as it burns out.
+ */
 export class Dust {
   readonly mesh: THREE.Mesh;
   private readonly puffs: Puff[] = [];
@@ -27,7 +33,7 @@ export class Dust {
   private readonly col = new Float32Array(MAX * 4 * 4);
   private readonly geometry = new THREE.BufferGeometry();
 
-  constructor() {
+  constructor(private readonly glowing = false) {
     const uv = new Float32Array(MAX * 8);
     const index: number[] = [];
     for (let i = 0; i < MAX; i++) {
@@ -38,15 +44,24 @@ export class Dust {
     this.geometry.setAttribute('color', new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage));
     this.geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     this.geometry.setIndex(index);
-    const material = ps1Material({ map: tex.dust(), lit: false, vertexColors: true, transparent: true, alphaTest: 0.5 });
+    const material = ps1Material({
+      map: tex.dust(),
+      lit: false,
+      vertexColors: true,
+      transparent: true,
+      alphaTest: 0.5,
+      additive: glowing,
+      glow: glowing ? 1.2 : 0,
+    });
     this.mesh = new THREE.Mesh(this.geometry, material);
     this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = 3;
+    this.mesh.renderOrder = glowing ? 4 : 3;
   }
 
-  spawn(x: number, y: number, z: number, vx: number, vy: number, vz: number, size: number, life: number, color: THREE.Color): void {
+  /** `fall` is the share of gravity it feels, for debris and spray. */
+  spawn(x: number, y: number, z: number, vx: number, vy: number, vz: number, size: number, life: number, color: THREE.Color, fall = 0): void {
     if (this.puffs.length >= MAX) this.puffs.shift();
-    this.puffs.push({ x, y, z, vx, vy, vz, size, life, age: 0, r: color.r, g: color.g, b: color.b });
+    this.puffs.push({ x, y, z, vx, vy, vz, size, life, age: 0, r: color.r, g: color.g, b: color.b, fall });
   }
 
   update(dt: number, camera: THREE.Camera): void {
@@ -63,12 +78,12 @@ export class Dust {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.z += p.vz * dt;
-      const drag = Math.exp(-dt * 3);
+      const drag = Math.exp(-dt * (p.fall ? 0.8 : 3));
       p.vx *= drag;
       p.vz *= drag;
-      p.vy = p.vy * drag + dt * 0.6;
+      p.vy = p.fall ? p.vy - GRAVITY * p.fall * dt : p.vy * drag + dt * 0.6;
       const t = p.age / p.life;
-      const s = p.size * (0.6 + t * 1.2);
+      const s = p.size * (this.glowing ? 1 - t * 0.7 : p.fall ? 1 : 0.6 + t * 1.2);
       const corners = [
         [-1, -1],
         [1, -1],

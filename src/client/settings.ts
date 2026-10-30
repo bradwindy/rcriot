@@ -6,6 +6,7 @@ export interface Fx {
   affine: boolean;
   colour: 'full' | 'reduced' | 'dithered';
   crt: 'off' | 'soft' | 'strong';
+  bloom: 'off' | 'soft' | 'strong';
   pixelated: boolean;
   mipmaps: boolean;
   /** Mipmap leaves, flags, flames and clouds too, with mip levels that keep their shape. */
@@ -14,6 +15,8 @@ export interface Fx {
   drawDistance: number;
   sound: boolean;
   engine: 'quiet' | 'normal' | 'off';
+  /** Pick-up boxes on the track, like the original's Weapon Pick-ups option. */
+  items: boolean;
 }
 
 export const DEFAULT_FX: Fx = {
@@ -23,6 +26,7 @@ export const DEFAULT_FX: Fx = {
   affine: true,
   colour: 'dithered',
   crt: 'soft',
+  bloom: 'soft',
   pixelated: true,
   mipmaps: true,
   cutoutMipmaps: true,
@@ -30,6 +34,7 @@ export const DEFAULT_FX: Fx = {
   drawDistance: 300,
   sound: true,
   engine: 'quiet',
+  items: true,
 };
 
 const KEY = 'rcriot.fx';

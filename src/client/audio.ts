@@ -29,6 +29,8 @@ interface Rig {
   sparkSrc: AudioBufferSourceNode;
   sparkFilter: BiquadFilterNode;
   sparkGain: GainNode;
+  heatGain: GainNode;
+  chargeGain: GainNode;
 }
 
 const clamp = (v: number, lo: number, hi: number): number => (v >= lo ? Math.min(v, hi) : lo);
@@ -271,6 +273,22 @@ export class Sound {
     for (const m of rig.traffic) m.silence();
     rig.skidGain.gain.setTargetAtTime(0, now, 0.05);
     rig.sparkGain.gain.setTargetAtTime(0, now, 0.05);
+    rig.heatGain.gain.setTargetAtTime(0, now, 0.05);
+    rig.chargeGain.gain.setTargetAtTime(0, now, 0.05);
+  }
+
+  /** A soft flame hiss for as long as it is called with true. */
+  heat(on: boolean): void {
+    const rig = this.live();
+    if (!rig) return;
+    rig.heatGain.gain.setTargetAtTime(on ? 0.065 : 0, rig.ctx.currentTime, on ? 0.05 : 0.08);
+  }
+
+  /** A quiet electric fizz for as long as it is called with true. */
+  charge(on: boolean): void {
+    const rig = this.live();
+    if (!rig) return;
+    rig.chargeGain.gain.setTargetAtTime(on ? 0.4 : 0, rig.ctx.currentTime, on ? 0.08 : 0.06);
   }
 
   hop(): void {
@@ -324,6 +342,99 @@ export class Sound {
     this.play('select', 40, () => {
       this.tone('square', 880, 1180, 0.05, 0.08);
       this.tone('triangle', 1760, 1760, 0.06, 0.04, 0.02);
+    });
+  }
+
+  /** The item slot landing on a pick-up: a soft two-note ding. */
+  pickup(): void {
+    this.play('pickup', 60, () => {
+      this.tone('triangle', 523, 523, 0.08, 0.12);
+      this.tone('triangle', 784, 784, 0.16, 0.12, 0.07);
+      this.tone('sine', 1046, 1046, 0.12, 0.035, 0.07);
+    });
+  }
+
+  /** One click of the item slot spinning through pick-ups. */
+  rollTick(): void {
+    this.play('roll', 40, () => this.tone('triangle', 660, 600, 0.03, 0.05));
+  }
+
+  /** Breaking open a pick-up box. */
+  boxBreak(): void {
+    this.play('box', 60, () => {
+      this.hiss('bandpass', 1800, 900, 0.09, 0.08, 0, 1.4);
+      this.tone('triangle', 440, 700, 0.07, 0.06);
+    });
+  }
+
+  lockOn(): void {
+    this.play('lock', 250, () => {
+      for (let i = 0; i < 3; i++) this.tone('sine', 740, 740, 0.05, 0.05, i * 0.09);
+    });
+  }
+
+  /** A rocket leaving or a water bomb being lobbed. */
+  launch(): void {
+    this.play('launch', 80, () => {
+      this.tone('sine', 220, 110, 0.1, 0.05);
+      this.hiss('bandpass', 300, 800, 0.3, 0.2, 0, 1.2, 0.12);
+    });
+  }
+
+  /** A mine, oil spill or fake box set down. */
+  drop(): void {
+    this.play('drop', 80, () => {
+      this.tone('triangle', 320, 150, 0.08, 0.15);
+      this.tone('sine', 480, 300, 0.05, 0.06, 0.012);
+      this.hiss('bandpass', 1400, 800, 0.03, 0.12, 0, 1.2);
+    });
+  }
+
+  explode(strength: number): void {
+    const s = clamp(strength, 0, 1);
+    this.play('explode', 60, () => {
+      this.tone('sine', 150, 55, 0.14 + 0.1 * s, 0.07 + 0.09 * s);
+      this.hiss('lowpass', 1100, 150, 0.1 + 0.1 * s, 0.14 + 0.14 * s, 0, 0.7);
+    });
+  }
+
+  zap(): void {
+    this.play('zap', 80, () => {
+      for (let i = 0; i < 3; i++) this.tone('triangle', 350 + Math.random() * 500, 200, 0.03, 0.07, i * 0.035);
+      this.hiss('bandpass', 900, 600, 0.12, 0.26, 0, 2, 0.01);
+    });
+  }
+
+  /** A water bomb landing or a bubble popping. */
+  splash(): void {
+    this.play('splash', 80, () => {
+      this.tone('sine', 300, 700, 0.09, 0.11);
+      this.tone('sine', 450, 950, 0.07, 0.06, 0.07);
+      this.hiss('lowpass', 900, 300, 0.12, 0.15, 0, 0.7);
+    });
+  }
+
+  shockwave(): void {
+    this.play('shockwave', 150, () => {
+      this.tone('sine', 160, 70, 0.35, 0.1);
+      this.hiss('lowpass', 600, 150, 0.3, 0.26, 0, 0.7, 0.1);
+    });
+  }
+
+  thunder(): void {
+    this.play('thunder', 300, () => {
+      this.hiss('bandpass', 1200, 500, 0.07, 0.3, 0, 0.8, 0.002);
+      this.tone('triangle', 400, 120, 0.07, 0.09);
+      this.hiss('lowpass', 400, 100, 0.8, 0.4, 0.04, 0.7, 0.15);
+      this.tone('sine', 110, 55, 0.7, 0.09, 0.04);
+    });
+  }
+
+  shieldUp(): void {
+    this.play('shield', 150, () => {
+      this.tone('sine', 440, 880, 0.22, 0.04, 0, 0.5);
+      this.tone('triangle', 660, 1100, 0.22, 0.02, 0.05, 0.5);
+      this.tone('sine', 880, 1180, 0.16, 0.015, 0.1, 0.5);
     });
   }
 
@@ -398,6 +509,34 @@ export class Sound {
     sparkSrc.connect(sparkFilter).connect(sparkGain).connect(fx);
     sparkSrc.start();
 
+    const heatSrc = ctx.createBufferSource();
+    heatSrc.buffer = noise;
+    heatSrc.loop = true;
+    const heatFilter = ctx.createBiquadFilter();
+    heatFilter.type = 'lowpass';
+    heatFilter.frequency.value = 900;
+    heatFilter.Q.value = 0.5;
+    const heatGain = ctx.createGain();
+    heatGain.gain.value = 0;
+    heatSrc.connect(heatFilter).connect(heatGain).connect(fx);
+    heatSrc.start(0, Math.random() * 1.5);
+
+    const chargeSrc = ctx.createBufferSource();
+    chargeSrc.buffer = crackleBuffer(ctx);
+    chargeSrc.loop = true;
+    chargeSrc.playbackRate.value = 3;
+    const chargeBand = ctx.createBiquadFilter();
+    chargeBand.type = 'bandpass';
+    chargeBand.frequency.value = 900;
+    chargeBand.Q.value = 2;
+    const chargeCut = ctx.createBiquadFilter();
+    chargeCut.type = 'lowpass';
+    chargeCut.frequency.value = 1400;
+    const chargeGain = ctx.createGain();
+    chargeGain.gain.value = 0;
+    chargeSrc.connect(chargeBand).connect(chargeCut).connect(chargeGain).connect(fx);
+    chargeSrc.start();
+
     this.rig = {
       ctx,
       master,
@@ -411,6 +550,8 @@ export class Sound {
       sparkSrc,
       sparkFilter,
       sparkGain,
+      heatGain,
+      chargeGain,
     };
     return this.rig;
   }

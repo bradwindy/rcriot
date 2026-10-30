@@ -9,7 +9,9 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
@@ -66,9 +68,8 @@
   justify-content: center;
   color: var(--accent);
   background: rgba(16, 12, 30, 0.55);
-  border: 2px solid var(--accent);
-  box-shadow: 4px 4px 0 var(--shade);
-  text-shadow: 2px 2px 0 var(--shade);
+  border: var(--px) solid var(--accent);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--shade);
   text-align: center;
 }
 
@@ -76,8 +77,8 @@
   color: var(--ink);
   background: rgba(242, 193, 46, 0.6);
   border-color: var(--ink);
-  box-shadow: 2px 2px 0 var(--shade);
-  transform: translate(2px, 2px);
+  box-shadow: var(--px) var(--px) 0 var(--shade);
+  transform: translate(var(--px), var(--px));
 }
 
 .touch-gas {
@@ -85,13 +86,13 @@
   bottom: var(--touch-bottom);
   width: var(--touch-gas);
   height: var(--touch-gas);
-  font-size: 16px;
+  font-size: 22px;
 }
 
 .touch-pedal {
   width: var(--touch-pedal);
   height: var(--touch-pedal);
-  font-size: 12px;
+  font-size: 17px;
 }
 
 .touch-brake {
@@ -104,11 +105,21 @@
   bottom: calc(var(--touch-bottom) + var(--touch-gas) + var(--touch-gap));
 }
 
+.touch-item {
+  right: calc(var(--touch-right) + var(--touch-gas) + var(--touch-gap));
+  bottom: calc(var(--touch-bottom) + var(--touch-gas) + var(--touch-gap));
+}
+
+.touch-back {
+  right: calc(var(--touch-right) + var(--touch-gas) + var(--touch-pedal) + var(--touch-gap) * 2);
+  bottom: calc(var(--touch-bottom) + var(--touch-gas) + var(--touch-gap));
+}
+
 .touch-small {
   top: var(--touch-top);
   height: 40px;
   padding: 0 12px;
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .touch-reset {
@@ -129,16 +140,13 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: max-content;
-  max-width: 80vw;
-  padding: 18px 20px;
-  color: var(--accent);
+  flex-direction: column;
+  align-items: center;
+  gap: var(--px);
+  padding: calc(var(--px) * 4) calc(var(--px) * 5);
   background: var(--panel);
-  border: 2px solid var(--accent);
-  box-shadow: 4px 4px 0 var(--shade);
-  font-size: 14px;
-  line-height: 1.8;
-  text-align: center;
+  border: var(--px) solid var(--accent);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--shade);
 }
 
 @media (orientation: portrait) {
@@ -149,6 +157,6 @@
   }
 
   .touch-turn {
-    display: block;
+    display: flex;
   }
 }

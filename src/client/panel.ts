@@ -1,4 +1,5 @@
 import { DEFAULT_FX, type Fx } from './settings';
+import { pixelLabel } from './pixel';
 
 type Choice<K extends keyof Fx> = { key: K; label: string; options: [Fx[K], string][] };
 
@@ -9,10 +10,12 @@ const CHOICES = [
   { key: 'affine', label: 'Texture warp', options: [[true, 'On'], [false, 'Off']] },
   { key: 'colour', label: 'Colour', options: [['dithered', '15-bit dithered'], ['reduced', '15-bit'], ['full', '24-bit']] },
   { key: 'crt', label: 'CRT', options: [['soft', 'Soft'], ['strong', 'Strong'], ['off', 'Off']] },
+  { key: 'bloom', label: 'Bloom', options: [['soft', 'Soft'], ['strong', 'Strong'], ['off', 'Off']] },
   { key: 'pixelated', label: 'Textures', options: [[true, 'Pixelated'], [false, 'Smooth']] },
   { key: 'mipmaps', label: 'Far textures', options: [[true, 'Mipmapped'], [false, 'Raw (PS1)']] },
   { key: 'cutoutMipmaps', label: 'Far cut-outs', options: [[true, 'Mipmapped'], [false, 'Raw']] },
   { key: 'fog', label: 'Fog', options: [[true, 'On'], [false, 'Off']] },
+  { key: 'items', label: 'Items', options: [[true, 'On'], [false, 'Off']] },
   { key: 'sound', label: 'Sound', options: [[true, 'On'], [false, 'Off']] },
   { key: 'engine', label: 'Engine', options: [['quiet', 'Quiet'], ['normal', 'Normal'], ['off', 'Off']] },
 ] satisfies Choice<keyof Fx>[];
@@ -34,8 +37,9 @@ export class Panel {
     this.root.hidden = true;
     host.append(this.root);
     const button = document.createElement('button');
-    button.className = 'panel-toggle';
-    button.textContent = 'EFFECTS';
+    button.className = 'panel-toggle pixel-ghost';
+    button.dataset.pixel = '';
+    pixelLabel(button, 'EFFECTS', 7);
     button.addEventListener('click', () => this.toggle());
     host.append(button);
     this.fps = document.createElement('div');

@@ -1,13 +1,16 @@
 import './touch.css';
+import { GOLD, pixelLabel } from './pixel';
 
 export type TouchAction = 'reset' | 'camera' | 'menu';
-type Hold = 'gas' | 'brake' | 'drift';
+type Hold = 'gas' | 'brake' | 'drift' | 'item' | 'back';
 type Control = Hold | TouchAction;
 
 const BUTTONS: [Control, string, string][] = [
   ['gas', 'GAS', 'touch-gas'],
   ['brake', 'BRAKE', 'touch-pedal touch-brake'],
   ['drift', 'DRIFT', 'touch-pedal touch-drift'],
+  ['item', 'FIRE', 'touch-pedal touch-item'],
+  ['back', 'BACK', 'touch-pedal touch-back'],
   ['reset', 'RESET', 'touch-small touch-reset'],
   ['camera', 'CAM', 'touch-small touch-camera'],
   ['menu', 'MENU', 'touch-small touch-menu'],
@@ -44,7 +47,7 @@ const steerFor = (dx: number): number => {
  * right, and small Reset, Camera and Menu buttons. Every touch is tracked by its identifier, so they work together.
  */
 export class TouchPad {
-  private readonly root = div('touch-root');
+  private readonly root = div('touch-root pixel-ghost');
   private readonly zone = div('touch-zone');
   private readonly ring = div('touch-stick');
   private readonly knob = div('touch-knob');
@@ -63,11 +66,20 @@ export class TouchPad {
     this.ring.append(this.knob);
     this.root.append(this.zone, this.ring);
     for (const [control, label, className] of BUTTONS) {
-      const button = div(`touch-btn ${className}`, label);
+      const button = div(`touch-btn ${className}`);
+      button.dataset.pixel = '';
+      pixelLabel(button, label, control === 'gas' ? 14 : isAction(control) ? 9 : 11, GOLD);
       this.controls.set(button, control);
       this.root.append(button);
     }
-    this.root.append(div('touch-turn', 'TURN YOUR PHONE SIDEWAYS'));
+    const turn = div('touch-turn');
+    for (const el of [turn, this.ring, this.knob]) el.dataset.pixel = '';
+    for (const line of ['TURN YOUR PHONE', 'SIDEWAYS']) {
+      const row = div('');
+      pixelLabel(row, line, 8, GOLD);
+      turn.append(row);
+    }
+    this.root.append(turn);
     host.append(this.root);
 
     const options = { passive: false };
@@ -93,9 +105,9 @@ export class TouchPad {
     return this.touched || this.coarse.matches;
   }
 
-  sample(): { steer: number; throttle: number; drift: boolean } {
+  sample(): { steer: number; throttle: number; drift: boolean; item: boolean; itemBack: boolean } {
     const throttle = this.held('brake') ? -1 : this.held('gas') ? 1 : 0;
-    return { steer: this.stick ? steerFor(this.stick.dx) : 0, throttle, drift: this.held('drift') };
+    return { steer: this.stick ? steerFor(this.stick.dx) : 0, throttle, drift: this.held('drift'), item: this.held('item'), itemBack: this.held('back') };
   }
 
   setVisible(visible: boolean): void {

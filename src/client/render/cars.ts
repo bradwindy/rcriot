@@ -275,8 +275,16 @@ export class CarView {
   private readonly flame = new THREE.Group();
   private readonly wheels: { pivot: THREE.Group; tyre: THREE.Mesh; front: boolean }[] = [];
   private readonly materials: Ps1Material[] = [];
+  private readonly fire: Ps1Material;
   private steer = 0;
   private slip = 0;
+  /** Spin flat on the spot while flung by a blast, with a small wobble, settling back after. */
+  private spin = 0;
+  private flip = 0;
+  /** Seconds left of the electric flash after being zapped or struck by lightning, and each material's own tint. */
+  private shocked = 0;
+  private tints: THREE.Color[] = [];
+  private glows: number[] = [];
   private roll = 0;
   private pitch = 0;
   private bob = 0;
@@ -289,13 +297,13 @@ export class CarView {
 
   constructor(model: CarModel, number: number) {
     this.kind = KINDS[model.body];
-    const mat = (map: THREE.Texture, lit = true) => {
-      const m = ps1Material({ map, lit });
+    const mat = (map: THREE.Texture, lit = true, glow = 0) => {
+      const m = ps1Material({ map, lit, glow });
       this.materials.push(m);
       return m;
     };
-    const tinted = (color: THREE.ColorRepresentation, lit = true) => {
-      const m = ps1Material({ map: tex.white(), lit, tint: color });
+    const tinted = (color: THREE.ColorRepresentation, lit = true, glow = 0) => {
+      const m = ps1Material({ map: tex.white(), lit, tint: color, glow });
       this.materials.push(m);
       return m;
     };
@@ -317,8 +325,8 @@ export class CarView {
       glass: tinted('#3a5a6a'),
       sail: cutout(tex.sail()),
       flag: cutout(tex.flag()),
-      lamp: mat(tex.lens(), false),
-      glow: (color) => tinted(color, false),
+      lamp: mat(tex.lens(), false, 0.4),
+      glow: (color) => tinted(color, false, 0.6),
       add: (g, m, matrix) => {
         const mesh = new THREE.Mesh(g, m);
         mesh.applyMatrix4(matrix);
@@ -332,7 +340,7 @@ export class CarView {
     const k = this.kind;
     k.build(parts);
     if (k.tail !== null) {
-      const tail = ps1Material({ map: tex.white(), lit: false, tint: 0xff3020 });
+      const tail = ps1Material({ map: tex.white(), lit: false, tint: 0xff3020, glow: 0.5 });
       for (const s of [-1, 1]) parts.add(box(0.2, 0.1, 0.05), tail, xf(s * 0.38, k.wheel + 0.12, k.tail));
     }
     parts.add(new THREE.PlaneGeometry(0.42, 0.42), mat(numberPlate(number)), xf(k.plate[0], k.plate[1] + 0.01, k.plate[2], 0, -UP));
@@ -350,7 +358,8 @@ export class CarView {
     this.antenna.add(whip, tip, new THREE.LineSegments(wire, dark));
     this.body.add(this.antenna);
 
-    const fire = ps1Material({ map: tex.flame(), lit: false, alphaTest: 0.5, side: THREE.DoubleSide, fog: 0.5 });
+    const fire = ps1Material({ map: tex.flame(), lit: false, alphaTest: 0.5, side: THREE.DoubleSide, fog: 0.5, glow: 1.4 });
+    this.fire = fire;
     for (const turn of [0, Math.PI / 2]) {
       const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.9), fire);
       plane.rotation.set(Math.PI / 2, 0, turn, 'ZXY');
@@ -395,7 +404,8 @@ export class CarView {
   showcase(at: THREE.Vector3, heading: number): void {
     this.root.position.copy(at);
     this.root.rotation.set(0, heading, 0, 'YXZ');
-    this.yaw.rotation.y = 0;
+    this.yaw.rotation.set(0, 0, 0);
+    this.spin = this.flip = 0;
     this.body.rotation.set(0, 0, 0);
     this.body.position.y = 0;
     this.flame.visible = false;
@@ -425,7 +435,15 @@ export class CarView {
     const ease = 1 - Math.exp(-dt * 12);
 
     this.slip += (-car.drift * DRIFT_ANGLE - this.slip) * (1 - Math.exp(-dt * 9));
-    this.yaw.rotation.y = this.slip;
+    const settle = 1 - Math.exp(-dt * 10);
+    if (car.tumble > 0) {
+      this.spin += 9.5 * dt;
+      this.flip = 0.22 * Math.sin(car.tumble * 16);
+    } else {
+      this.spin += (Math.round(this.spin / (Math.PI * 2)) * Math.PI * 2 - this.spin) * settle;
+      this.flip -= this.flip * settle;
+    }
+    this.yaw.rotation.set(0, this.slip + this.spin, this.flip, 'YXZ');
 
     let pitch = Math.atan(p.grade * along + slope * across);
     const roll = Math.atan(-p.grade * across + slope * along);
@@ -458,12 +476,25 @@ export class CarView {
     if (this.flame.visible) {
       const f = 0.8 + 0.4 * Math.sin(time * 61) * Math.sin(time * 37);
       this.flame.scale.set(f, f, f * (car.boostPower > 1 ? 1.4 : 1));
+      this.fire.uniforms.uGlow.value = 0.9 + f * (car.boostPower > 1 ? 1 : 0.6);
     }
     this.root.updateMatrixWorld();
 
     const indoor = car.cover === 'tunnel' || car.cover === 'ship';
     this.shade += ((indoor ? INDOOR : 1) - this.shade) * (1 - Math.exp(-dt * 6));
     for (const m of this.materials) m.uniforms.uShade.value = this.shade;
+    if (this.tints.length === 0) {
+      this.tints = this.materials.map((m) => m.uniforms.uTint.value.clone());
+      this.glows = this.materials.map((m) => m.uniforms.uGlow.value as number);
+    }
+    this.shocked = Math.max(0, this.shocked - dt);
+    // Electrocuted: the whole car strobes a hot blue-white.
+    const strobe = this.shocked > 0 && Math.floor(time * 18) % 2 === 0;
+    this.materials.forEach((m, i) => {
+      if (strobe) m.uniforms.uTint.value.setRGB(1.6, 1.9, 2.6);
+      else m.uniforms.uTint.value.copy(this.tints[i]);
+      m.uniforms.uGlow.value = strobe ? 0.7 : this.glows[i];
+    });
 
     const limit = limitOf(p);
     const ground = p.y + Math.max(-limit, Math.min(limit, car.offset)) * slope;
@@ -476,6 +507,25 @@ export class CarView {
   }
 
   /** World positions of the two rear tyres' contact patches, for dust and sparks. */
+  shock(seconds: number): void {
+    this.shocked = Math.max(this.shocked, seconds);
+  }
+
+  /** World position of the aerial tip, where Blue Lightning crackles. */
+  aerialTip(): THREE.Vector3 {
+    return this.antenna.localToWorld(new THREE.Vector3(0, 1.1, 0));
+  }
+
+  /** World position of the exhaust flame, or null while the car isn't boosting. */
+  exhaust(): THREE.Vector3 | null {
+    return this.flame.visible ? this.flame.localToWorld(new THREE.Vector3(0, 0, 0.5)) : null;
+  }
+
+  /** World position just in front of the car's nose, where the Heat Ray comes out. */
+  nose(): THREE.Vector3 {
+    return this.yaw.localToWorld(new THREE.Vector3(0, this.kind.wheel + 0.2, -1.5));
+  }
+
   rearWheels(): THREE.Vector3[] {
     return this.wheels
       .filter((w) => !w.front)

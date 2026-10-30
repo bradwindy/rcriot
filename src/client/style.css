@@ -16,8 +16,8 @@ body {
   overflow: hidden;
   background: #000;
   color: var(--ink);
-  font-family: 'Press Start 2P', monospace;
-  -webkit-font-smoothing: none;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 800;
   user-select: none;
 }
 
@@ -29,78 +29,15 @@ body {
   display: block;
 }
 
-#hud {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  text-shadow:
-    3px 3px 0 var(--shade),
-    -1px -1px 0 var(--shade),
-    1px -1px 0 var(--shade),
-    -1px 1px 0 var(--shade);
-}
-
-/* The HUD sits on the same TV: a touch of colour fringe on its text when the CRT pass is on. */
-[data-crt='soft'] #hud,
-[data-crt='strong'] #hud {
-  text-shadow:
-    1px 0 rgba(255, 60, 40, 0.45),
-    -1px 0 rgba(40, 160, 255, 0.45),
-    3px 3px 0 var(--shade),
-    -1px -1px 0 var(--shade),
-    1px -1px 0 var(--shade),
-    -1px 1px 0 var(--shade);
-}
-
-.hud-lap {
-  position: absolute;
-  top: 24px;
-  left: 28px;
-  font-size: 22px;
-}
-
-.hud-label {
-  color: var(--accent);
-}
-
-.hud-place {
-  position: absolute;
-  right: 32px;
-  bottom: 28px;
-  font-size: 44px;
-  color: var(--accent);
-}
-
-.hud-of {
-  font-size: 20px;
-  color: var(--ink);
-}
-
-.hud-help {
-  position: absolute;
-  left: 28px;
-  bottom: 28px;
-  font-size: 10px;
-  line-height: 1.8;
-  opacity: 0.85;
-  transition: opacity 1.5s;
-  max-width: 50vw;
-}
-
-.hud-help.faded {
-  opacity: 0;
-}
-
 .panel-toggle {
+  font-style: italic;
   position: fixed;
   top: 20px;
   right: 24px;
   font: inherit;
-  font-size: 10px;
-  padding: 8px 10px;
-  color: var(--ink);
+  padding: var(--px) calc(var(--px) * 2);
   background: var(--panel);
-  border: 2px solid var(--accent);
+  border: var(--px) solid var(--accent);
   cursor: pointer;
 }
 
@@ -113,13 +50,14 @@ body {
   padding: 14px;
   background: var(--panel);
   border: 2px solid var(--accent);
-  font-size: 9px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
 .panel-title {
+  font-style: italic;
   color: var(--accent);
-  font-size: 11px;
+  font-size: 15px;
   margin-bottom: 12px;
 }
 
@@ -135,7 +73,7 @@ body {
 .panel button,
 .panel input {
   font: inherit;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .panel select {
@@ -165,69 +103,12 @@ body {
   opacity: 0.7;
 }
 
-@media (max-width: 600px) {
-  .hud-lap {
-    font-size: 14px;
-    top: 16px;
-    left: 16px;
-  }
-  .hud-place {
-    font-size: 26px;
-    right: 16px;
-    bottom: 16px;
-  }
-  .hud-help {
-    display: none;
-  }
-}
-
-.hud-big {
-  position: absolute;
-  top: 34%;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 72px;
-  color: var(--accent);
-}
-
-.hud-note {
-  position: absolute;
-  top: 34%;
-  left: 0;
-  right: 0;
-  margin-top: 96px;
-  text-align: center;
-  font-size: 18px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.hud-note.on {
-  opacity: 1;
-}
-
-/* On phones the touch pad owns the corners, so the HUD moves to the top edge. */
-.touch-on .hud-lap {
-  top: 16px;
-  left: 110px;
-  font-size: 14px;
-}
-
-.touch-on .hud-place {
-  top: 16px;
-  right: 20px;
-  bottom: auto;
-  font-size: 22px;
-}
-
-.touch-on .hud-help,
 .touch-on .select-help {
   display: none;
 }
 
-/* The touch buttons need the screen while racing. The effects panel opens from the car select screen instead. */
-.touch-on.racing .panel-toggle,
+/* The HUD needs the corner while racing: P opens the effects panel there. Touch players open it from the car select screen. */
+.racing .panel-toggle,
 .touch-on.racing .panel {
   display: none;
 }
@@ -238,108 +119,97 @@ body {
   pointer-events: none;
 }
 
+/* Sizes are in --px, one low-res pixel, so the select screen scales with the screen like the HUD does. */
 .select {
   position: absolute;
   inset: 0;
-  text-shadow: 3px 3px 0 var(--shade);
 }
 
 .select-title {
   position: absolute;
-  top: 28px;
+  top: calc(var(--px) * 8);
   left: 0;
   right: 0;
-  text-align: center;
-  font-size: 22px;
-  color: var(--accent);
+  display: flex;
+  justify-content: center;
 }
 
 .select-bottom {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 28px;
+  bottom: calc(var(--px) * 8);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: calc(var(--px) * 4);
 }
 
 .select-pick {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: calc(var(--px) * 5);
 }
 
 .select-name {
-  min-width: 300px;
-  text-align: center;
-  font-size: 24px;
-  line-height: 1.6;
-}
-
-.select-name small {
-  display: block;
-  font-size: 10px;
-  opacity: 0.75;
+  min-width: calc(var(--px) * 90);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .select button {
   pointer-events: auto;
-  font: inherit;
-  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   background: var(--panel);
-  border: 2px solid var(--accent);
+  border: var(--px) solid var(--accent);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--shade);
   cursor: pointer;
-  text-shadow: none;
 }
 
 .select-arrow {
-  width: 56px;
-  height: 56px;
-  font-size: 20px;
+  width: calc(var(--px) * 18);
+  height: calc(var(--px) * 18);
 }
 
 .select-go {
-  font-size: 18px;
-  padding: 14px 28px;
-  color: var(--shade) !important;
+  padding: calc(var(--px) * 2) calc(var(--px) * 8) !important;
   background: var(--accent) !important;
 }
 
 .select-help {
-  font-size: 10px;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .select-stats {
   position: absolute;
-  right: 28px;
+  right: calc(var(--px) * 8);
   top: 50%;
   transform: translateY(-50%);
-  padding: 14px 16px;
+  padding: calc(var(--px) * 3) calc(var(--px) * 4);
   background: var(--panel);
-  border: 2px solid var(--accent);
-  font-size: 10px;
-  text-shadow: none;
+  border: var(--px) solid var(--accent);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--shade);
 }
 
 .select-stat {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  margin: 8px 0;
+  gap: calc(var(--px) * 4);
 }
 
 .select-stat b {
   display: flex;
-  gap: 4px;
+  gap: var(--px);
 }
 
 .select-stat i {
-  width: 14px;
-  height: 12px;
+  width: calc(var(--px) * 4);
+  height: calc(var(--px) * 3);
   background: #3a3150;
 }
 
@@ -347,37 +217,16 @@ body {
   background: var(--accent);
 }
 
-@media (max-width: 760px), (max-height: 480px) {
+/* Tall windows: the title drops below the effects toggle and the stats sit under it, clear of the car name. */
+@media (max-aspect-ratio: 1/1) {
   .select-title {
-    top: 14px;
-    font-size: 14px;
+    top: calc(var(--px) * 22);
   }
-  .select-bottom {
-    bottom: 12px;
-    gap: 10px;
-  }
-  .select-name {
-    min-width: 200px;
-    font-size: 16px;
-  }
-  .select-arrow {
-    width: 46px;
-    height: 46px;
-  }
-  .select-go {
-    font-size: 14px;
-    padding: 10px 20px;
-  }
+
   .select-stats {
-    right: 12px;
-    font-size: 8px;
-    padding: 10px 12px;
-  }
-  .select-stat i {
-    width: 10px;
-    height: 9px;
-  }
-  .hud-big {
-    font-size: 44px;
+    top: calc(var(--px) * 42);
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }

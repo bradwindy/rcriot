@@ -31,5 +31,5 @@ export function botInput(car: Car, spec: CarSpec, track: Track, brain: Brain): C
   const bend = Math.abs(wrapAngle(Math.atan2(far.tx, far.tz) - Math.atan2(ahead.tx, ahead.tz))) / 20;
   const safe = Math.sqrt(cornerGrip / Math.max(bend, 1e-4));
   const throttle = speed > Math.min(spec.topSpeed, safe) + 1 ? -0.4 : 1;
-  return { throttle, steer, drift: false };
+  return { throttle, steer, drift: false, item: false, itemBack: false };
 }

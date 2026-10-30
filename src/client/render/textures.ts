@@ -561,6 +561,59 @@ export const tex = {
     make(16, 16, 32, (p) => p.each((x, y) => (y === 5 || x < 2 || x > 13 ? hex('#c8a040') : scale(hex('#6e4426'), 0.9 + p.rng() * 0.2)))),
   ),
 
+  itembox: cache(() =>
+    make(16, 16, 34, (p) => {
+      p.each((x, y) => {
+        if (x === 0 || y === 0 || x === 15 || y === 15) return hex('#e8f4ff');
+        return mixc(hex('#1e6ad8'), hex('#58c8ff'), (x + y) / 30);
+      });
+      p.text('?', 6, 6, 1, hex('#0a2a5a'));
+      p.text('?', 5, 5, 1, hex('#ffffff'));
+    }),
+  ),
+
+  oil: cache(() =>
+    make(32, 32, 35, (p) => {
+      const spikes = Array.from({ length: 9 }, () => [p.rng() * Math.PI * 2, 8 + p.rng() * 6, 1.2 + p.rng()] as const);
+      const drops = Array.from({ length: 8 }, () => {
+        const a = p.rng() * Math.PI * 2;
+        const d = 11 + p.rng() * 4;
+        return [16 + Math.cos(a) * d, 16 + Math.sin(a) * d, 0.8 + p.rng() * 1.2] as const;
+      });
+      p.each((x, y) => {
+        const dx = x - 15.5;
+        const dy = y - 15.5;
+        const r = Math.hypot(dx, dy);
+        const ang = Math.atan2(dy, dx);
+        let inside = r < 6.5 + Math.sin(ang * 5) * 0.8;
+        for (const [a, len, w] of spikes) {
+          const along = dx * Math.cos(a) + dy * Math.sin(a);
+          const across = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
+          if (along > 0 && along < len && across < w * (1 - along / len) + 0.5) inside = true;
+        }
+        for (const [cx, cy, rr] of drops) if ((x - cx) ** 2 + (y - cy) ** 2 < rr * rr) inside = true;
+        if (!inside) return [0, 0, 0, 0];
+        const sheen = Math.sin(x * 0.5 + y * 0.3) > 0.8 && r < 7;
+        return sheen ? hex(p.rng() < 0.5 ? '#5a3a9a' : '#3a6a8a') : hex(p.rng() < 0.2 ? '#1a1820' : '#0e0c12');
+      });
+    }, false, false),
+  ),
+
+  /** A shimmering hex mesh for shield and water bubbles, scrolled across them. */
+  shimmer: cache(() =>
+    make(32, 32, 36, (p) => {
+      p.each((x, y) => {
+        const row = Math.floor(y / 8);
+        const cx = ((x + (row % 2) * 4) % 8) - 3.5;
+        const cy = (y % 8) - 3.5;
+        const edge = Math.abs(cx) > 2.8 || Math.abs(cy) > 2.8 || Math.abs(cx) + Math.abs(cy) > 4.5;
+        const glint = Math.sin((x + y) * 0.4) > 0.9;
+        if (glint) return hex('#ffffff');
+        return edge ? hex('#e0ffe8') : hex('#8aa8b0');
+      });
+    }),
+  ),
+
   gold: cache(() => make(8, 8, 33, (p) => p.each(() => hex(p.rng() < 0.3 ? '#fff2a0' : p.rng() < 0.5 ? '#e8b830' : '#c89420')))),
 };
 
