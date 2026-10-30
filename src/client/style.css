@@ -9,6 +9,11 @@
   box-sizing: border-box;
 }
 
+/* Elements styled with a display of their own still hide when told to. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -103,7 +108,12 @@ body {
   opacity: 0.7;
 }
 
-.touch-on .select-help {
+.touch-on .select-go.waiting {
+  background: var(--panel) !important;
+  cursor: default;
+}
+
+.select-help {
   display: none;
 }
 
@@ -170,6 +180,18 @@ body {
   cursor: pointer;
 }
 
+/* Back to the title, for touch players who have no Esc. In a party the panel's LEAVE does it. */
+.select-back {
+  position: absolute;
+  top: calc(var(--px) * 8);
+  left: calc(var(--px) * 8);
+  padding: var(--px) calc(var(--px) * 3) !important;
+}
+
+.party .select-back {
+  display: none;
+}
+
 .select-arrow {
   width: calc(var(--px) * 18);
   height: calc(var(--px) * 18);
@@ -228,5 +250,168 @@ body {
     right: auto;
     left: 50%;
     transform: translateX(-50%);
+  }
+}
+
+/* The party panel, in --px like the select screen. */
+.lobby {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lobby-box {
+  position: absolute;
+  left: calc(var(--px) * 8);
+  top: calc(var(--px) * 26);
+  width: calc(var(--px) * 116);
+  padding: calc(var(--px) * 4);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--px) * 3);
+  background: var(--panel);
+  border: var(--px) solid var(--accent);
+  box-shadow: calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--shade);
+}
+
+.lobby button {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--px) calc(var(--px) * 3);
+  background: var(--panel);
+  border: var(--px) solid var(--accent);
+  cursor: pointer;
+}
+
+.lobby button:disabled {
+  cursor: default;
+}
+
+.lobby-head,
+.lobby-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--px) * 3);
+}
+
+.lobby-players,
+.lobby-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--px);
+}
+
+.lobby-row {
+  display: grid;
+  grid-template-columns: 1fr auto calc(var(--px) * 22);
+  align-items: center;
+  gap: calc(var(--px) * 3);
+  padding: 0 var(--px);
+}
+
+.lobby-row > span:last-child {
+  justify-self: end;
+}
+
+.lobby-row.me {
+  background: rgba(242, 193, 46, 0.18);
+}
+
+.lobby-set {
+  display: grid;
+  grid-template-columns: 1fr calc(var(--px) * 9) calc(var(--px) * 48) calc(var(--px) * 9);
+  align-items: center;
+  justify-items: center;
+}
+
+.lobby-set > span:first-child {
+  justify-self: start;
+}
+
+.lobby-set button {
+  width: calc(var(--px) * 9);
+  height: calc(var(--px) * 9);
+  padding: 0;
+}
+
+.lobby-input {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  font-size: 16px;
+}
+
+/* In a party the car picker moves over to the right of the party panel, and the stats up out of its way. */
+.party .select-bottom {
+  left: calc(var(--px) * 124);
+}
+
+.party .select-stats {
+  top: max(calc(var(--px) * 26), 56px);
+  transform: none;
+}
+
+/* Tall screens stack them: the party panel under the title, the picker at the bottom, and no stats. */
+@media (max-aspect-ratio: 1/1) {
+  .lobby-box {
+    top: calc(var(--px) * 8);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .party .select-title {
+    display: none;
+  }
+
+  .party .select-bottom {
+    left: 0;
+  }
+
+  .party .select-stats {
+    display: none;
+  }
+}
+
+/* Phones held upright: the party panel narrows to the screen and drops the car column. */
+@media (max-aspect-ratio: 3/5) {
+  .lobby-box {
+    width: calc(100% - var(--px) * 6);
+    padding: calc(var(--px) * 3);
+  }
+
+  .lobby-row {
+    grid-template-columns: 1fr calc(var(--px) * 22);
+  }
+
+  .lobby-row > span:nth-child(2) {
+    display: none;
+  }
+
+  .lobby-set {
+    grid-template-columns: auto calc(var(--px) * 9) 1fr calc(var(--px) * 9);
+    column-gap: calc(var(--px) * 2);
+  }
+
+  .lobby-box,
+  .lobby-players,
+  .lobby-settings {
+    gap: var(--px);
+  }
+
+  .lobby-set button {
+    width: calc(var(--px) * 8);
+    height: calc(var(--px) * 8);
+  }
+
+  /* No room for the car picker under the panel. Turning the phone sideways brings it back. */
+  .party .select-pick {
+    display: none;
   }
 }

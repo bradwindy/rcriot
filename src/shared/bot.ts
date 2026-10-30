@@ -1,6 +1,16 @@
 import type { Car, CarInput, CarSpec } from './car';
 import { sampleAt, type Track } from './track';
 
+export type BotLevel = 'easy' | 'normal' | 'hard';
+export const BOT_LEVELS: readonly BotLevel[] = ['easy', 'normal', 'hard'];
+
+/** Share of top speed a bot drives at, how fast it dares take corners, and how much it weaves. */
+const SKILL: Record<BotLevel, { pace: number; corner: number; weave: number }> = {
+  easy: { pace: 0.86, corner: 0.8, weave: 1.4 },
+  normal: { pace: 1, corner: 1, weave: 1 },
+  hard: { pace: 1, corner: 1.18, weave: 0.6 },
+};
+
 export interface Brain {
   /** Preferred line, -1 left edge to 1 right edge. */
   lane: number;
@@ -8,6 +18,7 @@ export interface Brain {
   phase: number;
   /** Times its start for a rocket boost. */
   rocket: boolean;
+  level: BotLevel;
 }
 
 export function wrapAngle(a: number): number {
@@ -19,17 +30,19 @@ export function botInput(car: Car, spec: CarSpec, track: Track, brain: Brain): C
   const look = 6 + speed * 0.45;
   const ahead = sampleAt(track, car.s + look);
   const room = ahead.width / 2 - 1.6;
-  const lane = Math.max(-1, Math.min(1, brain.lane + 0.35 * Math.sin(car.s * 0.013 + brain.phase))) * room;
+  const skill = SKILL[brain.level];
+  const lane = Math.max(-1, Math.min(1, brain.lane + 0.35 * skill.weave * Math.sin(car.s * 0.013 + brain.phase))) * room;
   const tx = ahead.x - ahead.tz * lane;
   const tz = ahead.z + ahead.tx * lane;
   const want = Math.atan2(-(tx - car.x), -(tz - car.z));
   const steer = Math.max(-1, Math.min(1, -wrapAngle(want - car.heading) * 2.4));
 
   // Sideways grip the bot plans its corners around, more for grippier cars.
-  const cornerGrip = 16 + spec.grip * 1.7;
+  const cornerGrip = (16 + spec.grip * 1.7) * skill.corner;
   const far = sampleAt(track, car.s + look + 20);
   const bend = Math.abs(wrapAngle(Math.atan2(far.tx, far.tz) - Math.atan2(ahead.tx, ahead.tz))) / 20;
   const safe = Math.sqrt(cornerGrip / Math.max(bend, 1e-4));
-  const throttle = speed > Math.min(spec.topSpeed, safe) + 1 ? -0.4 : 1;
+  const limit = Math.min(spec.topSpeed * skill.pace, safe);
+  const throttle = speed > limit + 1 ? -0.4 : skill.pace < 1 && speed > spec.topSpeed * skill.pace ? 0 : 1;
   return { throttle, steer, drift: false, item: false, itemBack: false };
 }

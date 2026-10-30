@@ -1,0 +1,46 @@
+/* The title and results screens. All drawing is on the canvas, which drawPage copies to the low-res layer. */
+.arcade {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arcade-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.arcade-hit,
+.arcade-input {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.arcade-hit[hidden],
+.arcade-input[hidden] {
+  display: none;
+}
+
+/* 16px stops iOS zooming in when the code field takes focus. */
+.arcade-input {
+  font-size: 16px;
+  color: transparent;
+  caret-color: transparent;
+  outline: none;
+  text-transform: uppercase;
+}
+
+/* The title has its own EFFECTS entry, and the results board needs the corner for its page arrow. */
+.title-on .panel-toggle,
+.results-on .panel-toggle {
+  display: none;
+}

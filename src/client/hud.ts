@@ -6,8 +6,9 @@ export interface HudFrame {
   place: number;
   /** Cars in the race. */
   total: number;
-  /** Lap to show, 1-based. */
+  /** Lap to show, 1-based, and how many the race has. Infinity for a race with no end. */
   lap: number;
+  laps: number;
   /** Seconds into the current lap. */
   lapTime: number;
   /** Best lap in seconds, or null before there is one. */
@@ -18,6 +19,8 @@ export interface HudFrame {
   speedValue: number;
   /** World positions for the map. */
   cars: { x: number; z: number; me: boolean; color: string }[];
+  /** Name tags over other people's cars, in normalised device coordinates. */
+  tags: { x: number; y: number; name: string }[];
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0');
@@ -403,6 +406,7 @@ export class Hud {
     const L = this.layout;
     const f = this.last;
     if (this.visible && L && f) {
+      this.drawTags(L, f);
       ctx.save();
       ctx.translate(L.X, L.Y);
       this.drawHelp(L, now);
@@ -494,7 +498,8 @@ export class Hud {
     const time = lap + pitch;
     const label = time + pitch + 1.3 * u;
     this.text(String(f.place), x + infoWidth / 2, place, placeSize, WHITE, { align: 'center' });
-    this.text(`LAP ${Math.max(1, f.lap)}`, x, lap, size, WHITE);
+    const lapNo = Math.max(1, Math.min(f.lap, f.laps));
+    this.text(Number.isFinite(f.laps) ? `LAP ${lapNo}/${f.laps}` : `LAP ${lapNo}`, x, lap, size, WHITE);
     this.text(clock(f.lapTime), x, time, size, WHITE);
     this.text('BEST LAP', x, label, size, WHITE);
     this.text(f.bestLap === null ? '--:--.-' : clock(f.bestLap), x, label + pitch, size, WHITE);
@@ -509,6 +514,14 @@ export class Hud {
     const baseline = y + gauge.size / 2 + size * CAP * 0.5;
     const style = { align: 'center', squeeze: 0.78, edge: '#052a0a' } as const;
     this.text(digits, x + gauge.size * 0.46, baseline, size, GREEN, style);
+  }
+
+  private drawTags(L: Layout, f: HudFrame): void {
+    const { width, height } = this.canvas;
+    const size = Math.max(7, Math.round(2.6 * L.u));
+    for (const t of f.tags) {
+      this.text(t.name, Math.round(((t.x + 1) / 2) * width), Math.round(((1 - t.y) / 2) * height), size, WHITE, { align: 'center' });
+    }
   }
 
   private drawCountdown(L: Layout): void {

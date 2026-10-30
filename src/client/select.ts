@@ -23,11 +23,15 @@ function saved(): number {
 export class CarSelect {
   index = saved();
   private readonly root: HTMLElement;
+  private goLabel = 'RACE!';
+  private ready = true;
+  private help = 'ARROWS CHOOSE   ENTER RACE';
 
   constructor(
     host: HTMLElement,
     private readonly onChange: (car: CarModel) => void,
     private readonly onGo: () => void,
+    private readonly onBack: () => void,
   ) {
     this.root = document.createElement('div');
     this.root.className = 'select pixel-ghost';
@@ -64,7 +68,16 @@ export class CarSelect {
   }
 
   go(): void {
-    this.onGo();
+    if (this.ready) this.onGo();
+  }
+
+  /** The go button's label, whether it can be pressed yet, and the help line under it. */
+  configure(go: string, ready: boolean, help: string): void {
+    if (go === this.goLabel && ready === this.ready && help === this.help) return;
+    this.goLabel = go;
+    this.ready = ready;
+    this.help = help;
+    this.render();
   }
 
   private render(): void {
@@ -72,6 +85,7 @@ export class CarSelect {
     const pips = (n: number) => Array.from({ length: 5 }, (_, i) => `<i data-pixel class="${i < n ? 'on' : ''}"></i>`).join('');
     this.root.innerHTML = `
       <div class="select-title"></div>
+      <button class="select-back" data-pixel></button>
       <div class="select-bottom">
         <div class="select-pick">
           <button class="select-arrow" data-pixel data-step="-1" aria-label="Previous car"></button>
@@ -86,13 +100,17 @@ export class CarSelect {
       </div>`;
     const at = (selector: string) => this.root.querySelector(selector) as HTMLElement;
     pixelLabel(at('.select-title'), 'CHOOSE YOUR CAR', 14, GOLD);
+    pixelLabel(at('.select-back'), '< BACK', 7);
+    at('.select-back').addEventListener('click', () => this.onBack());
     pixelLabel(at('.select-name span'), car.name.toUpperCase(), 13);
     pixelLabel(at('.select-name small'), `${this.index + 1}/${ROSTER.length}`, 7);
     const [back, next] = this.root.querySelectorAll<HTMLElement>('.select-arrow');
     pixelLabel(back, '<', 12, GOLD);
     pixelLabel(next, '>', 12, GOLD);
-    pixelLabel(at('.select-go'), 'RACE!', 11);
-    pixelLabel(at('.select-help'), 'ARROWS CHOOSE   ENTER RACE', 7);
+    const go = at('.select-go');
+    go.classList.toggle('waiting', !this.ready);
+    pixelLabel(go, this.goLabel, this.ready ? 11 : 8);
+    pixelLabel(at('.select-help'), this.help, 7);
     this.root.querySelectorAll<HTMLElement>('.select-stat span').forEach((el, i) => pixelLabel(el, STATS[i][1], 7));
     for (const b of this.root.querySelectorAll<HTMLButtonElement>('[data-step]')) {
       b.addEventListener('click', () => this.step(Number(b.dataset.step)));

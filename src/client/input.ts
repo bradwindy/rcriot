@@ -17,6 +17,7 @@ export class Keyboard {
 
   constructor(onPress: (code: string) => void) {
     addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLInputElement) return;
       if (CAPTURED.has(e.code)) e.preventDefault();
       if (!e.repeat) onPress(e.code);
       this.held.add(e.code);

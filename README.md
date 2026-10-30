@@ -2,7 +2,24 @@
 
 Low-poly RC car racing in the browser, drawn like a PlayStation 1 game. The influences are Mario Kart, RC Revenge and Re-Volt.
 
-This is round 3 of 4: the power-ups. You pick one of 10 RC cars and race 7 bots round one track, on a keyboard or a phone, with the pick-ups from RC Revenge. Online multiplayer comes in the last round.
+This is round 4: online races. Make a party, send the link to your friends and race each other and bots, up to 12 cars, on a keyboard or a phone, with the pick-ups from RC Revenge. Practice races you alone against 7 bots over 3 laps. More tracks and a level select come in round 5.
+
+The game opens on an arcade title screen, with bots racing round the track behind the logo. Press any key or tap for the menu: CREATE PARTY, JOIN PARTY (type the 5-letter code), PRACTICE and EFFECTS. After every race a results board shows places and times, then awards and everyone's stats, a page at a time.
+
+## Racing online
+
+Pick Create party and send the link (COPY LINK in the party panel shares it on a phone). Everyone who opens it joins the lobby, picks a car and can change their name. Two people may drive the same car. The party host sets:
+
+- **Laps**: 1 to 9, 3 to start with.
+- **Bots**: how many bots join the grid after the people, up to 12 cars in all.
+- **Bot skill**: Easy, Normal or Hard. Easy bots drive slower and wider, Hard bots take corners faster and always get a rocket start.
+- **Items**: pick-ups on or off.
+
+The host presses START RACE. The grid is shuffled every race. Once the first person crosses the finish line, everyone else has 30 seconds, and anyone still racing then is placed by how far they got. The race also ends as soon as every person has finished. The results board shows places, times and best laps, then awards and everyone's stats. The host's NEXT RACE takes everyone back to the lobby.
+
+People who open the link during a race watch it, following the leader, and race next time. If your connection drops mid-race, a bot drives your car until you're back, and reloading the page takes it back. In an online race Esc or MENU opens the party panel over the race, where LEAVE quits. People watching see the panel from the start.
+
+The party host's browser runs the race, so the host keeps that tab open until it ends. A laptop or desktop makes the best host. If the host leaves or drops for 5 seconds, the race ends and everyone goes back to the lobby with a new host. The lobby shows everyone's ping to the host.
 
 ## The track
 
@@ -39,11 +56,11 @@ Rockets, Bombs and Mines come in packs of three more often the further back you 
 
 - Arrow keys or WASD to drive. Space or Shift to drift. E fires your pick-up ahead and Q fires it behind. Mines, Oil and Fakes always go behind.
 - B looks back, C changes the camera (chase, far chase, bumper), R puts your car back on the track.
-- M mutes, Esc goes back to the car select screen, P opens the effects panel.
+- M mutes, Esc goes back from a practice race to the car select screen and from there to the title, P opens the effects panel.
 
 ### Phone
 
-Hold the phone sideways. Put your left thumb anywhere on the left half to steer. GAS, BRAKE, DRIFT, FIRE and BACK sit on the right, and RESET, CAM and MENU along the top. The effects panel opens from the car select screen.
+Hold the phone sideways. Put your left thumb anywhere on the left half to steer. GAS, BRAKE, DRIFT, FIRE and BACK sit on the right, and RESET, CAM and MENU along the top. The effects panel opens from the title screen. BACK on the car select screen goes to the title.
 
 ## The cars
 
@@ -83,8 +100,18 @@ Every effect can be switched off or changed live in the effects panel. Your choi
 
 ## How it works
 
-- `src/shared` holds the parts a server will also run later: the track spline and its queries, the car physics with drifts and boosts, the car roster and stats, the pick-ups (`items.ts`: boxes, odds, effects and everything they leave on the track), the bots, and the race with its countdown. The sim runs on a fixed 1/60 s tick.
-- `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer and the dither pass. The world is built in code when the page loads: `terrain.ts` for the island, `road.ts` for the road, pier, cave and wreck (swept along the track spline), and `props.ts` for the palms, rocks and film crew. Static geometry is merged into one mesh per material. `render/cars.ts` builds the ten car bodies. `audio.ts` synthesises the sound, `touch.ts` draws the phone controls and `select.ts` is the car select screen.
+The game is one Cloudflare Worker and the players' browsers. The party host's browser runs each race, and everyone else plays over a direct WebRTC link to it, so gameplay never goes through Cloudflare unless a network needs a relay. The lobby, signalling and links follow Puckagon's.
+
+- `src/shared` holds the code more than one side runs: the track spline and its queries, the car physics with drifts and boosts, the car roster and stats, the pick-ups (`items.ts`), the bots with their skill levels, the race with its countdown, laps, finish and stats (`race.ts`), the snapshot format (`snapshot.ts`), the lobby settings and grid (`lobby.ts`) and the message protocol. The sim runs on a fixed 1/60 s tick.
+- `src/host` is the race on the host's page. It runs in a Web Worker at 60 Hz, whose timers keep time when the tab is in the background.
+- `src/worker` holds the Worker and one Durable Object class, `Party`. Each party code maps to its own Durable Object. It keeps the lobby (players, names, cars, settings and who is host), builds each race's grid, relays WebRTC signalling and keeps the last race's results. It runs no physics.
+- `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer, bloom and the CRT pass. The world is built in code when the page loads: `terrain.ts` for the island, `road.ts` for the road, pier, cave and wreck (swept along the track spline), and `props.ts` for the palms, rocks and film crew. `render/cars.ts` builds the ten car bodies. `audio.ts` synthesises the sound, `touch.ts` draws the phone controls, `select.ts` is the car select screen and `lobby.ts` the party panel.
+
+Every page keeps a WebSocket to its party. Each guest also opens a game link to the host: an `RTCPeerConnection` with a reliable `control` channel for pick-up events and the result, and an unreliable `state` channel, like UDP, for snapshots, inputs and pings. Snapshots go every tick as a flat block of 32-bit floats, about 3 kB for a full grid.
+
+Each player's page samples the controls once per tick and sends each sample as it is taken, repeating the ones the host hasn't applied yet, so a lost message costs nothing. The host applies one sample per tick, and each snapshot says which of your samples it has applied. Your page draws the race in your own time (`src/client/predict.ts`): each tick it loads the newest snapshot and drives every car on from there, yours with the samples the host has still to apply and the others as they were last driven, so your car answers at once whatever the ping. When a new snapshot moves a car from where the guess had it, the jump fades out over about 80 ms. Pick-ups land when the host says so, a round trip after you press the button.
+
+Add `?lag=150&jitter=20` to the page URL to feel a slow connection, and `?relay=1` to send game links only through a TURN relay.
 
 ## Development
 
@@ -102,7 +129,9 @@ npm run dev
 npm run check
 ```
 
-`npm run dev` serves the game at http://localhost:5173. `npm run check` runs the type check, lint and tests. The tests check the drift boost, the rocket start and wheelspin, that every car laps inside the barriers, the pick-up odds by position, the Shield, Blue Lightning, the Ultimate Weapon and a homing rocket.
+`npm run dev` serves the game at http://localhost:5173 with the Worker and Durable Object running locally in `workerd`. Open it in two browser tabs to try a host and a guest on one machine. `npm run check` runs the type check, lint and tests. The tests run inside the Workers runtime. They check the drift boost, the rocket start and wheelspin, that every car laps inside the barriers, the pick-up odds by position, the Shield, Blue Lightning, the Ultimate Weapon, a homing rocket, the finish rules, that a snapshot predicts the cars as the host moves them, and a whole lobby, race and result over real sockets.
+
+After changing `wrangler.jsonc`, regenerate the binding types with `npm run types`.
 
 ## Licence
 

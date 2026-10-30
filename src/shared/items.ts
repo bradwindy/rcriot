@@ -69,7 +69,8 @@ export type ItemEvent =
   | { type: 'pickup'; racer: number; box: number }
   | { type: 'lock'; racer: number }
   | { type: 'use'; racer: number; kind: ItemKind }
-  | { type: 'hit'; racer: number; hit: Hit }
+  /** `by` is the racer whose pick-up it was. */
+  | { type: 'hit'; racer: number; hit: Hit; by: number }
   | { type: 'explode'; x: number; y: number; z: number; strength: number }
   | { type: 'splash'; x: number; y: number; z: number }
   | { type: 'zap'; from: number; to: number }
@@ -399,13 +400,13 @@ export class Items {
           const d = Math.hypot(dx, dz);
           if (d > SHOCK_RADIUS || Math.abs(other.y - car.y) > 3) return;
           const shove = 16 * (1 - d / SHOCK_RADIUS) + 4;
-          this.hit(j, other, 'blast', { x: (dx / Math.max(d, 0.1)) * shove, z: (dz / Math.max(d, 0.1)) * shove });
+          this.hit(j, other, 'blast', i, { x: (dx / Math.max(d, 0.1)) * shove, z: (dz / Math.max(d, 0.1)) * shove });
         });
         break;
       case 'ultimate': {
         const struck: number[] = [];
         field.cars.forEach((other, j) => {
-          if (j !== i && this.hit(j, other, 'short')) struck.push(j);
+          if (j !== i && this.hit(j, other, 'short', i)) struck.push(j);
         });
         this.events.push({ type: 'thunder', racers: struck });
         break;
@@ -487,9 +488,9 @@ export class Items {
     });
   }
 
-  private hit(j: number, car: Car, hit: Hit, push?: { x: number; z: number }): boolean {
+  private hit(j: number, car: Car, hit: Hit, by: number, push?: { x: number; z: number }): boolean {
     const landed = applyHit(car, hit, push);
-    if (landed) this.events.push({ type: 'hit', racer: j, hit });
+    if (landed) this.events.push({ type: 'hit', racer: j, hit, by });
     return landed;
   }
 
@@ -507,7 +508,7 @@ export class Items {
           if (d > HEAT_RANGE || d < 0.1 || Math.abs(other.y - car.y) > 2) return;
           if ((dx * f.x + dz * f.z) / d < Math.cos(HEAT_CONE)) return;
           this.burnCooldown[j] = 0.35;
-          this.hit(j, other, 'burn');
+          this.hit(j, other, 'burn', i);
         });
       }
       if (this.charge[i] > 0) {
@@ -524,7 +525,7 @@ export class Items {
           }
           if (this.zapCooldown[j] > 0) return;
           this.zapCooldown[j] = 1;
-          if (this.hit(j, other, 'zap')) this.events.push({ type: 'zap', from: i, to: j });
+          if (this.hit(j, other, 'zap', i)) this.events.push({ type: 'zap', from: i, to: j });
         });
       }
     });
@@ -574,7 +575,7 @@ export class Items {
           const d2 = (car.x - e.x) ** 2 + (car.z - e.z) ** 2;
           const dy = Math.abs(car.y + 0.4 - e.y);
           if (e.kind === 'oil') {
-            if (d2 < OIL_RADIUS ** 2 && dy < 1.5 && car.slick <= 0.1) this.hit(j, car, 'slick');
+            if (d2 < OIL_RADIUS ** 2 && dy < 1.5 && car.slick <= 0.1) this.hit(j, car, 'slick', e.owner);
             continue;
           }
           const r = e.kind === 'mine' ? MINE_RADIUS : e.kind === 'fake' ? FAKE_RADIUS : HIT_RADIUS;
@@ -583,7 +584,7 @@ export class Items {
             this.splash(e, field);
           } else {
             const len = Math.hypot(e.vx, e.vz) || 1;
-            this.hit(j, car, 'blast', { x: (e.vx / len) * 4, z: (e.vz / len) * 4 });
+            this.hit(j, car, 'blast', e.owner, { x: (e.vx / len) * 4, z: (e.vz / len) * 4 });
             this.events.push({ type: 'explode', x: e.x, y: e.y, z: e.z, strength: e.kind === 'rocket' ? 1 : 0.7 });
           }
           gone = true;
@@ -701,7 +702,7 @@ export class Items {
     this.events.push({ type: 'splash', x: e.x, y: e.y, z: e.z });
     field.cars.forEach((car, j) => {
       if (j === e.owner && e.age < OWNER_GRACE) return;
-      if ((car.x - e.x) ** 2 + (car.z - e.z) ** 2 < WATER_RADIUS ** 2 && Math.abs(car.y - e.y) < 2.5) this.hit(j, car, 'bubble');
+      if ((car.x - e.x) ** 2 + (car.z - e.z) ** 2 < WATER_RADIUS ** 2 && Math.abs(car.y - e.y) < 2.5) this.hit(j, car, 'bubble', e.owner);
     });
   }
 }

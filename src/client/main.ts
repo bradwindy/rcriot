@@ -1,16 +1,23 @@
 import './style.css';
 import * as THREE from 'three';
+import { botInput } from '../shared/bot';
 import { driftLevel, grounded, TICK, type CarInput } from '../shared/car';
 import { PIRATE_COVE } from '../shared/circuit';
 import { ITEM_KINDS, ROLL_TIME, type ItemEvent, type ItemKind } from '../shared/items';
-import { COUNTDOWN, gridFor, gridSlot, Race, type Racer } from '../shared/race';
-import { ROSTER } from '../shared/roster';
+import { normalizeCode, sanitizeName, type RoomMsg } from '../shared/protocol';
+import { COUNTDOWN, gridFor, gridSlot, MAX_RACERS, Race, type Racer } from '../shared/race';
+import type { ResultRow } from '../shared/results';
+import { ROSTER, type CarModel } from '../shared/roster';
 import { buildTrack, sampleAt, surfaceY } from '../shared/track';
+import { Attract } from './attract';
 import { Sound, type Nearby } from './audio';
 import { ChaseCamera } from './camera';
 import { Hud } from './hud';
 import { Keyboard } from './input';
+import { LobbyPanel } from './lobby';
 import { Panel } from './panel';
+import { PartySession, randomCode } from './party';
+import { Predictor } from './predict';
 import { CarView, type Pose } from './render/cars';
 import { itemIcon } from './render/icons';
 import { ItemView } from './render/items';
@@ -19,17 +26,21 @@ import { Pipeline } from './render/post';
 import { dynamicLight, flushLights, globals } from './render/ps1';
 import { setFiltering } from './render/textures';
 import { World } from './render/world';
+import { mockResults, ResultsBoard } from './results';
 import { CarSelect } from './select';
 import { loadFx, saveFx } from './settings';
+import { Title } from './title';
 import { TouchPad } from './touch';
 import { voiceOf } from './voices';
 
 // Colours are written as the screen should show them, the way the PS1 did. No linear-light conversions anywhere.
 THREE.ColorManagement.enabled = false;
 
+/** Cars in a practice race, and the player's grid slot. */
 const GRID = 8;
+const PRACTICE_SLOT = 5;
+const PRACTICE_LAPS = 3;
 const ENGINE_VOLUME = { quiet: 0.5, normal: 1, off: 0 };
-const PLAYER_SLOT = 5;
 const SAND = new THREE.Color(0.86, 0.74, 0.55);
 const STONE = new THREE.Color(0.55, 0.52, 0.48);
 const SPARK = [new THREE.Color(0, 0, 0), new THREE.Color(0.45, 0.72, 1.0), new THREE.Color(1.0, 0.58, 0.15)];
@@ -38,22 +49,62 @@ const SMOKE = new THREE.Color(0.78, 0.76, 0.74);
 const EXHAUST = new THREE.Color(0.42, 0.4, 0.42);
 const EMBER = new THREE.Color(1.0, 0.55, 0.18);
 const FLARE = [new THREE.Color(1.0, 0.75, 0.3), new THREE.Color(1.0, 0.45, 0.12)];
+/** Seconds after the race ends before the results board comes up. */
+const RESULTS_DELAY = 2.5;
+/** Name tags show over people's cars closer than this. */
+const TAG_RANGE = 70;
+const NAME_KEY = 'rcriot.name';
 
 /** Scales world units per second to the speedo's figure, so a fast car tops out near 100. */
 const SPEEDO = 3;
 
 const el = (id: string) => document.getElementById(id) as HTMLElement;
 
+function savedName(): string {
+  try {
+    return sanitizeName(localStorage.getItem(NAME_KEY));
+  } catch {
+    return '';
+  }
+}
+
+function saveName(name: string): void {
+  try {
+    localStorage.setItem(NAME_KEY, name);
+  } catch {
+    // The name just won't be remembered.
+  }
+}
+
+/** Your saved name, or a made-up one that is saved so a reload keeps it. */
+function playerName(): string {
+  const name = savedName();
+  if (name) return name;
+  const made = `RACER ${10 + Math.floor(Math.random() * 90)}`;
+  saveName(made);
+  return made;
+}
+
 const track = buildTrack(PIRATE_COVE);
 const world = new World(
   track,
-  Array.from({ length: GRID }, (_, i) => gridSlot(track, i)),
+  Array.from({ length: MAX_RACERS }, (_, i) => gridSlot(track, i)),
 );
-const views = new Map(ROSTER.map((m, i) => [m.id, new CarView(m, i + 1)]));
-for (const v of views.values()) {
-  world.scene.add(v.root, v.shadow);
-  v.visible = false;
+/** Car bodies by model and grid number, made the first time a race needs one and kept for the next. */
+const pool = new Map<string, CarView>();
+function viewFor(model: CarModel, slot: number): CarView {
+  const key = `${model.id}:${slot}`;
+  let view = pool.get(key);
+  if (!view) {
+    view = new CarView(model, slot + 1);
+    world.scene.add(view.root, view.shadow);
+    pool.set(key, view);
+  }
+  return view;
 }
+const hideCars = () => {
+  for (const v of pool.values()) v.visible = false;
+};
 const dust = new Dust();
 const embers = new Dust(true);
 world.scene.add(dust.mesh, embers.mesh);
@@ -66,18 +117,21 @@ const chase = new ChaseCamera(track);
 const sound = new Sound();
 const hud = new Hud(el('hud'), track.samples);
 
-/** The race in progress, or null on the car select screen. */
+/** The race on screen, or null on the menus. */
 let session: Session | null = null;
+/** The party this page is in, or null. */
+let party: PartySession | null = null;
 let fx = loadFx();
 const applyFx = () => {
-  pipeline.resize(innerWidth, innerHeight, Math.min(devicePixelRatio, 2), fx, chase.camera);
+  // A page opened in a hidden tab can start at zero size. It gets a resize when it shows.
+  pipeline.resize(Math.max(1, innerWidth), Math.max(1, innerHeight), Math.min(devicePixelRatio, 2), fx, chase.camera);
   pipeline.apply(fx);
   hud.fit(pipeline.viewport, pipeline.size.w, pipeline.size.h);
   pipeline.setUi(hud.canvas);
   setFiltering(fx.pixelated, fx.mipmaps, fx.cutoutMipmaps);
   sound.muted = !fx.sound;
   sound.engineVolume = ENGINE_VOLUME[fx.engine];
-  if (session) session.race.items.enabled = fx.items;
+  if (session && !session.pred) session.race.items.enabled = fx.items;
 };
 applyFx();
 addEventListener('resize', applyFx);
@@ -88,21 +142,24 @@ const panel = new Panel(el('ui'), fx, (next) => {
   applyFx();
 });
 
-/** Everything about the race in progress. */
+/** Everything about the race on screen. */
 interface Session {
   race: Race;
+  /** Your grid slot, or -1 while watching someone else race. */
+  me: number;
+  names: string[];
+  /** Drives an online race from the host's snapshots. Null for practice, which runs on this page. */
+  pred: Predictor | null;
+  /** The online race's number, or 0 for practice. */
+  n: number;
   views: CarView[];
   items: ItemView;
   poses: Pose[];
   air: number[];
-  /** The player's lap clock: the lap last seen, when it began on the race clock, and the best lap so far. */
-  lapSeen: number;
-  lapStart: number;
-  bestLap: number | null;
   /** Each racer's last bump already shown as sparks, and last boost already shown as a flare. */
   bumps: number[];
   flares: number[];
-  /** Ages of the player's car events already turned into sounds. */
+  /** Ages of the followed car's events already turned into sounds. */
   heard: { hop: number; boost: number; bump: number; land: number };
   count: string;
   acc: number;
@@ -110,6 +167,10 @@ interface Session {
   rollUntil: number;
   rollNext: number;
   rollIcon: HTMLCanvasElement | null;
+  /** When the race was seen to end, and the results once known. The board comes up RESULTS_DELAY later. */
+  overAt: number | null;
+  results: ResultRow[] | null;
+  resetQueued: boolean;
 }
 
 const showroom = (() => {
@@ -117,59 +178,264 @@ const showroom = (() => {
   return { at: new THREE.Vector3(p.x, surfaceY(p, 0), p.z), heading: Math.atan2(-p.tx, -p.tz) };
 })();
 
-function toSelect(): void {
+function endSession(): void {
   session?.items.dispose();
   session = null;
-  for (const v of views.values()) v.visible = false;
-  select.show();
+  hideCars();
   hud.show(false);
   touch.setVisible(false);
   sound.idle();
 }
 
-function startRace(): void {
-  const seed = Math.floor(Math.random() * 1e9);
-  session?.items.dispose();
-  const race = new Race(track, gridFor(ROSTER, select.car, GRID, PLAYER_SLOT, seed), PLAYER_SLOT, seed, fx.items);
-  for (const v of views.values()) v.visible = false;
-  const raceViews = race.racers.map((r) => views.get(r.model.id) as CarView);
+/** The car select screen: practice on its own, or the lobby of the party this page is in. */
+function toSelect(): void {
+  endSession();
+  results.hide();
+  select.show();
+  syncLobby();
+}
+
+/** The go button and the party panel, to fit whether this page is in a party and whether it hosts. */
+function syncLobby(): void {
+  if (party) {
+    document.body.classList.add('party');
+    const host = party.room?.host === party.myId;
+    select.configure(host ? 'START RACE' : 'WAITING FOR HOST', host, host ? 'ARROWS CHOOSE   ENTER START' : 'ARROWS CHOOSE');
+    lobby.show(party.code, party.room, party.myId, party.status);
+  } else {
+    document.body.classList.remove('party');
+    select.configure('RACE!', true, 'ARROWS CHOOSE   ENTER RACE');
+    lobby.hide();
+  }
+}
+
+function beginSession(race: Race, me: number, names: string[], pred: Predictor | null, n: number): void {
+  leaveTitle();
+  endSession();
+  const raceViews = race.racers.map((r, i) => viewFor(r.model, i));
   for (const v of raceViews) v.visible = true;
   const items = new ItemView(race.items, raceViews, dust, embers, track);
   world.scene.add(items.group);
   session = {
     race,
+    me,
+    names,
+    pred,
+    n,
     views: raceViews,
     items,
-    poses: race.racers.map((r) => ({ x: r.car.x, y: r.car.y, z: r.car.z, heading: r.car.heading })),
+    poses: pred ? pred.poses : race.racers.map((r) => ({ x: r.car.x, y: r.car.y, z: r.car.z, heading: r.car.heading })),
     air: race.racers.map(() => 0),
     bumps: race.racers.map(() => -1),
     flares: race.racers.map(() => -1),
-    lapSeen: race.player.lap,
-    lapStart: COUNTDOWN,
-    bestLap: null,
     heard: { hop: -1, boost: -1, bump: -1, land: -1 },
     count: '',
     acc: 0,
     rollUntil: 0,
     rollNext: 0,
     rollIcon: null,
+    overAt: null,
+    results: null,
+    resetQueued: false,
   };
-  sound.voice(voiceOf(race.player.model.id));
+  sound.voice(voiceOf(race.racers[followed(session)].model.id));
   select.hide();
+  lobby.hide();
+  results.hide();
   hud.show(true);
-  touch.setVisible(true);
+  touch.setVisible(me >= 0);
   chase.snap();
 }
 
-const select = new CarSelect(el('select'), () => sound.select(), startRace);
+function startPractice(): void {
+  const seed = Math.floor(Math.random() * 1e9);
+  const models = gridFor(ROSTER, select.car, GRID, PRACTICE_SLOT, seed);
+  const race = new Race(track, models, PRACTICE_SLOT, seed, fx.items, { laps: PRACTICE_LAPS });
+  const names = models.map((m) => m.name.toUpperCase());
+  names[PRACTICE_SLOT] = playerName().toUpperCase();
+  beginSession(race, PRACTICE_SLOT, names, null, 0);
+}
+
+/** The racer the camera and HUD follow: your own car, or the leader while you watch. */
+function followed(s: Session): number {
+  return s.me >= 0 ? s.me : s.race.racers.indexOf(s.race.standings()[0]);
+}
+
+function startOnline(room: RoomMsg, myId: string): void {
+  const models = room.grid.map((g) => ROSTER.find((m) => m.id === g.car) ?? ROSTER[0]);
+  const humans = room.grid.flatMap((g, i) => (g.id ? [i] : []));
+  const { settings } = room;
+  const race = new Race(track, models, humans, room.seed, settings.items, { laps: settings.laps, level: settings.level });
+  const me = room.grid.findIndex((g) => g.id === myId);
+  beginSession(race, me, room.grid.map((g) => g.name.toUpperCase()), new Predictor(race, room.race, me), room.race);
+  // Someone watching has no controls, so the party panel stays up with its LEAVE button.
+  if (me < 0 && party) lobby.show(party.code, room, myId, party.status);
+}
+
+/** Follows the party's room: lobby, race or results. */
+function onRoom(room: RoomMsg): void {
+  if (!party) return;
+  if (room.phase === 'race') {
+    if (session?.n !== room.race) startOnline(room, party.myId);
+    else if (lobby.open) lobby.show(party.code, room, party.myId, party.status);
+    return;
+  }
+  if (room.phase === 'results' && room.results) {
+    if (session?.n === room.race) {
+      session.results ??= room.results;
+      session.overAt ??= time;
+      return;
+    }
+    // Joined after the race: straight to its board.
+    endSession();
+    select.hide();
+    lobby.hide();
+    showResults(room.results, room.grid.findIndex((g) => g.id === party?.myId));
+    return;
+  }
+  if (session || results.open || !select.open) toSelect();
+  else syncLobby();
+}
+
+function showResults(rows: ResultRow[], me: number): void {
+  const host = party ? party.room?.host === party.myId : true;
+  hud.show(false);
+  touch.setVisible(false);
+  sound.idle();
+  results.show(rows, me, host);
+}
+
+function enterParty(code: string): void {
+  leaveTitle();
+  party?.close();
+  const name = playerName();
+  history.replaceState(null, '', `/p/${code}${location.search}`);
+  party = new PartySession(code, name, () => select.car.id, {
+    room: (room) => onRoom(room),
+    snapshot: (buf) => session?.pred?.onSnapshot(buf),
+    host: (msg) => {
+      const s = session;
+      if (!s?.pred) return;
+      if (msg.t === 'e' && msg.n === s.n) s.pred.onEvents(msg.e);
+      if (msg.t === 'over' && msg.race === s.n) {
+        s.results ??= msg.results;
+        s.overAt ??= time;
+      }
+    },
+    status: () => {
+      if (lobby.open && party) lobby.show(party.code, party.room, party.myId, party.status);
+    },
+    link: (up) => {
+      if (up) session?.pred?.forget();
+    },
+  });
+  toSelect();
+}
+
+function leaveParty(): void {
+  party?.close();
+  party = null;
+  history.replaceState(null, '', `/${location.search}`);
+  toTitle();
+}
+
+const select = new CarSelect(
+  el('select'),
+  (car) => {
+    sound.select();
+    party?.pickCar(car.id);
+  },
+  () => {
+    if (party) party.start();
+    else startPractice();
+  },
+  () => (party ? leaveParty() : toTitle()),
+);
+const lobby = new LobbyPanel(el('ui'), {
+  settings: (s) => party?.settings(s),
+  rename: (name) => {
+    const clean = sanitizeName(name);
+    if (!clean) return;
+    saveName(clean);
+    party?.rename(clean);
+  },
+  leave: () => leaveParty(),
+});
+addEventListener('resize', () => {
+  if (lobby.open && party) lobby.show(party.code, party.room, party.myId, party.status);
+});
+const results = new ResultsBoard(el('select'), () => sound.select());
+results.onNext = () => {
+  if (party) party.again();
+  else startPractice();
+};
+
+function requestReset(): void {
+  const s = session;
+  if (!s || s.me < 0) return;
+  if (s.pred) s.resetQueued = true;
+  else {
+    s.race.reset(s.race.racers[s.me]);
+    chase.snap();
+  }
+}
+
+/**
+ * Esc and the touch MENU button: back out of practice. An online race carries on, so they open and close the party
+ * panel over it instead, where LEAVE quits the party.
+ */
+function back(): void {
+  if (session && !session.pred) toSelect();
+  else if (session && party) {
+    if (lobby.open) lobby.hide();
+    else lobby.show(party.code, party.room, party.myId, party.status);
+  }
+}
+
+// The title screen with bots racing behind it.
+const attract = new Attract(track, { viewFor, hideAll: hideCars }, world, dust, embers, chase);
+const title = new Title(
+  el('select'),
+  panel,
+  {
+    create: () => enterParty(randomCode()),
+    join: (raw) => {
+      const code = normalizeCode(raw);
+      if (code) enterParty(code);
+    },
+    practice: () => {
+      leaveTitle();
+      toSelect();
+    },
+  },
+  () => sound.select(),
+);
+
+function toTitle(): void {
+  endSession();
+  results.hide();
+  select.hide();
+  lobby.hide();
+  document.body.classList.remove('party');
+  title.show();
+  attract.start();
+}
+
+/** Off the title to a lobby or race. The attract race's cars and item boxes go with it. */
+function leaveTitle(): void {
+  title.hide();
+  attract.stop();
+}
+
 const touch = new TouchPad(el('touch'), (action) => {
   sound.unlock();
-  if (action === 'menu') toSelect();
+  if (action === 'menu') back();
   if (action === 'camera') chase.cycle();
-  if (action === 'reset' && session) session.race.reset(session.race.player);
+  if (action === 'reset') requestReset();
 });
 const keys = new Keyboard((code) => {
   sound.unlock();
+  if (lobby.typing) return;
   if (code === 'KeyP') panel.toggle();
   if (code === 'KeyM') {
     fx = { ...fx, sound: !fx.sound };
@@ -177,18 +443,25 @@ const keys = new Keyboard((code) => {
     applyFx();
     panel.sync(fx);
   }
+  if (results.open) {
+    if (code === 'Escape' && !party) toTitle();
+    else results.key(code);
+    return;
+  }
+  if (title.open) {
+    title.key(code);
+    return;
+  }
   if (select.open) {
     if (code === 'ArrowLeft' || code === 'KeyA') select.step(-1);
     if (code === 'ArrowRight' || code === 'KeyD') select.step(1);
     if (code === 'Enter' || code === 'Space') select.go();
+    if (code === 'Escape' && !party) toTitle();
     return;
   }
   if (code === 'KeyC') chase.cycle();
-  if (code === 'Escape') toSelect();
-  if (code === 'KeyR' && session) {
-    session.race.reset(session.race.player);
-    chase.snap();
-  }
+  if (code === 'Escape') back();
+  if (code === 'KeyR') requestReset();
 });
 for (const type of ['pointerdown', 'touchstart'] as const) addEventListener(type, () => sound.unlock(), { capture: true });
 
@@ -205,7 +478,7 @@ function merged(dt: number): CarInput {
   };
 }
 
-function kickUp(r: Racer, view: CarView, i: number, s: Session, dt: number): void {
+function kickUp(r: Racer, view: CarView, i: number, s: Pick<Session, 'air' | 'bumps' | 'flares'>, dt: number): void {
   const car = r.car;
   const speed = Math.hypot(car.vx, car.vz);
   const landed = grounded(car) && s.air[i] > 0.25;
@@ -283,7 +556,7 @@ function kickUp(r: Racer, view: CarView, i: number, s: Session, dt: number): voi
 }
 
 function hearPlayer(s: Session): void {
-  const r = s.race.player;
+  const r = s.race.racers[followed(s)];
   const car = r.car;
   const fx = -Math.sin(car.heading);
   const fz = -Math.cos(car.heading);
@@ -303,7 +576,7 @@ function hearPlayer(s: Session): void {
   const cam = chase.camera.position;
   const right = new THREE.Vector3().setFromMatrixColumn(chase.camera.matrixWorld, 0);
   const nearby: Nearby[] = s.race.racers
-    .filter((b) => b.brain)
+    .filter((b) => b !== r)
     .map((b) => {
       const dx = b.car.x - cam.x;
       const dz = b.car.z - cam.z;
@@ -320,9 +593,9 @@ function hearPlayer(s: Session): void {
   sound.traffic(nearby);
 }
 
-/** Item sounds: the player's own pick-ups and shots, and anything that goes off near the camera. */
+/** Item sounds: the followed car's own pick-ups and shots, and anything that goes off near the camera. */
 function hearItem(e: ItemEvent, s: Session): void {
-  const me = PLAYER_SLOT;
+  const me = followed(s);
   const cam = chase.camera.position;
   const near = (x: number, z: number) => Math.max(0, 1 - Math.hypot(x - cam.x, z - cam.z) / 45);
   const car = (i: number) => s.race.racers[i].car;
@@ -372,11 +645,14 @@ function hearItem(e: ItemEvent, s: Session): void {
 
 function countdown(s: Session): void {
   const { race } = s;
+  const mine = s.me >= 0 ? race.racers[s.me] : null;
   let text = '';
   if (!race.started) text = String(Math.ceil(COUNTDOWN - race.clock));
   else if (race.clock < COUNTDOWN + 0.8) text = 'GO!';
+  else if (mine && mine.finish !== null && race.clock < mine.finish + RESULTS_DELAY + 1) text = 'FINISH!';
+  else if (s.pred && s.me >= 0 && party && !party.linked && !race.over) text = 'CONNECTING';
   if (text !== s.count) {
-    if (text) sound.beep(text === 'GO!');
+    if (text && text !== 'CONNECTING') sound.beep(text === 'GO!');
     s.count = text;
   }
   hud.countdown(text);
@@ -384,31 +660,78 @@ function countdown(s: Session): void {
 
 let last = performance.now();
 let time = 0;
+/** Dev only: your car drives itself, for testing races from a script. */
+let autopilot = false;
 const target = new THREE.Vector3();
+const tagAt = new THREE.Vector3();
+
+/** One local tick: your controls into the race, or into the prediction and off to the host. */
+function tick(s: Session, input: CarInput): void {
+  if (!s.pred) {
+    s.race.racers.forEach((r, i) => Object.assign(s.poses[i], { x: r.car.x, y: r.car.y, z: r.car.z, heading: r.car.heading }));
+    s.race.step(input);
+    return;
+  }
+  const batch = s.pred.tick(input, s.resetQueued);
+  s.resetQueued = false;
+  if (batch) party?.input(batch);
+}
+
+function drawCars(s: Session, dt: number): void {
+  const alpha = s.acc / TICK;
+  const offsets = s.pred?.offsets;
+  s.race.racers.forEach((r, i) => {
+    const o = offsets?.[i];
+    const pose = s.poses[i];
+    const car = o ? { ...r.car, x: r.car.x + o.x, y: r.car.y + o.y, z: r.car.z + o.z, heading: r.car.heading + o.heading } : r.car;
+    const prev = o ? { x: pose.x + o.x, y: pose.y + o.y, z: pose.z + o.z, heading: pose.heading + o.heading } : pose;
+    s.views[i].update(car, prev, alpha, track, dt, r.input.steer, time);
+    kickUp(r, s.views[i], i, s, dt);
+  });
+}
+
+/** Name tags over the other people's cars, where the camera can see them. */
+function tags(s: Session, me: number): { x: number; y: number; name: string }[] {
+  const out: { x: number; y: number; name: string }[] = [];
+  if (!s.pred) return out;
+  s.race.racers.forEach((r, i) => {
+    if (i === me || !r.human) return;
+    tagAt.copy(s.views[i].root.position);
+    tagAt.y += 1.9;
+    if (tagAt.distanceTo(chase.camera.position) > TAG_RANGE) return;
+    tagAt.project(chase.camera);
+    if (tagAt.z > 1 || Math.abs(tagAt.x) > 1 || Math.abs(tagAt.y) > 1) return;
+    out.push({ x: tagAt.x, y: tagAt.y, name: s.names[i] });
+  });
+  return out;
+}
 
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   time += dt;
   document.body.classList.toggle('touch-on', touch.active);
-  document.body.classList.toggle('racing', session !== null);
+  document.body.classList.toggle('racing', session !== null && !results.open);
 
   const s = session;
-  if (s) {
-    const input = merged(dt);
+  if (s && !results.open) {
+    const mine = s.me >= 0 ? s.race.racers[s.me] : null;
+    const input = autopilot && mine ? botInput(mine.car, mine.spec, track, mine.brain) : merged(dt);
     s.acc += dt;
     while (s.acc >= TICK) {
-      s.race.racers.forEach((r, i) => Object.assign(s.poses[i], { x: r.car.x, y: r.car.y, z: r.car.z, heading: r.car.heading }));
-      s.race.step(input);
+      tick(s, input);
       s.acc -= TICK;
     }
-    const alpha = s.acc / TICK;
-    s.race.racers.forEach((r, i) => {
-      s.views[i].update(r.car, s.poses[i], alpha, track, dt, r.input.steer, time);
-      kickUp(r, s.views[i], i, s, dt);
-    });
-    const player = s.race.player;
-    const me = s.views[s.race.racers.indexOf(player)].root;
+    s.pred?.fade(dt);
+    if (s.race.over && s.overAt === null) s.overAt = time;
+    if (s.overAt !== null && time - s.overAt > RESULTS_DELAY) {
+      const rows = s.results ?? (s.pred ? null : s.race.results(s.names));
+      if (rows) showResults(rows, s.me);
+    }
+    drawCars(s, dt);
+    const index = followed(s);
+    const player = s.race.racers[index];
+    const me = s.views[index].root;
     target.copy(me.position);
     chase.update(target, me.rotation.y, dt, {
       drift: player.car.drift,
@@ -416,7 +739,6 @@ function frame(now: number): void {
       lookBack: keys.lookingBack,
     });
     s.items.update(s.race, dt, time, chase.camera.position, (e) => hearItem(e, s));
-    const index = s.race.racers.indexOf(player);
     const held = s.race.items.held[index];
     if (s.rollUntil > 0 && time < s.rollUntil) {
       if (time >= s.rollNext) {
@@ -437,28 +759,25 @@ function frame(now: number): void {
     sound.charge(s.race.items.charge[index] > 0);
     hearPlayer(s);
     countdown(s);
-    if (player.lap > s.lapSeen) {
-      if (s.lapSeen >= 1) {
-        const lap = s.race.clock - s.lapStart;
-        s.bestLap = s.bestLap === null ? lap : Math.min(s.bestLap, lap);
-      }
-      s.lapSeen = player.lap;
-      s.lapStart = s.race.clock;
-    }
     const speed = Math.hypot(player.car.vx, player.car.vz);
     hud.frame({
       place: s.race.standings().indexOf(player) + 1,
       total: s.race.racers.length,
       lap: Math.max(1, player.lap),
-      lapTime: s.race.started ? s.race.clock - s.lapStart : 0,
-      bestLap: s.bestLap,
+      laps: s.race.laps,
+      lapTime: s.race.started && player.finish === null ? s.race.clock - player.lapStart : 0,
+      bestLap: player.bestLap,
       speed: speed / player.spec.topSpeed,
       speedValue: speed * SPEEDO,
       cars: s.race.racers.map((r) => ({ x: r.car.x, z: r.car.z, me: r === player, color: r.model.color })),
+      tags: tags(s, index),
     });
-  } else {
-    const view = views.get(select.car.id) as CarView;
-    for (const v of views.values()) v.visible = v === view;
+  } else if (!s && attract.running) {
+    attract.update(dt, time, (r, view, i) => kickUp(r, view, i, attract, dt));
+  } else if (!s) {
+    const view = viewFor(select.car, 0);
+    hideCars();
+    view.visible = true;
     view.showcase(showroom.at, showroom.heading + time * 0.6);
     chase.orbit(showroom.at, time);
   }
@@ -479,14 +798,56 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-toSelect();
+/** Party links like /p/ABCDE join that party. Anything else starts on the menus. */
+function route(): void {
+  const match = location.pathname.match(/^\/p\/([^/]+)\/?$/);
+  const code = match ? normalizeCode(match[1]) : null;
+  if (code) enterParty(code);
+  else {
+    if (match) history.replaceState(null, '', `/${location.search}`);
+    toTitle();
+  }
+}
+
+route();
 requestAnimationFrame(frame);
 
 if (import.meta.env.DEV) {
   const give = (kind: ItemKind, count = 1) => {
-    if (session) session.race.items.held[PLAYER_SLOT] = { kind, count };
+    if (session && session.me >= 0) session.race.items.held[session.me] = { kind, count };
   };
-  const debug = { chase, track, keys, select, touch, sound, startRace, toSelect, give, pipeline, hud };
+  const debug = {
+    chase,
+    track,
+    keys,
+    select,
+    touch,
+    sound,
+    startPractice,
+    toSelect,
+    give,
+    pipeline,
+    hud,
+    create: () => enterParty(randomCode()),
+    join: (code: string) => {
+      const c = normalizeCode(code);
+      if (c) enterParty(c);
+    },
+    leave: leaveParty,
+    autopilot: (on = true) => (autopilot = on),
+    title,
+    attract,
+    toTitle,
+    /** Shows the results board with made-up racers, over whatever is on screen. */
+    results: (rows = mockResults(), me = 3, host = true) => {
+      title.hide();
+      hud.show(false);
+      touch.setVisible(false);
+      results.show(rows, me, host);
+    },
+  };
   Object.defineProperty(debug, 'race', { get: () => session?.race });
+  Object.defineProperty(debug, 'session', { get: () => session });
+  Object.defineProperty(debug, 'party', { get: () => party });
   Object.assign(window, { rc: debug });
 }

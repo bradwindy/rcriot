@@ -94,6 +94,7 @@ export interface Car {
   bump: number;
   landAt: number;
   land: number;
+  wallAt: number;
   /** Seconds left on pick-up effects: immune, oiled (little grip), powerless, floating in a bubble, flung and spinning. */
   shield: number;
   slick: number;
@@ -144,6 +145,7 @@ export function spawnCar(track: Track, s: number, offset: number): Car {
     bump: 0,
     landAt: -1,
     land: 0,
+    wallAt: -1,
     shield: 0,
     slick: 0,
     slickDir: 1,
@@ -296,7 +298,10 @@ export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Trac
       car.vz -= nz * out * (1 + WALL_BOUNCE);
       car.vx *= 0.96;
       car.vz *= 0.96;
-      if (out > 2) hitCar(car, Math.min(1, out / 18));
+      if (out > 2) {
+        hitCar(car, Math.min(1, out / 18));
+        car.wallAt = car.age;
+      }
       if (out > 7 && car.drift) endDrift(car, false);
     }
     loc.offset = side * limit;
