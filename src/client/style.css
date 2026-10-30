@@ -1,0 +1,182 @@
+:root {
+  --ink: #fff6dc;
+  --shade: #1a1006;
+  --accent: #f2c12e;
+  --panel: rgba(16, 12, 30, 0.88);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--ink);
+  font-family: 'Press Start 2P', monospace;
+  -webkit-font-smoothing: none;
+  user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  text-shadow:
+    3px 3px 0 var(--shade),
+    -1px -1px 0 var(--shade),
+    1px -1px 0 var(--shade),
+    -1px 1px 0 var(--shade);
+}
+
+/* The HUD sits on the same TV: a touch of colour fringe on its text when the CRT pass is on. */
+[data-crt='soft'] #hud,
+[data-crt='strong'] #hud {
+  text-shadow:
+    1px 0 rgba(255, 60, 40, 0.45),
+    -1px 0 rgba(40, 160, 255, 0.45),
+    3px 3px 0 var(--shade),
+    -1px -1px 0 var(--shade),
+    1px -1px 0 var(--shade),
+    -1px 1px 0 var(--shade);
+}
+
+.hud-lap {
+  position: absolute;
+  top: 24px;
+  left: 28px;
+  font-size: 22px;
+}
+
+.hud-label {
+  color: var(--accent);
+}
+
+.hud-place {
+  position: absolute;
+  right: 32px;
+  bottom: 28px;
+  font-size: 44px;
+  color: var(--accent);
+}
+
+.hud-of {
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.hud-help {
+  position: absolute;
+  left: 28px;
+  bottom: 28px;
+  font-size: 10px;
+  line-height: 1.8;
+  opacity: 0.85;
+  transition: opacity 1.5s;
+  max-width: 50vw;
+}
+
+.hud-help.faded {
+  opacity: 0;
+}
+
+.panel-toggle {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  font: inherit;
+  font-size: 10px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+
+.panel {
+  position: fixed;
+  top: 60px;
+  right: 24px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 14px;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.panel-title {
+  color: var(--accent);
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.panel select,
+.panel button,
+.panel input {
+  font: inherit;
+  font-size: 9px;
+}
+
+.panel select {
+  width: 150px;
+  color: var(--ink);
+  background: #2a2240;
+  border: 1px solid #6a5a9a;
+  padding: 4px;
+}
+
+.panel input[type='range'] {
+  width: 150px;
+  accent-color: var(--accent);
+}
+
+.panel button {
+  margin-top: 6px;
+  color: var(--shade);
+  background: var(--accent);
+  border: 0;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.panel-fps {
+  margin-top: 12px;
+  opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .hud-lap {
+    font-size: 14px;
+    top: 16px;
+    left: 16px;
+  }
+  .hud-place {
+    font-size: 26px;
+    right: 16px;
+    bottom: 16px;
+  }
+  .hud-help {
+    display: none;
+  }
+}
