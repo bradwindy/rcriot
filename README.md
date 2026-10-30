@@ -2,18 +2,51 @@
 
 Low-poly RC car racing in the browser, drawn like a PlayStation 1 game. The influences are Mario Kart, RC Revenge and Re-Volt.
 
-This is round 1 of 4: the graphics. You drive one car round one track against 7 bots. Controls, power-ups and online multiplayer come in later rounds.
+This is round 2 of 4: the controls. You pick one of 10 RC cars and race 7 bots round one track, on a keyboard or a phone. Power-ups and online multiplayer come in later rounds.
 
 ## The track
 
 Pirate Cove is a movie set on a beach. The lap starts on the sand under the start arch, with the film crew's lights and camera crane beside it. It runs along a pier over the lagoon, through a wrecked galleon, over a stunt ramp, through a torch-lit smugglers' cave and back down to the beach.
 
-## Controls
+## Driving
 
-- Arrow keys or WASD to drive.
-- C changes the camera: chase, far chase, bumper.
-- R puts your car back on the track.
-- P (or the EFFECTS button) opens the effects panel.
+The cars are light RC cars. They slide a little, bounce off walls and each other (heavier cars push lighter ones), hop over bumps, bounce on hard landings and can steer a little in the air. They always land on their wheels.
+
+- **Drift.** Hold Drift while steering at speed. The car hops and slides into the corner. Steering into the drift tightens it and steering out widens it. Hold it and sparks under the rear wheels turn blue, then orange. Let go for a short boost on blue or a longer one on orange. Slowing right down or hitting a wall hard ends the drift with no boost.
+- **Rocket start.** Press the gas just before GO for a boost off the line. Press it too early and the wheels spin for a moment instead.
+
+### Keyboard
+
+- Arrow keys or WASD to drive. Space or Shift to drift.
+- B looks back, C changes the camera (chase, far chase, bumper), R puts your car back on the track.
+- M mutes, Esc goes back to the car select screen, P opens the effects panel.
+
+### Phone
+
+Hold the phone sideways. Put your left thumb anywhere on the left half to steer. GAS, BRAKE and DRIFT sit on the right, and RESET, CAM and MENU along the top. The effects panel opens from the car select screen.
+
+## The cars
+
+Every car has five stats from 1 to 5, and every car's stats add up to 15, so none is better overall. In a bots-only test every car laps within 10% of the others.
+
+| Car | Theme | Speed | Accel | Handling | Grip | Weight |
+|---|---|---|---|---|---|---|
+| Sand Flea | Pirate beach buggy with a cannon exhaust | 3 | 3 | 3 | 3 | 3 |
+| Chomper | Shark on monster-truck wheels | 2 | 3 | 2 | 4 | 4 |
+| Comet | Silver rocket with flames | 5 | 2 | 3 | 3 | 2 |
+| Saucer | Flying saucer with a pilot in the dome | 4 | 4 | 4 | 2 | 1 |
+| Last Ride | Hearse with a coffin on the roof | 2 | 2 | 3 | 3 | 5 |
+| Safari | Zebra-striped jungle jeep | 3 | 4 | 4 | 2 | 2 |
+| Raptor | Dinosaur with a tail spoiler | 5 | 3 | 2 | 2 | 3 |
+| Galleon | Pirate ship on wheels | 3 | 3 | 1 | 4 | 4 |
+| Quackers | Rubber duck | 1 | 5 | 5 | 3 | 1 |
+| Boneshaker | Skeleton dune buggy | 4 | 3 | 3 | 4 | 1 |
+
+Each car is themed on one of RC Revenge's movie worlds: pirates, monsters, sci-fi, horror, jungle and cartoons.
+
+## Sound
+
+Everything you hear is synthesised in code. Each motor is a muffled two-stroke hum that sits in the background: a steady train of soft cracks through two lowpass filters. Each car has its own rev range and amount of rasp, from the Galleon's low putter to Quackers' quicker buzz. The Engine row in the effects panel sets motor volume to Quiet (the default), Normal or Off without touching the other sounds. The two nearest bots' motors play quieter, panned to where they are. The rest, kept well under the motors and softened on top: tyre skids, drift sparks, boosts, bumps, landings and the countdown. M or the Sound row in the effects panel turns it off.
 
 ## The PS1 look
 
@@ -30,8 +63,8 @@ Every effect can be switched off or changed live in the effects panel. Your choi
 
 ## How it works
 
-- `src/shared` holds the parts a server will also run later: the track spline and its queries, the car physics, the bots and the race. The sim runs on a fixed 1/60 s tick.
-- `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer and the dither pass. The world is built in code when the page loads: `terrain.ts` for the island, `road.ts` for the road, pier, cave and wreck (swept along the track spline), and `props.ts` for the palms, rocks and film crew. Static geometry is merged into one mesh per material.
+- `src/shared` holds the parts a server will also run later: the track spline and its queries, the car physics with drifts and boosts, the car roster and stats, the bots, and the race with its countdown. The sim runs on a fixed 1/60 s tick.
+- `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer and the dither pass. The world is built in code when the page loads: `terrain.ts` for the island, `road.ts` for the road, pier, cave and wreck (swept along the track spline), and `props.ts` for the palms, rocks and film crew. Static geometry is merged into one mesh per material. `render/cars.ts` builds the ten car bodies. `audio.ts` synthesises the sound, `touch.ts` draws the phone controls and `select.ts` is the car select screen.
 
 ## Development
 
@@ -49,7 +82,7 @@ npm run dev
 npm run check
 ```
 
-`npm run dev` serves the game at http://localhost:5173. `npm run check` runs the type check, lint and tests.
+`npm run dev` serves the game at http://localhost:5173. `npm run check` runs the type check, lint and tests. The tests check the drift boost, the rocket start and wheelspin, and that every car laps inside the barriers.
 
 ## Licence
 

@@ -1,14 +1,13 @@
 import type { Car, CarInput, CarSpec } from './car';
 import { sampleAt, type Track } from './track';
 
-/** Sideways grip the bots plan corners around, in units per second squared. */
-const CORNER_GRIP = 30;
-
 export interface Brain {
   /** Preferred line, -1 left edge to 1 right edge. */
   lane: number;
   /** Where along the lap this bot starts weaving. */
   phase: number;
+  /** Times its start for a rocket boost. */
+  rocket: boolean;
 }
 
 export function wrapAngle(a: number): number {
@@ -26,9 +25,11 @@ export function botInput(car: Car, spec: CarSpec, track: Track, brain: Brain): C
   const want = Math.atan2(-(tx - car.x), -(tz - car.z));
   const steer = Math.max(-1, Math.min(1, -wrapAngle(want - car.heading) * 2.4));
 
+  // Sideways grip the bot plans its corners around, more for grippier cars.
+  const cornerGrip = 16 + spec.grip * 1.7;
   const far = sampleAt(track, car.s + look + 20);
   const bend = Math.abs(wrapAngle(Math.atan2(far.tx, far.tz) - Math.atan2(ahead.tx, ahead.tz))) / 20;
-  const safe = Math.sqrt(CORNER_GRIP / Math.max(bend, 1e-4));
+  const safe = Math.sqrt(cornerGrip / Math.max(bend, 1e-4));
   const throttle = speed > Math.min(spec.topSpeed, safe) + 1 ? -0.4 : 1;
-  return { throttle, steer };
+  return { throttle, steer, drift: false };
 }

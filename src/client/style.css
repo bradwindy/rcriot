@@ -180,3 +180,204 @@ body {
     display: none;
   }
 }
+
+.hud-big {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 72px;
+  color: var(--accent);
+}
+
+.hud-note {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  right: 0;
+  margin-top: 96px;
+  text-align: center;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hud-note.on {
+  opacity: 1;
+}
+
+/* On phones the touch pad owns the corners, so the HUD moves to the top edge. */
+.touch-on .hud-lap {
+  top: 16px;
+  left: 110px;
+  font-size: 14px;
+}
+
+.touch-on .hud-place {
+  top: 16px;
+  right: 20px;
+  bottom: auto;
+  font-size: 22px;
+}
+
+.touch-on .hud-help,
+.touch-on .select-help {
+  display: none;
+}
+
+/* The touch buttons need the screen while racing. The effects panel opens from the car select screen instead. */
+.touch-on.racing .panel-toggle,
+.touch-on.racing .panel {
+  display: none;
+}
+
+#select {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.select {
+  position: absolute;
+  inset: 0;
+  text-shadow: 3px 3px 0 var(--shade);
+}
+
+.select-title {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.select-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.select-pick {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.select-name {
+  min-width: 300px;
+  text-align: center;
+  font-size: 24px;
+  line-height: 1.6;
+}
+
+.select-name small {
+  display: block;
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.select button {
+  pointer-events: auto;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  text-shadow: none;
+}
+
+.select-arrow {
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+}
+
+.select-go {
+  font-size: 18px;
+  padding: 14px 28px;
+  color: var(--shade) !important;
+  background: var(--accent) !important;
+}
+
+.select-help {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.select-stats {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  font-size: 10px;
+  text-shadow: none;
+}
+
+.select-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 8px 0;
+}
+
+.select-stat b {
+  display: flex;
+  gap: 4px;
+}
+
+.select-stat i {
+  width: 14px;
+  height: 12px;
+  background: #3a3150;
+}
+
+.select-stat i.on {
+  background: var(--accent);
+}
+
+@media (max-width: 760px), (max-height: 480px) {
+  .select-title {
+    top: 14px;
+    font-size: 14px;
+  }
+  .select-bottom {
+    bottom: 12px;
+    gap: 10px;
+  }
+  .select-name {
+    min-width: 200px;
+    font-size: 16px;
+  }
+  .select-arrow {
+    width: 46px;
+    height: 46px;
+  }
+  .select-go {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+  .select-stats {
+    right: 12px;
+    font-size: 8px;
+    padding: 10px 12px;
+  }
+  .select-stat i {
+    width: 10px;
+    height: 9px;
+  }
+  .hud-big {
+    font-size: 44px;
+  }
+}

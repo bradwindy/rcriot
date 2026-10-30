@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../../shared/rng';
+import type { Pattern } from '../../shared/roster';
 import { drawText, textWidth } from './font';
 
 /** Every texture is painted here at PS1 sizes (16 to 128 px), so there are no image files. */
@@ -563,14 +564,33 @@ export const tex = {
   gold: cache(() => make(8, 8, 33, (p) => p.each(() => hex(p.rng() < 0.3 ? '#fff2a0' : p.rng() < 0.5 ? '#e8b830' : '#c89420')))),
 };
 
-/** Body paint for one car: base colour, a racing stripe and dirt along the sills. */
-export function livery(color: string, stripe: string, seed: number): THREE.Texture {
+/** Body paint for one car: a base colour, a pattern in the second colour, and dirt along the sills. */
+export function livery(color: string, second: string, seed: number, pattern: Pattern): THREE.Texture {
   return make(32, 32, 100 + seed, (p) => {
     const base = hex(color);
+    const ink = hex(second);
+    const spots = Array.from({ length: 9 }, () => [p.rng() * 32, p.rng() * 32, 1.8 + p.rng() * 2.2] as const);
+    const flame = Array.from({ length: 32 }, (_, x) => 10 + 9 * Math.abs(Math.sin(x * 0.55 + p.rng() * 0.4)));
     p.each((x, y) => {
       let c = scale(base, 0.94 + p.rng() * 0.1);
-      if (x >= 12 && x < 20) c = hex(stripe);
-      if (x === 11 || x === 20) c = scale(base, 0.7);
+      if (pattern === 'stripe') {
+        if (x >= 12 && x < 20) c = ink;
+        if (x === 11 || x === 20) c = scale(base, 0.7);
+      } else if (pattern === 'pinstripe') {
+        if (x === 5 || x === 26 || (y === 6 && x > 5 && x < 26)) c = ink;
+      } else if (pattern === 'zebra') {
+        if ((x + y * 0.5 + 3 * Math.sin(y * 0.4) + 64) % 11 < 4.5) c = scale(ink, 0.95 + p.rng() * 0.1);
+      } else if (pattern === 'spots') {
+        for (const [sx, sy, r] of spots) {
+          for (const ox of [-32, 0, 32]) {
+            for (const oy of [-32, 0, 32]) if ((x - sx - ox) ** 2 + (y - sy - oy) ** 2 < r * r) c = scale(ink, 0.9 + p.rng() * 0.15);
+          }
+        }
+      } else if (pattern === 'flames') {
+        const h = flame[x];
+        const up = 31 - y;
+        if (up < h) c = up < h * 0.55 ? hex('#f2c12e') : ink;
+      }
       if (y > 26 && p.rng() < (y - 26) / 6) c = mixc(c, hex('#6e5434'), 0.6);
       return c;
     });

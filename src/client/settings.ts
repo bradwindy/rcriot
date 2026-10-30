@@ -12,6 +12,8 @@ export interface Fx {
   cutoutMipmaps: boolean;
   fog: boolean;
   drawDistance: number;
+  sound: boolean;
+  engine: 'quiet' | 'normal' | 'off';
 }
 
 export const DEFAULT_FX: Fx = {
@@ -26,6 +28,8 @@ export const DEFAULT_FX: Fx = {
   cutoutMipmaps: true,
   fog: true,
   drawDistance: 300,
+  sound: true,
+  engine: 'quiet',
 };
 
 const KEY = 'rcriot.fx';

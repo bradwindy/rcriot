@@ -13,6 +13,8 @@ const CHOICES = [
   { key: 'mipmaps', label: 'Far textures', options: [[true, 'Mipmapped'], [false, 'Raw (PS1)']] },
   { key: 'cutoutMipmaps', label: 'Far cut-outs', options: [[true, 'Mipmapped'], [false, 'Raw']] },
   { key: 'fog', label: 'Fog', options: [[true, 'On'], [false, 'Off']] },
+  { key: 'sound', label: 'Sound', options: [[true, 'On'], [false, 'Off']] },
+  { key: 'engine', label: 'Engine', options: [['quiet', 'Quiet'], ['normal', 'Normal'], ['off', 'Off']] },
 ] satisfies Choice<keyof Fx>[];
 
 /** The effects panel: every PS1 effect can be switched or tuned live, so feedback can name exactly what to change. */
@@ -38,6 +40,12 @@ export class Panel {
     host.append(button);
     this.fps = document.createElement('div');
     this.fps.className = 'panel-fps';
+    this.render();
+  }
+
+  /** Shows settings changed from outside the panel, such as the mute key. */
+  sync(fx: Fx): void {
+    this.fx = fx;
     this.render();
   }
 

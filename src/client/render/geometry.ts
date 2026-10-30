@@ -147,11 +147,19 @@ export function boulder(seed: number, size: number, squash = 0.7): THREE.BufferG
   return faceted(g);
 }
 
-function beam(a: THREE.Vector3, b: THREE.Vector3, w: number, h = w): [THREE.BufferGeometry, THREE.Matrix4] {
+/** Geometry and transform for a box from a to b. */
+export function beam(a: THREE.Vector3, b: THREE.Vector3, w: number, h = w): [THREE.BufferGeometry, THREE.Matrix4] {
   const d = b.clone().sub(a);
   const mid = a.clone().add(b).multiplyScalar(0.5);
   const g = new THREE.BoxGeometry(w, h, d.length());
   return [g, xf(mid.x, mid.y, mid.z, Math.atan2(-d.x, -d.z), Math.atan2(d.y, Math.hypot(d.x, d.z)))];
+}
+
+/** A low-poly ball with flat faces, stretched by sx, sy, sz. */
+export function ball(r: number, sx = 1, sy = 1, sz = 1, segments = 8): THREE.BufferGeometry {
+  const g = new THREE.SphereGeometry(r, segments, Math.max(4, Math.round(segments * 0.75)));
+  g.scale(sx, sy, sz);
+  return faceted(g);
 }
 
 /** A box whose top face is narrower and shorter than its bottom, for car shells and wedges. */
