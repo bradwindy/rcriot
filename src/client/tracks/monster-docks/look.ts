@@ -122,6 +122,14 @@ const paint = {
       false,
       false,
     ),
+  /** Rings rising up the tractor beam, as a band that repeats. */
+  rings: () =>
+    make(16, 32, 514, (p) =>
+      p.each((_x, y) => {
+        const v = 0.28 + 0.72 * Math.max(0, Math.cos(((y % 32) / 32) * Math.PI * 2)) ** 3;
+        return [255 * v, 255 * v, 255 * v, 255];
+      }),
+    ),
   smoke: () =>
     make(
       32,
@@ -291,7 +299,7 @@ export const looks = cache(() => {
     glow: ps1Material({ map: glowTexture(), vertexColors: true, lit: false, glow: 0.9 }),
     skyline: ps1Material({ map: paint.skyline(), vertexColors: true, lit: false, fog: 0.55, glow: 0.25, side: THREE.DoubleSide }),
     beam: ps1Material({ map: beam, vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, fog: 0.3 }),
-    tractor: ps1Material({ map: beam, vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, scroll: [0, -0.6] }),
+    tractor: ps1Material({ map: paint.rings(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, scroll: [0, 0.5] }),
     smoke: ps1Material({ map: paint.smoke(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, scroll: [0, -0.12], fog: 0.7 }),
     water: ps1Material({ map: tex.water(), vertexColors: true, transparent: true, opacity: 0.86, wave: 0.18, scroll: [0.012, 0.007] }),
   };

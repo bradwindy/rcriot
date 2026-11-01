@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMain } from '../../../shared/course';
 import { limitOf, sampleAt, type Sample, type Track } from '../../../shared/track';
-import { Batch, xf } from '../../render/geometry';
+import { Batch, xf, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { hash2 } from '../../render/noise';
 import type { PointLight } from '../../render/ps1';
@@ -177,6 +177,48 @@ export function viaduct(track: Track, batch: Batch, mats: Materials, looks: Look
       batch.beam(mats.metal, a, b, 0.07, 0.07, [0.55, 0.35, 0.25]);
     }
     break;
+  }
+}
+
+/** Under the piers: pilings into the harbour and cross beams, with old tyres hung as fenders, and the bitten edge. */
+export function piers(track: Track, batch: Batch, mats: Materials): void {
+  const tyre: RGB = [0.5, 0.5, 0.5];
+  for (let s = 0, k = 0; s < track.length; s += 5, k++) {
+    const p = sampleAt(track, s);
+    if (p.zone !== 'pier') continue;
+    const h = headingAt(p);
+    const l = limitOf(p);
+    for (const side of [-1, 1]) {
+      const edge = frame(p, side * (l - 0.3), 0);
+      box(batch, mats.planks, 0.6, edge.y + 5, 0.6, xf(edge.x, (edge.y - 5) / 2 - 0.3, edge.z, h));
+      if (k % 3 === 0) {
+        const fender = frame(p, side * (l + 0.5), -1.5);
+        batch.geometry(mats.plastic, new THREE.TorusGeometry(0.75, 0.3, 5, 8), xf(fender.x, fender.y, fender.z, h + Math.PI / 2), tyre);
+      }
+    }
+    const mid = frame(p, 0, -0.75);
+    box(batch, mats.planks, l * 2, 0.4, 0.5, xf(mid.x, mid.y, mid.z, h));
+    const low = frame(p, 0, -2.2);
+    if (k % 2 === 0) box(batch, mats.planks, l * 2, 0.3, 0.3, xf(low.x, low.y, low.z, h));
+  }
+  // Splintered plank ends either side of the bite taken out of the deck.
+  const gaps: number[] = [];
+  for (let s = 1; s < track.length; s += 1) {
+    const a = sampleAt(track, s - 1);
+    const b = sampleAt(track, s);
+    if ((a.zone === 'gap') !== (b.zone === 'gap')) gaps.push(s);
+  }
+  for (const [s, dir] of [
+    [gaps[0] - 1, 1],
+    [gaps[1] + 1, -1],
+  ] as const) {
+    const p = sampleAt(track, s);
+    for (let o = -limitOf(p); o <= limitOf(p); o += 1) {
+      const reach = 1 + hash2(Math.round(o * 4), s, 8) * 3.6;
+      const a = frame(p, o, -0.1);
+      const b = a.clone().add(new THREE.Vector3(p.tx * dir * reach, -0.9 * hash2(Math.round(o * 4), s, 9), p.tz * dir * reach));
+      batch.beam(mats.planks, a, b, 0.8, 0.14);
+    }
   }
 }
 
