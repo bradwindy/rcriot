@@ -262,8 +262,8 @@ const textures = {
             if (e < 1) return Math.hypot(x - 31.5 - ex + 1, y - 23) < 1.6 ? hex('#ffffff') : ink;
           }
           if (Math.hypot(x - 31.5 - 15, y - 35) < 4 || Math.hypot(x - 31.5 + 15, y - 35) < 4) return hex('#ff9a6a');
-          const smile = Math.hypot(dx, dy - 28);
-          if (smile > 13.5 && smile < 16 && dy > -1 && Math.abs(dx) < 11) return ink;
+          const smile = Math.hypot(dx, dy + 2);
+          if (smile > 14 && smile < 16.5 && dy > 4 && Math.abs(dx) < 12) return ink;
           return d > 23 ? hex('#ffb428') : hex('#ffe04a');
         },
         2,

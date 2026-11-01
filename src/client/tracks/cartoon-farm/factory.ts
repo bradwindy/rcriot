@@ -198,6 +198,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
 
   // Hanging lamps over the road: pools of warm light with the dark between them.
   for (let s = a + 8, k = 0; s < b - 4; s += 15, k++) {
+    if (k === 1) continue;
     const p = sampleAt(track, s);
     const at = v3(p.x, p.y + 8.2, p.z);
     batch.beam(L.flatIn, at, v3(p.x, TOP, p.z), 0.08, 0.08, [0.5, 0.5, 0.5]);
@@ -323,7 +324,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
 
   // A pink neon milk bottle hanging over the road, the brightest thing in the building.
   {
-    const p = sampleAt(track, a + 30.5);
+    const p = sampleAt(track, a + 24);
     const at = v3(p.x, p.y + 10.4, p.z);
     const m = xf(at.x, at.y, at.z, headingAt(p));
     toon.box(L.flatIn, 0.3, 5.2, 8, m.clone().multiply(xf(0, 0, -0.1, Math.PI / 2)), rgb(C.dark), 0.08);

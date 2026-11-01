@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { toMain } from '../../../shared/course';
+import { fromMain, toMain } from '../../../shared/course';
 import { limitOf, sampleAt, type Sample, type Track } from '../../../shared/track';
 import { xf, type Batch } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { hash2, valueNoise } from '../../render/noise';
-import { atJunction, frame, headingAt, paveRoad, routeSpans, startLine } from '../../render/road';
+import { atJunction, frame, headingAt, loft, paveRoad, routeSpans, startLine } from '../../render/road';
 import type { Terrain } from '../../render/terrain';
 import { C, rgb, type Looks } from './look';
 import type { Toon } from './toon';
@@ -34,6 +34,22 @@ export function paveFarm(track: Track, batch: Batch, L: Looks, mats: Materials, 
       return null;
     },
   });
+  // At the fork and the join, a second skin of road, so neither road's verge lies across the other's surface.
+  const fork = track.routes[0];
+  for (const [a, b] of fork?.zones ?? []) {
+    for (const route of [0, 1]) {
+      const t = route ? fork.track : track;
+      const s0 = route ? Math.max(fromMain(track, 1, a), fork.rfrom) : a;
+      const s1 = route ? Math.min(fromMain(track, 1, b), fork.rto) : b;
+      loft(batch, t, s0, s1, {
+        spacing: 2,
+        vScale: 6,
+        outward: true,
+        material: () => L.road,
+        profile: (p) => [-0.5, -0.25, 0, 0.25, 0.5].map((f) => [f * p.width, route ? 0.1 : 0.08, f + 0.5]),
+      });
+    }
+  }
   startLine(track, batch, mats, grid);
 }
 
