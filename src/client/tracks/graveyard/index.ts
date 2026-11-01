@@ -48,7 +48,7 @@ export const graveyard: TrackArt = {
     startLine(track, batch, mats, grid);
     horizon(batch, g);
     pondWater(batch, g);
-    mist(track, batch, g, terrain);
+    mist(track, batch, g, terrain, index);
     const pieces = buildSetPieces(track, kit, grid);
     scatter(track, kit);
     const life = buildLife(track, kit, group, pieces);

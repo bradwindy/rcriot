@@ -5,6 +5,7 @@ import type { Materials } from '../../render/materials';
 import { fbm, smoothstep, valueNoise } from '../../render/noise';
 import { atJunction, frame, routeSpans } from '../../render/road';
 import type { GroundSpec, Terrain } from '../../render/terrain';
+import type { TrackIndex } from '../../render/trackindex';
 import type { GraveMats } from './textures';
 
 /** Where the full moon hangs, low in the north-east, and the way its light falls. */
@@ -121,7 +122,7 @@ export function pondWater(batch: Batch, g: GraveMats): void {
  * Low mist lying on the ground beside the road, out past the barriers. It follows the ground, not the road, so it
  * pools in the hollows and over the pond and thins on the hill.
  */
-export function mist(track: Track, batch: Batch, g: GraveMats, terrain: Terrain): void {
+export function mist(track: Track, batch: Batch, g: GraveMats, terrain: Terrain, index: TrackIndex): void {
   const lift = 0.55;
   for (const { route, t, s0, s1 } of routeSpans(track)) {
     for (const side of [-1, 1]) {
@@ -160,6 +161,15 @@ export function mist(track: Track, batch: Batch, g: GraveMats, terrain: Terrain)
           const at = frame(p, side * (limit + o), 0);
           return at.setY(Math.max(terrain.height(at.x, at.z), 0) + lift + o * 0.03);
         });
+        // A strip stops short of any other road it would drift across.
+        const onRoad = pts.some((v) => {
+          const near = index.nearest(v.x, v.z, 30);
+          return near !== null && near.d < limitOf(near.sample) + 0.5;
+        });
+        if (onRoad) {
+          flush();
+          continue;
+        }
         strip.push({ p, pts });
       }
       flush();

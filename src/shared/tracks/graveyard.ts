@@ -61,8 +61,8 @@ const ROWS: Row[] = [
   [6, -98, 8.4, 13, 2, 0, 'dirt', 'hill'],
   [0, -56, 11.0, 13, 2, 0, 'dirt', 'hill'], // the hangman's tree
   [0, -28, 12.4, 13, 2, 0, 'dirt', 'hill'],
-  [0, -14, 12.6, 12, 2, 0, 'dirt', 'hill'], // kicker over the crypt
-  [0, -6, 14.4, 12, 2, 0, 'dirt', 'hill'],
+  [0, -14, 12.6, 12, 2, 0, 'stone', 'hill'], // kicker over the crypt
+  [0, -6, 14.4, 12, 2, 0, 'stone', 'hill'],
   [0, 12, 11.6, 13, 2, 0, 'dirt', 'hill'],
   [0, 40, 7.0, 13, 2.5, 0, 'dirt', 'hill'],
   [-4, 72, 3.0, 13, 2.5, 0, 'dirt', 'hill'],

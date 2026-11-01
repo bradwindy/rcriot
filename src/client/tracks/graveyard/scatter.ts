@@ -4,7 +4,7 @@ import { xf } from '../../render/geometry';
 import { fbm, hash2 } from '../../render/noise';
 import { atJunction, box, frame, headingAt, rope, routeSpans } from '../../render/road';
 import { AREA, pondDepth } from './ground';
-import { angel, coffin, cube, deadTree, headstone, jackOLantern, type Kit, lampPost, mausoleum, skull, slab, spearPost } from './kit';
+import { angel, coffin, cube, deadTree, headstone, jackOLantern, type Kit, lampPost, mausoleum, pyramid, skull, slab, spearPost, WARM } from './kit';
 
 const CEMETERY = new Set(['gate', 'avenue', 'yard', 'lawn']);
 const RAIL_STEP = 1.8;
@@ -26,6 +26,49 @@ export function scatter(track: Track, kit: Kit): void {
   rows(track, kit);
   field(kit);
   openGraves(track, kit);
+  bellTower(track, kit);
+}
+
+/** A ruined bell tower in the crook of the hairpin, the landmark to turn round, with a lamp lit in its belfry. */
+function bellTower(track: Track, kit: Kit): void {
+  const { batch, g, mats } = kit;
+  // The middle of the hairpin: the spot on the inside of the tightest part of the hill road.
+  let tight = track.samples[0];
+  let most = 0;
+  for (const p of track.samples) {
+    if (p.zone !== 'hill') continue;
+    const q = sampleAt(track, p.s + 12);
+    const turn = Math.abs(Math.atan2(Math.sin(Math.atan2(q.tx, q.tz) - Math.atan2(p.tx, p.tz)), Math.cos(Math.atan2(q.tx, q.tz) - Math.atan2(p.tx, p.tz))));
+    if (turn > most) {
+      most = turn;
+      tight = p;
+    }
+  }
+  const inside = -Math.sign(tight.tx * sampleAt(track, tight.s + 12).tz - tight.tz * sampleAt(track, tight.s + 12).tx) || 1;
+  const at = frame(tight, inside * (limitOf(tight) + 8.5), 0);
+  at.y = kit.terrain.height(at.x, at.z) - 0.3;
+  const shaft = 15;
+  const w = 5.4;
+  const m = xf(at.x, at.y, at.z, headingAt(tight));
+  slab(batch, g.blocks, m.clone().multiply(xf(0, 1, 0)), w + 1.4, 2, w + 1.4, 4, [0.8, 0.8, 0.85]);
+  slab(batch, g.blocks, m.clone().multiply(xf(0, shaft / 2, 0)), w, shaft, w, 4);
+  cube(batch, g.stone, m.clone().multiply(xf(0, shaft + 0.2, 0)), w + 0.7, 0.4, w + 0.7, [0.8, 0.8, 0.85]);
+  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    slab(batch, g.blocks, m.clone().multiply(xf((x * (w - 1)) / 2, shaft + 2.4, (z * (w - 1)) / 2)), 1, 4.2, 1, 4);
+  }
+  cube(batch, g.stone, m.clone().multiply(xf(0, shaft + 4.7, 0)), w + 0.7, 0.4, w + 0.7, [0.8, 0.8, 0.85]);
+  pyramid(batch, g.shingle, m.clone().multiply(xf(0, shaft + 4.9, 0)), w + 1.5, 6);
+  cube(batch, g.stone, m.clone().multiply(xf(0, shaft + 12.2, 0)), 0.3, 2.6, 0.3);
+  cube(batch, g.stone, m.clone().multiply(xf(0, shaft + 12.6, 0)), 1.4, 0.3, 0.3);
+  batch.geometry(g.iron, new THREE.CylinderGeometry(0.5, 1.15, 1.9, 8), m.clone().multiply(xf(0, shaft + 2.8, 0)));
+  cube(batch, mats.lantern, m.clone().multiply(xf(0, shaft + 1.2, 0)), 0.7, 0.9, 0.7);
+  kit.light(new THREE.Vector3(0, shaft + 1, 0).applyMatrix4(m), WARM.clone().multiplyScalar(1.4), 22, 5, 0.2);
+  for (const side of [-1, 1]) {
+    const door = m.clone().multiply(xf(0, 2.6, (side * w) / 2 + side * 0.02, side > 0 ? 0 : Math.PI));
+    batch.geometry(g.iron, new THREE.PlaneGeometry(1.8, 3.6), door);
+  }
+  jackOLantern(kit, new THREE.Vector3(-2.4, 0.2, (w + 2) / 2).applyMatrix4(m), headingAt(tight), 1.1, true);
+  jackOLantern(kit, new THREE.Vector3(2.4, 0.2, (w + 2) / 2).applyMatrix4(m), headingAt(tight), 0.9, false);
 }
 
 const main = (track: Track, route: number, s: number) => {
@@ -110,10 +153,11 @@ function rows(track: Track, kit: Kit): void {
   for (const { route, t, s0, s1 } of routeSpans(track)) {
     for (let s = s0 + 8; s < s1 - 8; s += 3.5) {
       const p = sampleAt(t, s);
-      if (!CEMETERY.has(p.zone) || atJunction(track, main(track, route, s), 6)) continue;
+      const hill = p.zone === 'hill';
+      if ((!CEMETERY.has(p.zone) && !hill) || atJunction(track, main(track, route, s), 6)) continue;
       for (const side of [-1, 1]) {
-        for (const o of [2.4, 5.6, 9.2]) {
-          if (rng() < 0.36) continue;
+        for (const o of hill ? [3.5, 7.5] : [2.4, 5.6, 9.2]) {
+          if (rng() < (hill ? 0.72 : 0.36)) continue;
           const v = frame(p, side * (limitOf(p) + o + (rng() - 0.5) * 0.9), 0);
           const g = place(kit, v.x, v.z, 2);
           if (g) headstone(kit, g, headingAt(p) + (side > 0 ? -Math.PI / 2 : Math.PI / 2) + (rng() - 0.5) * 0.3, 0.9 + rng() * 0.4);
