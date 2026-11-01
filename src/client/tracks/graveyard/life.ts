@@ -106,8 +106,9 @@ function buildMoon(kit: Kit, group: THREE.Group): (camera: THREE.Camera) => void
   const dir = new THREE.Vector3(...MOON_SKY).normalize();
   const moon = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), g.moon);
   const halo = new THREE.Mesh(new THREE.PlaneGeometry(620, 620), g.halo);
+  // The disc draws after its halo, so the glow never washes out its face.
   moon.renderOrder = -1;
-  halo.renderOrder = -1;
+  halo.renderOrder = -1.5;
   moon.frustumCulled = false;
   halo.frustumCulled = false;
   group.add(halo, moon);
@@ -271,7 +272,7 @@ function buildNoose(track: Track, kit: Kit, group: THREE.Group, pieces: SetPiece
   const { mats } = kit;
   const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1, 5, 1, true), mats.rope);
   const loop = solid((batch) => {
-    batch.geometry(mats.rope, new THREE.TorusGeometry(0.72, 0.13, 5, 10), xf(0, -0.7, 0));
+    batch.geometry(mats.rope, new THREE.TorusGeometry(0.95, 0.16, 5, 10), xf(0, -0.95, 0));
     batch.geometry(mats.rope, new THREE.CylinderGeometry(0.2, 0.17, 0.75, 6), xf(0, 0.25, 0));
   });
   rope.frustumCulled = false;
@@ -279,7 +280,7 @@ function buildNoose(track: Track, kit: Kit, group: THREE.Group, pieces: SetPiece
   const hook = new THREE.Vector3();
   return (clock) => {
     const at: HazardState = hazardAt(track, NOOSE, clock);
-    hook.set(at.x, at.y + 1.75, at.z);
+    hook.set(at.x, at.y + 2.1, at.z);
     stretch(rope, pieces.noosePivot, hook);
     loop.position.copy(hook);
     loop.quaternion.copy(rope.quaternion);

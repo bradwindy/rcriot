@@ -501,7 +501,7 @@ export const gm = cache(() => ({
   pumpkin: lit(gt.pumpkin()),
   face: glow(gt.face(), 0.9, 0.5),
   bone: lit(gt.bone()),
-  moon: ps1Material({ map: gt.moon(), lit: false, fog: 0, alphaTest: 0.5, depthWrite: false, tint: 0xd8d8d0 }),
+  moon: ps1Material({ map: gt.moon(), lit: false, fog: 0, alphaTest: 0.5, transparent: true, depthWrite: false, tint: 0xd8d8d0 }),
   halo: ps1Material({ map: gt.halo(), lit: false, fog: 0, additive: true, depthWrite: false }),
   mist: ps1Material({ map: gt.mist(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, scroll: [0, 0.03] }),
   ghost: ps1Material({ map: gt.ghost(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, tint: 0x8a9aaa, fog: 0.5 }),
