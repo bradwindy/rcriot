@@ -24,7 +24,7 @@ export const MAP = {
   factory: { x0: 84, x1: 162, z0: 164, z1: 208 },
   yard: { x0: 150, x1: 232, z0: 100, z1: 214 },
   barns: { x0: 98, x1: 212, z0: -130, z1: -100 },
-  inner: { x0: -150, x1: 520, z0: -330, z1: 330 },
+  inner: { x0: -130, x1: 480, z0: -270, z1: 330 },
 };
 
 function segDist(x: number, z: number, a: [number, number], b: [number, number]): number {

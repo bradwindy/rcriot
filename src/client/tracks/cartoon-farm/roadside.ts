@@ -91,7 +91,7 @@ export function fences(track: Track, toon: Toon, L: Looks): void {
         ];
         for (const [v, uu, vv] of quad) batch.vertex(L.picket, v, n, uu, vv, [1, 1, 1]);
       }
-      if (k++ % 3 === 0) {
+      if (k++ % 4 === 0) {
         const h = headingAt(p) + (wob - 0.5) * 0.3;
         const mid = foot.clone().lerp(top, 0.5);
         toon.box(L.flat, 0.24, H + 0.55, 0.24, xf(mid.x, mid.y + 0.1, mid.z, h, (wob - 0.5) * 0.2, side * (wob - 0.5) * 0.3), rgb(C.cream), 0.05);
@@ -120,11 +120,14 @@ export function decks(track: Track, toon: Toon, L: Looks, terrain: Terrain, wate
       const h = headingAt(p);
       const lim = limitOf(p);
       const chute = p.zone === 'chute';
+      const post = chute || k % 2 === 0;
       const now: THREE.Vector3[] = [];
       for (const side of [-1, 1]) {
         const edge = frame(p, side * (lim + 0.1), 0);
-        toon.box(L.wood, 0.22, 1.3, 0.22, xf(edge.x, edge.y + 0.55, edge.z, h, 0, side * 0.06 * (hash2(k, side, route) - 0.5)), [1, 1, 1], 0.05);
-        now.push(edge.clone().setY(edge.y + 1.1), edge.clone().setY(edge.y + 0.55));
+        if (post) {
+          toon.box(L.wood, 0.22, 1.3, 0.22, xf(edge.x, edge.y + 0.55, edge.z, h, 0, side * 0.06 * (hash2(k, side, route) - 0.5)), [1, 1, 1], 0.05);
+          now.push(edge.clone().setY(edge.y + 1.1), edge.clone().setY(edge.y + 0.55));
+        }
         if (k % 2 === 0 || chute) {
           const ground = Math.max(terrain.height(edge.x, edge.z), p.zone === 'boardwalk' ? water - 1.5 : -10);
           const top = edge.y - 0.3;
@@ -135,10 +138,10 @@ export function decks(track: Track, toon: Toon, L: Looks, terrain: Terrain, wate
           }
         }
       }
-      if (rails) {
-        for (let i = 0; i < 4; i++) toon.beam(L.wood, rails[i], now[i], 0.14, 0.18, [1, 1, 1], 0.04);
+      if (post) {
+        if (rails) for (let i = 0; i < 4; i++) toon.beam(L.wood, rails[i], now[i], 0.14, 0.18, [1, 1, 1], 0.04);
+        rails = now;
       }
-      rails = now;
       // Cross bracing between the legs of the tall trestle.
       const left = frame(p, -(lim - 0.6), -0.3);
       const right = frame(p, lim - 0.6, -0.3);

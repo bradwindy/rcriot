@@ -34,7 +34,7 @@ export class Toon {
     if (t > 0) this.batch.geometry(this.L.ink, new THREE.BoxGeometry(w + 2 * t, h + 2 * t, d + 2 * t), m);
   }
 
-  ball(mat: THREE.Material, r: number, m: THREE.Matrix4, color: RGB = [1, 1, 1], t = 0.08, sx = 1, sy = 1, sz = 1, seg = 8): void {
+  ball(mat: THREE.Material, r: number, m: THREE.Matrix4, color: RGB = [1, 1, 1], t = 0.08, sx = 1, sy = 1, sz = 1, seg = 6): void {
     this.batch.geometry(mat, ball(r, sx, sy, sz, seg), m, color);
     if (t > 0) this.batch.geometry(this.L.ink, ball(r + t / Math.min(sx, sy, sz), sx, sy, sz, Math.max(5, seg - 2)), m);
   }

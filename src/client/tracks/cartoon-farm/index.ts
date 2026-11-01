@@ -50,8 +50,8 @@ export const cartoonFarm: TrackArt = {
     return {
       update(time, _dt, clock, camera) {
         sky.update(time, camera);
-        factory.update(time, clock);
-        animals.update(time, clock);
+        factory.update(time, clock, camera);
+        animals.update(time, clock, camera);
         props.update(time);
         for (const l of lamps) l.light.color.copy(l.base).multiplyScalar(0.85 + 0.25 * valueNoise(time * 6 + l.seed, l.seed, 3));
       },

@@ -26,14 +26,14 @@ function sheet(w: number, h: number, nx: number, ny: number, ru: number, rv: num
 }
 
 /** A milk bottle's outline, for turning on a lathe: base at 0, cap at the top, `h` tall. */
-export function bottle(h: number): { glass: THREE.BufferGeometry; cap: THREE.BufferGeometry } {
+export function bottle(h: number, seg = 8): { glass: THREE.BufferGeometry; cap: THREE.BufferGeometry } {
   const r = h * 0.2;
   const line = (pts: [number, number][]) => pts.map(([a, b]) => new THREE.Vector2(a * r, b * h));
   const glass = new THREE.LatheGeometry(
     line([[0.001, 0], [0.9, 0], [1, 0.05], [1, 0.52], [0.94, 0.6], [0.72, 0.72], [0.55, 0.82], [0.52, 0.92], [0.001, 0.92]]),
-    8,
+    seg,
   );
-  const cap = new THREE.CylinderGeometry(r * 0.6, r * 0.6, h * 0.1, 8);
+  const cap = new THREE.CylinderGeometry(r * 0.6, r * 0.6, h * 0.1, seg);
   cap.translate(0, h * 0.95, 0);
   return { glass, cap };
 }
@@ -61,7 +61,7 @@ export function churn(toon: Toon, L: Looks, at: THREE.Vector3, r: number, yaw: n
 export interface FactoryArt {
   lights: { light: PointLight; base: THREE.Color; seed: number }[];
   group: THREE.Object3D[];
-  update(time: number, clock: number): void;
+  update(time: number, clock: number, camera: THREE.Camera): void;
 }
 
 /** The surreal milk factory, its yard, the milk silo pouring the river, and the churn crane. */
@@ -189,7 +189,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
     for (let s = a + 1, k = 0; s <= b - 1; s += 3, k++) {
       const p = sampleAt(track, s);
       const foot = frame(p, side * (limitOf(p) + 0.2), 0);
-      toon.box(L.stripesIn, 0.28, 1.2, 0.28, xf(foot.x, foot.y + 0.6, foot.z, headingAt(p)), [1, 1, 1], 0.04);
+      toon.box(L.stripesIn, 0.28, 1.2, 0.28, xf(foot.x, foot.y + 0.6, foot.z, headingAt(p)), [1, 1, 1], 0);
       const top = foot.clone().setY(foot.y + 1.05);
       if (prev) batch.beam(L.flatIn, prev, top, 0.16, 0.16, rgb(C.yellow));
       prev = top;
@@ -228,7 +228,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
       lamp(v3(x, belt.y + 2.2, belt.z + 3.5), new THREE.Color(1, 0.9, 0.7).multiplyScalar(1.5), 13, x);
     }
   }
-  const { glass, cap } = bottle(1.7);
+  const { glass, cap } = bottle(1.7, 5);
   const bottles: number[] = [];
   const count = Math.floor((belt.x1 - belt.x0) / 3.2);
   for (let i = 0; i < count; i++) {
@@ -452,25 +452,30 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
   );
 
   const m = new THREE.Matrix4();
+  let ready = false;
   return {
     lights,
     group: [...rig.done(), ...crane.done()],
-    update(time, clock) {
-      const span = belt.x1 - belt.x0;
-      bottles.forEach((id, i) => {
-        const f = (((i / bottles.length - time * 0.09) % 1) + 1) % 1;
-        const x = belt.x0 + f * span;
-        const wobble = Math.sin(time * 9 + i * 2) * 0.05;
-        rig.set(id, pose(m, x, belt.y, belt.z, 0, 0, wobble));
-      });
-      const shake = valueNoise(time * 7, 2, 9);
-      rig.set(needle, pose(m, dial.x, dial.y, dial.z - 0.16, Math.PI, 0, -0.9 + 0.5 * Math.sin(time * 0.8) + shake * 0.4));
-      rig.set(wheelPart, pose(m, wheelAt.x, wheelAt.y, wheelAt.z, 0, 0, time * 1.4));
-      pistons.forEach((id, i) => {
-        const up = Math.abs(Math.sin(time * 2.4 + i * 1.6));
-        rig.set(id, pose(m, pistonAt[i].x, pistonAt[i].y + 3.2 + up * 1.4, pistonAt[i].z));
-      });
-      rig.flush();
+    update(time, clock, camera) {
+      // The machinery inside only runs while the camera is close enough to see it.
+      if (!ready || Math.hypot(midX - camera.position.x, midZ - camera.position.z) < 130) {
+        ready = true;
+        const span = belt.x1 - belt.x0;
+        bottles.forEach((id, i) => {
+          const f = (((i / bottles.length - time * 0.09) % 1) + 1) % 1;
+          const x = belt.x0 + f * span;
+          const wobble = Math.sin(time * 9 + i * 2) * 0.05;
+          rig.set(id, pose(m, x, belt.y, belt.z, 0, 0, wobble));
+        });
+        const shake = valueNoise(time * 7, 2, 9);
+        rig.set(needle, pose(m, dial.x, dial.y, dial.z - 0.16, Math.PI, 0, -0.9 + 0.5 * Math.sin(time * 0.8) + shake * 0.4));
+        rig.set(wheelPart, pose(m, wheelAt.x, wheelAt.y, wheelAt.z, 0, 0, time * 1.4));
+        pistons.forEach((id, i) => {
+          const up = Math.abs(Math.sin(time * 2.4 + i * 1.6));
+          rig.set(id, pose(m, pistonAt[i].x, pistonAt[i].y + 3.2 + up * 1.4, pistonAt[i].z));
+        });
+        rig.flush();
+      }
 
       // The churn is drawn exactly where it hits. The trolley lags a little inside it, so the cable swings.
       const at = hazardAt(track, churnHazard, clock);

@@ -13,31 +13,32 @@ import { InkRig, pose, tube, type Toon } from './toon';
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
-function lollipop(toon: Toon, L: Looks, at: THREE.Vector3, rng: () => number): void {
+/** A lollipop tree. Far from the road it stays plain: no outline or trimmings, which would only eat triangles. */
+function lollipop(toon: Toon, L: Looks, at: THREE.Vector3, rng: () => number, near = true): void {
   const h = 5 + rng() * 5;
   const r = 2.8 + rng() * 2.4;
   const lean = (rng() - 0.5) * 0.14;
-  toon.cyl(L.flat, 0.34, 0.6, h, xf(at.x, at.y + h / 2, at.z, 0, lean, lean), rgb(C.trunk), 0.07, 5);
+  toon.cyl(L.flat, 0.34, 0.6, h, xf(at.x, at.y + h / 2, at.z, 0, lean, lean), rgb(C.trunk), near ? 0.07 : 0, 5);
   const crown: RGB = rng() < 0.5 ? rgb(C.leaf) : rng() < 0.5 ? rgb(C.leafDark) : [0.48, 0.82, 0.26];
   const y = at.y + h + r * 0.7;
-  toon.ball(L.flat, r, xf(at.x + lean * h, y, at.z - lean * h, rng() * 3), crown, 0.11, 1, 0.92, 1, 7);
+  toon.ball(L.flat, r, xf(at.x + lean * h, y, at.z - lean * h, rng() * 3), crown, near ? 0.11 : 0, 1, 0.92, 1, near ? 7 : 5);
+  if (!near) return;
   const kind = rng();
-  if (kind < 0.35) {
-    for (let i = 0; i < 2; i++) {
-      const a = rng() * 6.3;
-      toon.ball(L.flat, r * 0.6, xf(at.x + Math.cos(a) * r * 0.8, y + r * 0.3, at.z + Math.sin(a) * r * 0.8), crown, 0.09, 1, 1, 1, 6);
-    }
-  } else if (kind < 0.6) {
-    for (let i = 0; i < 6; i++) {
+  if (kind < 0.3) {
+    const a = rng() * 6.3;
+    toon.ball(L.flat, r * 0.6, xf(at.x + Math.cos(a) * r * 0.8, y + r * 0.3, at.z + Math.sin(a) * r * 0.8), crown, 0.09, 1, 1, 1, 5);
+  } else if (kind < 0.55) {
+    const apple = new THREE.OctahedronGeometry(0.34);
+    for (let i = 0; i < 5; i++) {
       const a = rng() * 6.3;
       const b = rng() * 1.2;
-      toon.ball(L.flat, 0.3, xf(at.x + Math.cos(a) * Math.cos(b) * r, y + Math.sin(b) * r * 0.9, at.z + Math.sin(a) * Math.cos(b) * r), rgb(C.red), 0.04, 1, 1, 1, 5);
+      toon.batch.geometry(L.flat, apple, xf(at.x + Math.cos(a) * Math.cos(b) * r, y + Math.sin(b) * r * 0.9, at.z + Math.sin(a) * Math.cos(b) * r), rgb(C.red));
     }
   }
 }
 
 function roundBale(toon: Toon, L: Looks, at: THREE.Vector3, yaw: number, r = 1.5): void {
-  toon.cyl(L.hay, r, r, r * 1.5, xf(at.x, at.y + r, at.z, yaw, 0, Math.PI / 2), [1, 1, 1], 0.08, 10);
+  toon.cyl(L.hay, r, r, r * 1.5, xf(at.x, at.y + r, at.z, yaw, 0, Math.PI / 2), [1, 1, 1], 0.08, 8);
 }
 
 function farmhouse(toon: Toon, L: Looks, at: THREE.Vector3, yaw: number): void {
@@ -199,8 +200,9 @@ export function buildProps(track: Track, toon: Toon, L: Looks, terrain: Terrain,
   scarecrow(toon, L, ground(62, 4), 2.2);
 
   // Trees, hedges, bales and flowers scattered over the fields.
-  for (let z = -320; z < 320; z += 17) {
-    for (let x = -140; x < 510; x += 17) {
+  const { x0, x1, z0, z1 } = MAP.inner;
+  for (let z = z0 + 10; z < z1 - 10; z += 17) {
+    for (let x = x0 + 10; x < x1 - 10; x += 17) {
       const px = x + (rng() - 0.5) * 14;
       const pz = z + (rng() - 0.5) * 14;
       const roll = rng();
@@ -208,14 +210,15 @@ export function buildProps(track: Track, toon: Toon, L: Looks, terrain: Terrain,
       const at = ground(px, pz);
       const density = fbm(px / 70, pz / 70, 2, 23);
       const hill = Math.hypot(px - MAP.hill.x, pz - MAP.hill.z) < 18;
-      if (!hill && density > 0.48 && roll < (density - 0.44) * 2.6 && clear(px, pz, 6)) lollipop(toon, L, at, rng);
+      const near = index.nearest(px, pz, 55) !== null;
+      if (!hill && density > 0.48 && roll < (density - 0.44) * 2 && clear(px, pz, 6)) lollipop(toon, L, at, rng, near);
       else if (roll > 0.8 && clear(px, pz, 3)) {
         const tone = fieldTint(px, pz, at.y);
         if (tone[0] > 0.7) {
           roundBale(toon, L, at, rng() * 6.3);
           if (rng() < 0.4) roundBale(toon, L, ground(px + 3.4, pz + 1), rng() * 6.3);
-        } else if (rng() < 0.45) {
-          toon.ball(L.flat, 1.5 + rng() * 1.2, xf(at.x, at.y + 0.8, at.z), rgb(C.leafDark), 0.08, 1.2, 0.8, 1, 6);
+        } else if (rng() < 0.3) {
+          toon.ball(L.flat, 1.5 + rng() * 1.2, xf(at.x, at.y + 0.8, at.z), rgb(C.leafDark), near ? 0.08 : 0, 1.2, 0.8, 1, 5);
         }
       }
     }
