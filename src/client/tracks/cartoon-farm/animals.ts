@@ -125,7 +125,7 @@ export function menagerie(track: Track, toon: Toon, L: Looks, terrain: Terrain, 
       const x = cx + (rng() - 0.5) * spread * 2;
       const z = cz + (rng() - 0.5) * spread * 2;
       if (!clear(x, z, 3.5)) continue;
-      const size = 0.8 + rng() * 0.45;
+      const size = 1.25 + rng() * 0.6;
       flock.push({
         id: rig.part(fluffy),
         x,
@@ -134,7 +134,7 @@ export function menagerie(track: Track, toon: Toon, L: Looks, terrain: Terrain, 
         yaw: rng() * Math.PI * 2,
         hop: rng(),
         rate: 0.8 + rng() * 0.5,
-        high: 1.6 + rng() * 2.6,
+        high: 2.2 + rng() * 3.4,
         size,
         flip: rng() < 0.35,
       });

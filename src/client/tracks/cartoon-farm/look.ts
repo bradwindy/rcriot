@@ -9,14 +9,14 @@ export const INK = '#2b1d33';
 const ink = hex(INK);
 
 /** Rounded outline: draws `inside` where the test passes and ink on a ring `w` pixels round it. */
-function outlined(p: Painter, inside: (x: number, y: number) => RGBA | null, w = 1): void {
+function outlined(p: Painter, inside: (x: number, y: number) => RGBA | null, w = 1, line: RGBA = ink): void {
   const fill: (RGBA | null)[] = [];
   for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) fill.push(inside(x, y));
   const at = (x: number, y: number) => (y < 0 || y >= p.h ? null : fill[y * p.w + (((x % p.w) + p.w) % p.w)]);
   p.each((x, y) => {
     const c = at(x, y);
     if (!c) {
-      for (let j = -w; j <= w; j++) for (let i = -w; i <= w; i++) if (at(x + i, y + j)) return ink;
+      for (let j = -w; j <= w; j++) for (let i = -w; i <= w; i++) if (at(x + i, y + j)) return line;
       return [0, 0, 0, 0];
     }
     return c;
@@ -205,9 +205,9 @@ const textures = {
           const point = Math.abs(k - 4.5);
           if (fromTop < 28 - point * 1.4) return hex(k === 3 ? '#ffffff' : '#f2efe4');
         }
-        if ((y >= 6 && y <= 8) || (y >= 18 && y <= 20)) return hex('#ddd8c8');
+        if ((y >= 6 && y <= 8) || (y >= 18 && y <= 20)) return hex('#ece7d8');
         return null;
-      });
+      }, 1, hex('#9aa0b8'));
     }, true, true),
   ),
 

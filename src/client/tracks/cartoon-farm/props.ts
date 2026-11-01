@@ -268,7 +268,7 @@ export function buildProps(track: Track, toon: Toon, L: Looks, terrain: Terrain,
   toon.cyl(L.flat, 3.6, 5.2, millH, xf(top.x, top.y + millH / 2 - 0.5, top.z), rgb(C.white), 0.14, 8);
   toon.batch.geometry(L.flat, new THREE.CylinderGeometry(4.35, 4.8, 1.3, 8), xf(top.x, top.y + 6.2, top.z), rgb(C.red));
   toon.shape(L.flat, new THREE.ConeGeometry(4.3, 4.2, 8), xf(top.x, top.y + millH + 1.5, top.z), rgb(C.barnRed), 0.14);
-  const yaw = -1.75;
+  const yaw = 2.0;
   const hub = v3(top.x + Math.sin(yaw + Math.PI) * 4.6, top.y + millH - 0.6, top.z + Math.cos(yaw + Math.PI) * 4.6);
   toon.box(L.flat, 2.2, 3.4, 0.2, xf(top.x + Math.sin(yaw + Math.PI) * 4.1, top.y + 2, top.z + Math.cos(yaw + Math.PI) * 4.1, yaw), rgb(C.blue), 0.08);
   const blades = mill.part([
