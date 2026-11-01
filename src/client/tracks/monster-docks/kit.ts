@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Batch, ball, boulder, xf, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
+import { hash2 } from '../../render/noise';
 import { box } from '../../render/road';
 import { lamp, type Looks } from './look';
 
@@ -94,15 +95,24 @@ export function filmLight(batch: Batch, mats: Materials, looks: Looks, at: THREE
   if (light) addPointLight(at.clone().setY(at.y + 5).lerp(target, 0.4), new THREE.Color(1.0, 0.92, 0.82).multiplyScalar(1.2), 30);
 }
 
-/** A column of smoke: rounded puffs growing as they rise and lean on the wind, catching the sunset on one side. */
+/** A column of smoke: clusters of rounded puffs growing as they rise and lean on the wind, catching the sunset. */
 export function plume(batch: Batch, looks: Looks, at: THREE.Vector3, size: number, puffs = 7): void {
+  const seed = Math.round(at.x * 3 + at.z);
   for (let k = 0; k < puffs; k++) {
     const f = k / (puffs - 1);
-    const r = size * (0.75 + f * 1.7);
+    const r = size * (0.75 + f * 1.5);
     const heat = Math.max(0, 1 - k / 2);
     const tone: RGB = [0.5 + heat * 0.6, 0.46 + heat * 0.16, 0.54 - heat * 0.14];
-    const g = puffs < 7 ? boulder(Math.round(at.x) + k * 7, r * 2, 0.85) : ball(r, 1, 0.82, 1, 7);
-    batch.geometry(looks.smoke, g, xf(at.x + size * 5 * f * f, at.y + size * (1 + k * 1.9), at.z - size * 2.5 * f * f, k * 1.3), tone);
+    const cx = at.x + size * 5 * f * f;
+    const cy = at.y + size * (1 + k * 1.45);
+    const cz = at.z - size * 2.5 * f * f;
+    for (let j = 0; j < (puffs < 7 ? 1 : 2); j++) {
+      const a = hash2(seed, k + j * 9, 3) * Math.PI * 2;
+      const off = j * r * 0.8;
+      const puff = r * (1 - j * 0.3) * (0.85 + hash2(seed, k + j * 9, 4) * 0.3);
+      const g = puffs < 7 ? boulder(seed + k * 7, puff * 2, 0.85) : ball(puff, 1, 0.8 + hash2(seed, k, 5) * 0.2, 1, 6);
+      batch.geometry(looks.smoke, g, xf(cx + Math.cos(a) * off, cy + j * r * 0.25, cz + Math.sin(a) * off, k * 1.3), tone);
+    }
   }
 }
 

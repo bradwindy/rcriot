@@ -81,6 +81,7 @@ export function containerYard(track: Track, index: TrackIndex, batch: Batch, mat
     [-198, 6, 15], // under the UFO
     [-52, -16, 56], // the raptor paddock
     [152, -138, 30], // the big ape
+    [80, -116, 36], // keeps him in view from the start road
   ];
   const free = (x: number, z: number) => keepOut.every(([cx, cz, r]) => Math.hypot(x - cx, z - cz) > r);
   const inShed = (x: number, z: number) => x > 96 && x < 144 && z > -180 && z < -86;
@@ -207,7 +208,6 @@ export function wreckage(track: Track, batch: Batch, mats: Materials, looks: Loo
     [1000 / 1554, 24, 3.2],
     [62 / 1554, -20, 2],
     [262 / 1554, -22, 2.4],
-    [440 / 1554, -20, 2],
     [800 / 1554, 16, 2.6],
     [1160 / 1554, 18, 2.2],
     [1300 / 1554, -20, 2.6],

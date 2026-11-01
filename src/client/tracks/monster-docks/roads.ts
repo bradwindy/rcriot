@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { toMain } from '../../../shared/course';
 import { limitOf, sampleAt, type Sample, type Track } from '../../../shared/track';
-import { Batch, xf, type RGB } from '../../render/geometry';
+import { Batch, boulder, xf, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { hash2 } from '../../render/noise';
 import type { PointLight } from '../../render/ps1';
@@ -94,7 +94,7 @@ export function barriers(track: Track, batch: Batch, mats: Materials, looks: Loo
         vScale: 5,
         uScale: 5,
         outward: true,
-        material: (p) => (p.zone === 'viaduct' ? looks.concrete : null),
+        material: (p) => (p.zone === 'viaduct' && p.grade > -0.2 ? looks.concrete : null),
         profile: (p) => {
           const l = limitOf(p);
           const pts: [number, number][] = [
@@ -180,6 +180,21 @@ export function viaduct(track: Track, batch: Batch, mats: Materials, looks: Look
       const b = a.clone().add(new THREE.Vector3(-Math.sin(h) * 1.6, 0.8 + hash2(Math.round(o * 10), i, 4), -Math.cos(h) * 1.6));
       batch.beam(mats.metal, a, b, 0.07, 0.07, [0.55, 0.35, 0.25]);
     }
+    // Rubble down both edges of the slab that slumped to the ground, and a cracked stripe across its top.
+    for (let s = p.s + 1, k = 0; s < L; s += 2.6, k++) {
+      const q = sampleAt(track, s);
+      if (q.zone !== 'viaduct') break;
+      for (const side of [-1, 1]) {
+        const at = frame(q, side * (limitOf(q) + 0.6 + hash2(k, side, 5)), -0.4);
+        const size = 2 + hash2(k, side, 6) * 2.6;
+        batch.geometry(looks.concrete, boulder(k * 3 + side, size, 0.8), xf(at.x, Math.max(LAND + size * 0.25, at.y), at.z, k * 1.7), [0.8, 0.76, 0.72]);
+        if (k % 2 === 0) {
+          batch.geometry(looks.concrete, boulder(k * 5 + side, size * 0.8, 0.7), xf(at.x + side * 2, LAND + 0.5, at.z + (k % 3) - 1, k), [0.7, 0.66, 0.62]);
+        }
+      }
+    }
+    const lip = frame(p, 0, 0.08);
+    box(batch, looks.stripes, limitOf(p) * 2, 0.08, 0.9, xf(lip.x, lip.y, lip.z, h));
     break;
   }
 }
