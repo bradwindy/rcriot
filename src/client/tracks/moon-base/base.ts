@@ -188,8 +188,8 @@ function airlockDoors(track: Track, mm: MoonMats, batch: Batch, group: THREE.Gro
   const head = frame(p, 0, (W + C) / 2 + 0.1);
   box(batch, mm.stripes, L * 2 + 0.4, C - W + 0.9, 0.9, xf(head.x, head.y, head.z, h));
   for (const side of [-1, 1]) {
-    const at = frame(p, side * (L + half / 2 + 0.3), height / 2 - 0.4);
-    box(batch, mm.hull, half + 0.8, height + 1.2, 1.3, xf(at.x, at.y, at.z, h), [0.84, 0.86, 0.88]);
+    const at = frame(p, side * (L + half / 2 + 0.75), height / 2 - 0.4);
+    box(batch, mm.hull, half + 0.4, height + 1.2, 1.3, xf(at.x, at.y, at.z, h), [0.84, 0.86, 0.88]);
     const lamp = frame(p, side * (L + 0.9), W + 1.4);
     box(batch, mm.beacon, 0.6, 0.6, 0.6, xf(lamp.x, lamp.y, lamp.z, h));
   }

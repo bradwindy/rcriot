@@ -65,7 +65,7 @@ const T = {
         if (seam) return hex('#33373d');
         const edge = x % 32 === 1 || y % 32 === 1;
         const tread = (x + y * 3) % 8 === 0 && (x * 3 - y) % 8 < 3;
-        return edge ? hex('#7d848c') : tread ? hex('#565c64') : hex('#646a72');
+        return edge ? hex('#6e747c') : tread ? hex('#565c64') : hex('#646a72');
       });
       for (let i = 0; i < 4; i++) for (const [x, y] of [[4, 4], [28, 4], [4, 28], [28, 28]]) p.set(x + (i % 2) * 32, y + Math.floor(i / 2) * 32, hex('#a6adb5'));
     }),

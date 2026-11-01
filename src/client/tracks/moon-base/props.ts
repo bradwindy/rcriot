@@ -164,7 +164,6 @@ export interface Rover {
   rig: THREE.Group;
   centre: THREE.Vector3;
   radius: number;
-  beacon: THREE.Vector3;
 }
 
 /** A six-wheeled rover that potters round a loop in the crater field, beacon turning. */
@@ -187,8 +186,9 @@ function rover(mm: MoonMats, mats: Materials, group: THREE.Group, centre: THREE.
   b.geometry(mats.lens, new THREE.PlaneGeometry(0.8, 0.5), xf(1.4, 2.6, -3.77, Math.PI));
   const rig = new THREE.Group();
   for (const m of b.meshes()) rig.add(m);
+  rig.scale.setScalar(1.5);
   group.add(rig);
-  return { rig, centre, radius, beacon: new THREE.Vector3() };
+  return { rig, centre, radius };
 }
 
 export interface Props {
@@ -323,7 +323,7 @@ export function buildProps(track: Track, index: TrackIndex, terrain: Terrain, ba
     }
   }
   greenhouse(batch, mm, mats, terrain);
-  const rv = rover(mm, mats, group, ground(112, 150), 26);
+  const rv = rover(mm, mats, group, ground(142, 148), 24);
   return { lamps, rover: rv, beacons };
 }
 

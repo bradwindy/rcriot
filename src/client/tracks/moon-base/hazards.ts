@@ -161,7 +161,8 @@ export function landerRig(track: Track, h: Hazard, batch: Batch, mats: Materials
       // The last fifth of each cycle is the warm-up: the bell glows and the lamps race.
       const warmup = Math.max(0, (at.t - 0.8) / 0.2);
       const flicker = 0.85 + 0.3 * Math.sin(time * 53) * Math.sin(time * 31);
-      plume.visible = core.visible = ring.visible = firing;
+      plume.visible = ring.visible = firing;
+      core.visible = firing || warmup > 0;
       warm.visible = firing || warmup > 0;
       warm.scale.setScalar(firing ? 1 : 0.3 + warmup * 0.7);
       if (firing) {
@@ -174,7 +175,13 @@ export function landerRig(track: Track, h: Hazard, batch: Batch, mats: Materials
         dynamicLight(nozzle.x, ground + 2, nozzle.z, BLAST, 3.2 * flicker, 22, -6);
         flames.forEach((f, i) => f.set(nozzle.x + Math.cos(i * 1.6 + time * 5) * 3, ground + 0.6, nozzle.z + Math.sin(i * 1.6 + time * 5) * 3));
       } else {
-        if (warmup > 0) dynamicLight(nozzle.x, nozzle.y - 0.5, nozzle.z, BLAST, warmup * 1.4 * flicker, 10, -2);
+        if (warmup > 0) {
+          // A jet licks out of the bell as a warning. It stops well above the cars, so nothing unseen can hit them.
+          const reach = 0.12 + warmup * 0.22;
+          core.scale.set(flicker * 0.5, reach, flicker * 0.5);
+          core.position.y = nozzle.y - (length * reach) / 2;
+          dynamicLight(nozzle.x, nozzle.y - 1, nozzle.z, BLAST, warmup * 2 * flicker, 14, -2);
+        }
         for (const f of flames) f.y = AWAY;
       }
       const rate = firing || warmup > 0 ? 9 : 1.6;
