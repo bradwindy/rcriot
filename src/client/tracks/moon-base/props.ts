@@ -169,9 +169,9 @@ export interface Rover {
 /** A six-wheeled rover that potters round a loop in the crater field, beacon turning. */
 function rover(mm: MoonMats, mats: Materials, group: THREE.Group, centre: THREE.Vector3, radius: number): Rover {
   const b = new Batch();
-  b.geometry(mm.hull, new THREE.BoxGeometry(5, 1.6, 7.5), xf(0, 2.6, 0), [0.95, 0.95, 0.92]);
+  b.geometry(mm.hull, new THREE.BoxGeometry(5, 1.6, 7.5), xf(0, 2.6, 0), [1.25, 0.5, 0.14]);
   b.geometry(mm.gold, new THREE.BoxGeometry(4.6, 0.9, 6.8), xf(0, 1.5, 0));
-  b.geometry(mm.hull, new THREE.BoxGeometry(4, 1.4, 2.6), xf(0, 4.0, -1.6), [0.9, 0.9, 0.88]);
+  b.geometry(mm.hull, new THREE.BoxGeometry(4, 1.4, 2.6), xf(0, 4.0, -1.6), [1.1, 1.1, 1.05]);
   b.geometry(mm.glass, new THREE.PlaneGeometry(3.4, 1), xf(0, 4.1, -2.95, Math.PI, 0.2));
   for (const x of [-2.9, 2.9]) {
     for (const z of [-2.6, 0, 2.6]) {

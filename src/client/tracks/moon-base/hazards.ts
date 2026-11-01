@@ -17,6 +17,8 @@ export interface Rig {
 const LASER = new THREE.Color(1, 0.18, 0.1);
 const BLAST = new THREE.Color(1, 0.62, 0.25);
 const AWAY = -9999;
+/** Share of the way down to the road that the lander's warm-up jet gets. */
+const WARM_REACH = 0.34;
 
 /** Merges a little batch of parts into one moving group. */
 function rigOf(build: (b: Batch) => void): THREE.Group {
@@ -56,7 +58,7 @@ export function laserRig(track: Track, h: Hazard, batch: Batch, mats: Materials,
   const beam = new THREE.Mesh(new THREE.BoxGeometry(0.22, beamH, 0.22), mm.laser);
   const glow = new THREE.Mesh(new THREE.BoxGeometry(0.8, beamH, 0.8), mm.laser);
   glow.scale.set(1, 1, 1);
-  const spot = new THREE.Mesh(new THREE.CircleGeometry(1.5, 12), mm.laser);
+  const spot = new THREE.Mesh(new THREE.CircleGeometry(h.radius, 12), mm.laser);
   for (const m of [beam, glow]) m.rotation.y = yaw;
   spot.rotation.set(-Math.PI / 2, 0, 0);
   group.add(carriage, beam, glow, spot);
@@ -74,7 +76,7 @@ export function laserRig(track: Track, h: Hazard, batch: Batch, mats: Materials,
       const pulse = 0.85 + 0.3 * Math.sin(time * 37) * Math.sin(time * 23);
       glow.scale.set(pulse, 1, pulse);
       spot.position.set(at.x, at.y + 0.06, at.z);
-      spot.scale.setScalar(0.8 + 0.25 * pulse);
+      spot.scale.setScalar(0.9 + 0.1 * pulse);
       flames.forEach((f, i) => f.set(at.x + Math.cos(i * 2.1 + time * 9) * 0.6, at.y + 0.5, at.z + Math.sin(i * 2.1 + time * 9) * 0.6));
       dynamicLight(at.x, at.y + 0.8, at.z, LASER, 2.2 * pulse, 11, -4);
     },
@@ -166,7 +168,8 @@ export function landerRig(track: Track, h: Hazard, batch: Batch, mats: Materials
       warm.visible = firing || warmup > 0;
       warm.scale.setScalar(firing ? 1 : 0.3 + warmup * 0.7);
       if (firing) {
-        const spread = Math.min(1, at.t / (h.duty * 0.25));
+        // Picks up from the warm-up jet and hits the road within a few frames, so the flame is there when the hit is.
+        const spread = Math.min(1, WARM_REACH + at.t / (h.duty * 0.1));
         plume.scale.set(flicker, spread, flicker);
         core.scale.set(flicker * 0.9, spread, flicker * 0.9);
         plume.position.y = nozzle.y - (length * spread) / 2;
@@ -177,7 +180,7 @@ export function landerRig(track: Track, h: Hazard, batch: Batch, mats: Materials
       } else {
         if (warmup > 0) {
           // A jet licks out of the bell as a warning. It stops well above the cars, so nothing unseen can hit them.
-          const reach = 0.12 + warmup * 0.22;
+          const reach = 0.12 + warmup * (WARM_REACH - 0.12);
           core.scale.set(flicker * 0.5, reach, flicker * 0.5);
           core.position.y = nozzle.y - (length * reach) / 2;
           dynamicLight(nozzle.x, nozzle.y - 1, nozzle.z, BLAST, warmup * 2 * flicker, 14, -2);

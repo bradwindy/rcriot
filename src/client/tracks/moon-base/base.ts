@@ -318,7 +318,7 @@ export function buildBase(track: Track, batch: Batch, mats: Materials, mm: MoonM
   // The rotunda's courtyard: a platform inside the hairpin where the hologram turns, seen through the inner windows.
   const rot = zoneRanges(track, 'rotunda')[0];
   const mid = sampleAt(track, (rot[0] + rot[1]) / 2);
-  const inward = frame(mid, -(limitOf(mid) + 15), 0);
+  const inward = frame(mid, -(limitOf(mid) + 18), 0);
   const core = new THREE.Vector3(inward.x, mid.y + 6.5, inward.z);
   let radius = Infinity;
   for (let s = rot[0] - 20; s < rot[1] + 20; s += 2) {
