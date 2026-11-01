@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { FAKE_ARM, MINE_SIZE, type Entity, type ItemEvent, type Items } from '../../shared/items';
 import type { Race } from '../../shared/race';
+import { routeTrack } from '../../shared/course';
 import type { Track } from '../../shared/track';
 import type { CarView } from './cars';
 import { ball } from './geometry';
@@ -343,7 +344,7 @@ export class ItemView {
           break;
         case 'oil': {
           // Laid flat on the track, tilted with its slope and banking, just above it so it never sinks out of sight.
-          const p = this.track.samples[e.index];
+          const p = routeTrack(this.track, e.route).samples[e.index];
           obj.position.y = e.y + 0.06;
           obj.rotation.set(Math.atan(p.grade), Math.atan2(-p.tx, -p.tz), p.bank, 'YXZ');
           break;

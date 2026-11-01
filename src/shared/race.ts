@@ -14,6 +14,7 @@ import {
   type CarInput,
   type CarSpec,
 } from './car';
+import { strike } from './hazards';
 import { botItem, Items, type Field } from './items';
 import { newStats, type RacerStats, type ResultRow } from './results';
 import { mulberry32 } from './rng';
@@ -167,10 +168,11 @@ export class Race implements Field {
     const { track } = this;
     this.racers.forEach((r, i) => {
       if (!r.auto) r.input = own(i);
-      else r.input = { ...botInput(r.car, r.spec, track, r.brain), ...(full ? botItem(this, this.items, i) : {}) };
+      else r.input = { ...botInput(r.car, r.spec, track, r.brain, r.lap), ...(full ? botItem(this, this.items, i) : {}) };
     });
     const leader = full ? this.standings()[0] : null;
     this.racers.forEach((r, i) => this.drive(r, i, full, r === leader));
+    for (const h of track.hazards) for (const r of this.racers) strike(track, h, this.clock, r.car);
     if (full) {
       const seen = this.items.events.length;
       this.items.step(this, this.racers.map((r) => r.input), TICK);

@@ -8,6 +8,11 @@ export interface Nearest {
   offset: number;
 }
 
+/** Every sample of the main track and of the fork's own stretch, so scenery keeps clear of both roads. */
+export function allSamples(track: Track): Sample[] {
+  return [...track.samples, ...track.routes.flatMap((r) => r.track.samples.filter((p) => p.s > r.rfrom && p.s < r.rto))];
+}
+
 /** Buckets track samples on a grid, for quick nearest-track lookups while building the world. */
 export class TrackIndex {
   private readonly cells = new Map<string, Sample[]>();
@@ -16,7 +21,7 @@ export class TrackIndex {
     readonly track: Track,
     private readonly cell = 16,
   ) {
-    for (const p of track.samples) {
+    for (const p of allSamples(track)) {
       const key = this.key(Math.floor(p.x / cell), Math.floor(p.z / cell));
       const list = this.cells.get(key);
       if (list) list.push(p);

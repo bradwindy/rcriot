@@ -3,13 +3,17 @@ import { LAPS_MAX, type Settings } from '../shared/lobby';
 import { NAME_MAX, type RoomMsg } from '../shared/protocol';
 import { MAX_RACERS } from '../shared/race';
 import { ROSTER } from '../shared/roster';
+import { trackInfo, WORLDS } from '../shared/tracks/info';
+import { pixelScale, textWidth } from './arcade';
+import { WORLD_LOOKS } from './levels';
 import { GOLD, GREEN, pixelLabel, RED, WHITE, type Fill } from './pixel';
 
 const DIM: Fill = ['#c9c4dc', '#9a94b4', '#625c7c'];
-const TRACK_NAMES: Record<Settings['track'], string> = { 'pirate-cove': 'PIRATE COVE' };
 
 export interface LobbyEvents {
   settings(s: Partial<Settings>): void;
+  /** The host wants to pick the track. */
+  pickTrack(): void;
   rename(name: string): void;
   leave(): void;
 }
@@ -24,7 +28,6 @@ interface Row {
 function rows(s: Settings): Row[] {
   const level = BOT_LEVELS.indexOf(s.level);
   return [
-    { label: 'TRACK', value: TRACK_NAMES[s.track], steps: [null, null] },
     { label: 'LAPS', value: String(s.laps), steps: [s.laps > 1 ? { laps: s.laps - 1 } : null, s.laps < LAPS_MAX ? { laps: s.laps + 1 } : null] },
     { label: 'BOTS', value: String(s.bots), steps: [s.bots > 0 ? { bots: s.bots - 1 } : null, s.bots < MAX_RACERS - 1 ? { bots: s.bots + 1 } : null] },
     {
@@ -91,6 +94,7 @@ export class LobbyPanel {
           ${more > 0 ? '<div class="lobby-more"></div>' : ''}
         </div>
         <div class="lobby-settings">
+          ${room ? '<div class="lobby-track"><span></span><button data-pixel class="lobby-pick"><span></span><span></span></button></div>' : ''}
           ${settings.map(() => `<div class="lobby-set"><span></span><button data-pixel class="lobby-step"></button><span></span><button data-pixel class="lobby-step"></button></div>`).join('')}
         </div>
         <div class="lobby-actions">
@@ -138,6 +142,23 @@ export class LobbyPanel {
         if (step) b.addEventListener('click', () => this.on.settings(step));
       });
     });
+    const pick = this.root.querySelector<HTMLButtonElement>('.lobby-pick');
+    if (room && pick) {
+      const track = trackInfo(room.settings.track);
+      const world = WORLDS.find((w) => w.id === track.world)?.name ?? '';
+      const label = at('.lobby-track > span');
+      const [name, place] = pick.querySelectorAll<HTMLElement>('span');
+      pixelLabel(label, 'TRACK', 7, DIM);
+      // A long name drops a size, then takes the label's room. The world goes under it where there is room.
+      const space = () => pick.clientWidth / pixelScale() - 4;
+      const size = !narrow && textWidth(track.name, 8) <= space() ? 8 : 7;
+      pixelLabel(name, track.name, size);
+      pixelLabel(place, world, 7, WORLD_LOOKS[track.world].fill);
+      label.hidden = textWidth(track.name, size) > space();
+      place.hidden = narrow || textWidth(world, 7) > space();
+      pick.disabled = !host || racing;
+      if (!pick.disabled) pick.addEventListener('click', () => this.on.pickTrack());
+    }
     pixelLabel(at('.lobby-name'), 'NAME', 7);
     pixelLabel(at('.lobby-leave'), 'LEAVE', 7);
     at('.lobby-copy').addEventListener('click', () => void this.copy(code));

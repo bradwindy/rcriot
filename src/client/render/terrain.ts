@@ -1,40 +1,43 @@
 import * as THREE from 'three';
-import { K } from '../../shared/circuit';
 import { coverRanges, limitOf, sampleAt, surfaceY, type Sample } from '../../shared/track';
 import { Batch, type RGB } from './geometry';
-import type { Materials } from './materials';
-import { fbm, smoothstep, valueNoise } from './noise';
+import { smoothstep, valueNoise } from './noise';
 import type { TrackIndex } from './trackindex';
 
-const CELL = 4;
-const X0 = -330;
-const X1 = 330;
-const Z0 = -340;
-const Z1 = 240;
-/** Clearance kept above the cave roof, so the hillside never pokes into the tunnel. */
+/** Clearance kept above a tunnel roof, so the hillside never pokes into the tunnel. */
 export const TUNNEL_HEIGHT = 7.5;
 
-function ellipse(x: number, z: number, cx: number, cz: number, rx: number, rz: number): number {
-  return ((x - cx * K) / (rx * K)) ** 2 + ((z - cz * K) / (rz * K)) ** 2;
-}
-
-/** The island before the track is cut into it: beach, a lagoon open to the sea, dunes and a rocky headland. */
-export function naturalHeight(x: number, z: number): number {
-  const island = smoothstep(1.05, 0.8, ellipse(x, z, -10, -30, 175, 115));
-  const lagoon = smoothstep(1.0, 0.6, ellipse(x, z, 55, -120, 80, 55));
-  const land = island * (1 - lagoon);
-  const dunes = (fbm(x / 40, z / 40, 3, 5) - 0.45) * 3.2;
-  let h = -5 + (6 + Math.max(0, dunes)) * land;
-  const d = Math.hypot(x + 125 * K, z - 25 * K);
-  h += 19 * smoothstep(65, 27, d) * (0.8 + 0.4 * fbm(x / 18, z / 18, 3, 9)) * island;
-  return h;
+/** A track's ground: the land before the road is cut into it, and how to paint it. */
+export interface GroundSpec {
+  /** The area to cover, in world units, and the grid cell size (4 by default). */
+  x0: number;
+  x1: number;
+  z0: number;
+  z1: number;
+  cell?: number;
+  height(x: number, z: number): number;
+  /**
+   * Material and vertex tint for one triangle. `steep` faces are walls and cliffs, `top` and `low` its highest and
+   * lowest corner. The tint takes each corner's own height.
+   */
+  paint(face: { steep: boolean; top: number; low: number }): THREE.Material;
+  tint(x: number, z: number, h: number, mat: THREE.Material): RGB;
+  /** Materials that wrap textures round the faces of cliffs rather than laying them flat. */
+  cliffs?: THREE.Material[];
+  /** Rock for the wall round each tunnel mouth. */
+  headwall: THREE.Material;
+  /** How far beyond the barrier open ground eases back from road height to its own height. */
+  blend?: number;
 }
 
 export interface Terrain {
   height(x: number, z: number): number;
 }
 
-export function buildTerrain(index: TrackIndex, mats: Materials, batch: Batch): Terrain {
+export function buildTerrain(index: TrackIndex, batch: Batch, spec: GroundSpec): Terrain {
+  const CELL = spec.cell ?? 4;
+  const { x0: X0, x1: X1, z0: Z0, z1: Z1 } = spec;
+  const blend = spec.blend ?? 16;
   const nx = Math.round((X1 - X0) / CELL) + 1;
   const nz = Math.round((Z1 - Z0) / CELL) + 1;
   const heights = new Float32Array(nx * nz);
@@ -45,7 +48,7 @@ export function buildTerrain(index: TrackIndex, mats: Materials, batch: Batch): 
     for (let i = 0; i < nx; i++) {
       const x = X0 + i * CELL;
       const z = Z0 + j * CELL;
-      let h = naturalHeight(x, z);
+      let h = spec.height(x, z);
       const near = index.nearest(x, z, 40);
       if (near) {
         const p = near.sample;
@@ -54,10 +57,10 @@ export function buildTerrain(index: TrackIndex, mats: Materials, batch: Batch): 
         if (near.d < limit + 2 && ends.some((e) => Math.abs(p.s - e) < 6)) mouth[j * nx + i] = 1;
         if (p.cover === 'tunnel') {
           if (near.d < limit + 7) h = Math.max(h, p.y + TUNNEL_HEIGHT + 2.5);
-        } else if (p.cover === 'pier') {
+        } else if (p.cover === 'deck') {
           if (near.d < limit + 2) h = Math.min(h, road - 1.6);
         } else {
-          h += (road - h) * smoothstep(limit + 16, limit + 2.5, near.d);
+          h += (road - h) * smoothstep(limit + blend, limit + 2.5, near.d);
         }
       }
       heights[j * nx + i] = h;
@@ -68,25 +71,6 @@ export function buildTerrain(index: TrackIndex, mats: Materials, batch: Batch): 
   const point = (i: number, j: number) => new THREE.Vector3(X0 + i * CELL, at(i, j), Z0 + j * CELL);
   const normal = (i: number, j: number) =>
     new THREE.Vector3(at(i - 1, j) - at(i + 1, j), 2 * CELL, at(i, j - 1) - at(i, j + 1)).normalize();
-  const tint = (i: number, j: number, rocky: boolean): RGB => {
-    const x = X0 + i * CELL;
-    const z = Z0 + j * CELL;
-    const h = at(i, j);
-    const v = 0.92 + valueNoise(x / 9, z / 9, 3) * 0.16;
-    if (rocky) {
-      const moss = h > 13 ? smoothstep(13, 18, h) * 0.5 : 0;
-      return [v * (1 - moss * 0.35), v * (1 + moss * 0.1), v * (1 - moss * 0.4)];
-    }
-    if (h < -0.4) return [0.72 * v, 0.78 * v, 0.72 * v];
-    const wet = smoothstep(0.9, -0.2, h);
-    const grassy = smoothstep(0.58, 0.72, fbm(x / 30, z / 30, 2, 11)) * smoothstep(1.3, 2.2, h);
-    return [
-      v * (1 - wet * 0.22 - grassy * 0.25),
-      v * (1 - wet * 0.18 + grassy * 0.05),
-      v * (1 - wet * 0.1 - grassy * 0.45),
-    ];
-  };
-
   for (let j = 0; j < nz - 1; j++) {
     for (let i = 0; i < nx - 1; i++) {
       const flip = (i + j) % 2 === 0;
@@ -107,17 +91,17 @@ export function buildTerrain(index: TrackIndex, mats: Materials, batch: Batch): 
         if (atMouth && top - low > 3) continue;
         const face = new THREE.Vector3().crossVectors(pts[1].clone().sub(pts[0]), pts[2].clone().sub(pts[0])).normalize();
         const steep = Math.abs(face.y) < 0.8;
-        const rocky = (top > 6 && steep) || low > 9;
-        const mat = rocky ? mats.rock : mats.sand;
+        const mat = spec.paint({ steep, top, low });
+        const wrap = steep && (spec.cliffs?.includes(mat) ?? false);
         tri.forEach(([a, b], k) => {
           const p = pts[k];
           let u = p.x / 10;
           let v = p.z / 10;
-          if (rocky && steep) {
+          if (wrap) {
             u = (Math.abs(face.x) > Math.abs(face.z) ? p.z : p.x) / 10;
             v = p.y / 10;
           }
-          batch.vertex(mat, p, normal(a, b), u, v, tint(a, b, rocky));
+          batch.vertex(mat, p, normal(a, b), u, v, spec.tint(p.x, p.z, p.y, mat));
         });
       }
     }
@@ -177,7 +161,7 @@ export function buildTerrain(index: TrackIndex, mats: Materials, batch: Batch): 
           [quad, out],
           [[b0, b1, t0, b1, t1, t0], out.clone().negate()],
         ] as const) {
-          for (const v of wind) batch.vertex(mats.rock, v, n, ...uv(v), [0.82, 0.8, 0.78]);
+          for (const v of wind) batch.vertex(spec.headwall, v, n, ...uv(v), [0.82, 0.8, 0.78]);
         }
       }
     }

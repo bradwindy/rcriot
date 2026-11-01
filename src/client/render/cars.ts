@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { grounded, type Car } from '../../shared/car';
 import type { Body, CarModel } from '../../shared/roster';
-import { limitOf, sampleAt, type Track } from '../../shared/track';
+import { routeTrack } from '../../shared/course';
+import { limitOf, roofed, sampleAt, type Track } from '../../shared/track';
 import { ball, beam, taper, xf } from './geometry';
 import { INDOOR } from './materials';
 import { ps1Material, type Ps1Material } from './ps1';
@@ -276,6 +277,10 @@ export class CarView {
   private readonly wheels: { pivot: THREE.Group; tyre: THREE.Mesh; front: boolean }[] = [];
   private readonly materials: Ps1Material[] = [];
   private readonly fire: Ps1Material;
+  /** Headlamps: the pool of light on the road ahead and the glow of the lenses. */
+  private readonly beam: THREE.Mesh;
+  private readonly lenses = new THREE.Group();
+  private lit = false;
   private steer = 0;
   private slip = 0;
   /** Spin flat on the spot while flung by a blast, with a small wobble, settling back after. */
@@ -390,6 +395,20 @@ export class CarView {
     this.yaw.add(this.body);
     this.root.add(this.yaw);
 
+    const beamMat = ps1Material({ map: tex.beam(), lit: false, additive: true, opacity: 0.55, fog: 0.8, depthWrite: false });
+    this.beam = new THREE.Mesh(new THREE.PlaneGeometry(5, 10).rotateX(-Math.PI / 2), beamMat);
+    this.beam.position.set(0, 0.1, -k.base - 5.3);
+    this.beam.renderOrder = 3;
+    const lensMat = ps1Material({ map: tex.white(), lit: false, tint: 0xfff2d0, glow: 1.2 });
+    for (const side of [-1, 1]) {
+      const lens = new THREE.Mesh(box(0.16, 0.1, 0.04), lensMat);
+      lens.position.x = side * 0.34;
+      this.lenses.add(lens);
+    }
+    this.lenses.position.set(0, k.wheel + 0.18, -k.base - 0.62);
+    this.beam.visible = this.lenses.visible = false;
+    this.yaw.add(this.beam, this.lenses);
+
     const shadowMat = ps1Material({ map: tex.shadow(), lit: false, transparent: true, fog: 0.6 });
     this.shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 3.0).rotateX(-Math.PI / 2), shadowMat);
     this.shadow.renderOrder = 2;
@@ -424,7 +443,7 @@ export class CarView {
     this.root.position.set(x, y, z);
     this.root.rotation.set(0, heading, 0, 'YXZ');
 
-    const p = sampleAt(track, car.s);
+    const p = sampleAt(routeTrack(track, car.route), car.rs);
     const fx = -Math.sin(heading);
     const fz = -Math.cos(heading);
     const along = fx * p.tx + fz * p.tz;
@@ -480,7 +499,7 @@ export class CarView {
     }
     this.root.updateMatrixWorld();
 
-    const indoor = car.cover === 'tunnel' || car.cover === 'ship';
+    const indoor = roofed(car.cover);
     this.shade += ((indoor ? INDOOR : 1) - this.shade) * (1 - Math.exp(-dt * 6));
     for (const m of this.materials) m.uniforms.uShade.value = this.shade;
     if (this.tints.length === 0) {
@@ -506,7 +525,18 @@ export class CarView {
     (this.shadow.material as Ps1Material).uniforms.uOpacity.value = Math.max(0.2, 1 - lift * 0.2) * (indoor ? 0.6 : 1);
   }
 
-  /** World positions of the two rear tyres' contact patches, for dust and sparks. */
+  /** Headlamps on or off. */
+  lamps(on: boolean): void {
+    if (on === this.lit) return;
+    this.lit = on;
+    this.beam.visible = this.lenses.visible = on;
+  }
+
+  /** World position a little ahead of the nose, where the headlamps light the road. */
+  lampSpot(): THREE.Vector3 {
+    return this.yaw.localToWorld(new THREE.Vector3(0, this.kind.wheel + 1.2, -this.kind.base - 4));
+  }
+
   shock(seconds: number): void {
     this.shocked = Math.max(this.shocked, seconds);
   }

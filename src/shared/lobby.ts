@@ -4,9 +4,7 @@ import type { GridSlot } from './protocol';
 import { MAX_RACERS } from './race';
 import { mulberry32 } from './rng';
 import { ROSTER } from './roster';
-
-export const TRACKS = ['pirate-cove'] as const;
-export type TrackId = (typeof TRACKS)[number];
+import { TRACK_IDS, type TrackId } from './tracks/info';
 
 export interface Settings {
   laps: number;
@@ -36,7 +34,7 @@ export function sanitizeSettings(input: unknown, prev: Settings = DEFAULT_SETTIN
     bots: int(s.bots, 0, MAX_RACERS - 1, prev.bots),
     items: typeof s.items === 'boolean' ? s.items : prev.items,
     level: pick(s.level, BOT_LEVELS, prev.level),
-    track: pick(s.track, TRACKS, prev.track),
+    track: pick(s.track, TRACK_IDS, prev.track),
   };
 }
 

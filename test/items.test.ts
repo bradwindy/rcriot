@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { NO_INPUT, spawnCar, TICK } from '../src/shared/car';
-import { PIRATE_COVE } from '../src/shared/circuit';
 import { applyHit, FAKE_ARM, ROLL_TIME, rollItem, type ItemKind } from '../src/shared/items';
 import { mulberry32 } from '../src/shared/rng';
 import { Race } from '../src/shared/race';
 import { ROSTER } from '../src/shared/roster';
-import { buildTrack } from '../src/shared/track';
+import { courseOf } from '../src/shared/tracks';
 
-const track = buildTrack(PIRATE_COVE);
+const track = courseOf('pirate-cove');
 
 /** A race just past GO, with the player in slot 0 holding nothing and bots everywhere else. */
 function started(count: number): Race {

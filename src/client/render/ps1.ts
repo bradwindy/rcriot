@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 
+/** Slots handed each frame to the track's nearest fixed lights: torches, lamps, lava glow. */
 export const POINT_LIGHTS = 8;
-/** Extra light slots handed each frame to the nearest rockets, blasts, boosts and bolts. */
-export const DYNAMIC_LIGHTS = 4;
+/** Extra light slots handed each frame to the nearest rockets, blasts, boosts, bolts and headlights. */
+export const DYNAMIC_LIGHTS = 6;
 
 /**
  * The PS1 look, per vertex where the console did it: positions snap to the low-res pixel grid (the wobble),
@@ -142,21 +143,28 @@ export const globals = {
   uTime: { value: 0 },
 };
 
+/** A fixed light on the track. Change its colour or position and the next frame picks it up. */
+/** The track's fog distance as a share of the draw distance setting. Murky tracks close it in. */
+export const haze = { value: 1 };
+
 export interface PointLight {
-  index: number;
   position: THREE.Vector3;
   color: THREE.Color;
+  range: number;
 }
 
-let lightCount = 0;
+const fixed: PointLight[] = [];
 
-export function addPointLight(position: THREE.Vector3, color: THREE.Color, range: number): PointLight | null {
-  if (lightCount >= POINT_LIGHTS) return null;
-  const index = lightCount++;
-  globals.uPointPos.value[index].copy(position);
-  globals.uPointColor.value[index].copy(color);
-  globals.uPointRange.value[index] = range;
-  return { index, position: globals.uPointPos.value[index], color: globals.uPointColor.value[index] };
+/** A track can have as many fixed lights as it likes. Each frame the nearest few to the camera are lit. */
+export function addPointLight(position: THREE.Vector3, color: THREE.Color, range: number): PointLight {
+  const light = { position: position.clone(), color: color.clone(), range };
+  fixed.push(light);
+  return light;
+}
+
+/** Drops every fixed light, before another track is built. */
+export function clearPointLights(): void {
+  fixed.length = 0;
 }
 
 interface Offer {
@@ -183,8 +191,22 @@ export function dynamicLight(x: number, y: number, z: number, color: THREE.Color
 
 const score = (f: Offer, eye: THREE.Vector3) => Math.hypot(f.x - eye.x, f.y - eye.y, f.z - eye.z) - f.range + f.rank;
 
-/** Hands the dynamic slots to this frame's nearest lights, then clears the offers. */
+const reach = (l: PointLight, eye: THREE.Vector3) => l.position.distanceTo(eye) - l.range;
+
+/** Hands the fixed slots to the nearest fixed lights and the dynamic slots to this frame's nearest offers. */
 export function flushLights(eye: THREE.Vector3): void {
+  const near = fixed.length <= POINT_LIGHTS ? fixed : [...fixed].sort((a, b) => reach(a, eye) - reach(b, eye));
+  for (let i = 0; i < POINT_LIGHTS; i++) {
+    const l = near[i];
+    if (l) {
+      globals.uPointPos.value[i].copy(l.position);
+      globals.uPointColor.value[i].copy(l.color);
+      globals.uPointRange.value[i] = l.range;
+    } else {
+      globals.uPointPos.value[i].set(0, -9999, 0);
+      globals.uPointColor.value[i].setRGB(0, 0, 0);
+    }
+  }
   // Lights well out of view cost every lit vertex a loop for nothing, so they get no slot.
   const live = offers
     .slice(0, offered)

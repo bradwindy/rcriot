@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { NO_INPUT, TICK } from '../shared/car';
 import { COUNTDOWN, Race, type Racer } from '../shared/race';
 import { ROSTER, type CarModel } from '../shared/roster';
-import { limitOf, sampleAt, surfaceY, type Track } from '../shared/track';
+import { routeTrack } from '../shared/course';
+import { limitOf, roofed, sampleAt, surfaceY, type Track } from '../shared/track';
 import type { ChaseCamera } from './camera';
 import type { CarView, Pose } from './render/cars';
 import { ItemView } from './render/items';
@@ -15,13 +16,12 @@ const RESTART = 75;
 
 type Shot = 'arch' | 'crane' | 'trackside' | 'chase';
 
-const indoor = (track: Track, s: number) => {
-  const cover = sampleAt(track, s).cover;
-  return cover === 'tunnel' || cover === 'ship';
-};
+const indoor = (track: Track, s: number) => roofed(sampleAt(track, s).cover);
+/** Whether the racer will be under a roof `d` ahead on its own route. */
+const roofAhead = (track: Track, r: Racer, d: number) => indoor(routeTrack(track, r.car.route), r.car.rs + d);
 
 /**
- * The race behind the title screen: eight bots on Pirate Cove, filmed like a game's attract mode. The camera cuts every
+ * The race behind the title screen and the level select: eight bots on a track, filmed like a game's attract mode. The camera cuts every
  * few seconds between a crane on the leader, low shots from the trackside as the pack goes by, a chase shot on a car
  * further back, and a slow orbit round the start arch as cars come through it. A fresh race starts now and then.
  */
@@ -30,6 +30,7 @@ export class Attract {
   air: number[] = [];
   bumps: number[] = [];
   flares: number[] = [];
+  sinks: number[] = [];
   private race: Race | null = null;
   private views: CarView[] = [];
   private poses: Pose[] = [];
@@ -49,8 +50,11 @@ export class Attract {
   private readonly look = new THREE.Vector3();
   private readonly want = new THREE.Vector3();
 
+  private track: Track | null = null;
+
+  /** `restart` is called when the race has run long enough, to start the next one, on whichever track. */
   constructor(
-    private readonly track: Track,
+    private readonly restart: () => void,
     private readonly cars: { viewFor(model: CarModel, slot: number): CarView; hideAll(): void },
     private readonly world: World,
     private readonly dust: Dust,
@@ -58,15 +62,21 @@ export class Attract {
     private readonly chase: ChaseCamera,
   ) {}
 
+  /** The flyover race's clock, which the track's hazards run off. */
+  get clock(): number | undefined {
+    return this.race?.clock;
+  }
+
   get running(): boolean {
     return this.race !== null;
   }
 
-  start(): void {
+  start(track: Track): void {
     this.stop();
+    this.track = track;
     const seed = Math.floor(Math.random() * 1e9);
     const models = [...ROSTER].sort(() => Math.random() - 0.5).slice(0, GRID);
-    const race = new Race(this.track, models, -1, seed, true);
+    const race = new Race(track, models, -1, seed, true);
     // Skip most of the countdown: the first shot opens on the grid just before GO.
     while (race.clock < COUNTDOWN - 1.2) race.step(NO_INPUT);
     this.race = race;
@@ -77,7 +87,8 @@ export class Attract {
     this.air = race.racers.map(() => 0);
     this.bumps = race.racers.map(() => -1);
     this.flares = race.racers.map(() => -1);
-    this.items = new ItemView(race.items, this.views, this.dust, this.embers, this.track);
+    this.sinks = race.racers.map(() => -1);
+    this.items = new ItemView(race.items, this.views, this.dust, this.embers, track);
     this.world.scene.add(this.items.group);
     this.acc = 0;
     this.age = 0;
@@ -96,7 +107,8 @@ export class Attract {
   /** Runs the race and the camera. `kick` throws up each car's dust and sparks. */
   update(dt: number, time: number, kick: (r: Racer, view: CarView, i: number) => void): void {
     const race = this.race;
-    if (!race) return;
+    const track = this.track;
+    if (!race || !track) return;
     this.acc += dt;
     while (this.acc >= TICK) {
       race.racers.forEach((r, i) => Object.assign(this.poses[i], { x: r.car.x, y: r.car.y, z: r.car.z, heading: r.car.heading }));
@@ -105,14 +117,14 @@ export class Attract {
     }
     const alpha = this.acc / TICK;
     race.racers.forEach((r, i) => {
-      this.views[i].update(r.car, this.poses[i], alpha, this.track, dt, r.input.steer, time);
+      this.views[i].update(r.car, this.poses[i], alpha, track, dt, r.input.steer, time);
       kick(r, this.views[i], i);
     });
     this.age += dt;
     this.shotAge += dt;
     if (this.shotAge >= this.shotLength) {
-      if (this.age > RESTART) this.start();
-      else this.next();
+      if (this.age > RESTART) return this.restart();
+      this.next();
     }
     this.film(dt);
     this.items?.update(race, dt, time, this.chase.camera.position, (e) => {
@@ -149,7 +161,8 @@ export class Attract {
     const order = this.standings();
     const leader = order[0];
     const speed = this.speedOf(leader);
-    const toLine = leader.car.s > this.track.length / 2 ? (this.track.length - leader.car.s) / speed : Infinity;
+    const track = this.track as Track;
+    const toLine = leader.car.s > track.length / 2 ? (track.length - leader.car.s) / speed : Infinity;
     if (this.shot !== 'arch' && this.age - this.lastArch > 25 && toLine > 1.5 && toLine < 4.5) {
       this.subject = this.indexOf(leader);
       this.cut('arch', toLine + 3);
@@ -160,7 +173,7 @@ export class Attract {
     const pick = shot === 'chase' ? order[Math.min(order.length - 1, Math.floor(Math.random() * 4))] : leader;
     // A crane above the cave or the wreck would only film the roof.
     if (shot === 'crane') {
-      for (let d = 0; d < speed * 6; d += 4) if (indoor(this.track, pick.car.s + d)) shot = 'chase';
+      for (let d = 0; d < speed * 6; d += 4) if (roofAhead(track, pick, d)) shot = 'chase';
     }
     this.subject = this.indexOf(pick);
     this.front = Math.random() < 0.5;
@@ -170,17 +183,19 @@ export class Attract {
   /** A spot at the barrier a couple of seconds ahead of the leader, in the open, with the camera low to the road. */
   private setTrackside(): void {
     const leader = this.standings()[0];
-    let s = leader.car.s + this.speedOf(leader) * 1.8;
-    for (let k = 0; k < 40 && indoor(this.track, s); k++) s += 5;
-    const p = sampleAt(this.track, s);
+    const track = routeTrack(this.track as Track, leader.car.route);
+    let s = leader.car.rs + this.speedOf(leader) * 1.8;
+    for (let k = 0; k < 40 && indoor(track, s); k++) s += 5;
+    const p = sampleAt(track, s);
     const offset = this.side * (limitOf(p) - 0.4);
     this.pos.set(p.x - p.tz * offset, surfaceY(p, offset) + 0.7, p.z + p.tx * offset);
-    const back = sampleAt(this.track, s - 25);
+    const back = sampleAt(track, s - 25);
     this.look.set(back.x, back.y + 1, back.z);
   }
 
   private film(dt: number): void {
     const race = this.race as Race;
+    const track = this.track as Track;
     const camera = this.chase.camera;
     const r = race.racers[this.subject] ?? race.racers[0];
     const view = this.views[this.indexOf(r)];
@@ -189,7 +204,7 @@ export class Attract {
     let fov = 55;
     switch (this.shot) {
       case 'arch': {
-        const p = sampleAt(this.track, 0);
+        const p = sampleAt(track, 0);
         const a = this.side * (0.75 - t * 0.09) + this.spin;
         const radius = 26;
         const h = Math.min(11, 6 + t * 0.7);
@@ -199,7 +214,7 @@ export class Attract {
       }
       case 'crane': {
         // The subject heading into the cave or wreck ends the shot early.
-        if (indoor(this.track, r.car.s + this.speedOf(r) * 1.2)) {
+        if (roofAhead(track, r, this.speedOf(r) * 1.2)) {
           this.cut('chase', 3.5);
           return this.film(dt);
         }
@@ -229,7 +244,13 @@ export class Attract {
         break;
       }
       case 'chase': {
-        this.chase.update(view.root.position, view.root.rotation.y, dt, { drift: r.car.drift, boosting: r.car.boost > 0, lookBack: false });
+        this.chase.update(view.root.position, view.root.rotation.y, dt, {
+          drift: r.car.drift,
+          boosting: r.car.boost > 0,
+          lookBack: false,
+          route: r.car.route,
+          index: r.car.index,
+        });
         this.placed = true;
         return;
       }

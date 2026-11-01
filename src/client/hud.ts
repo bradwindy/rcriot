@@ -1,3 +1,4 @@
+import type { Track } from '../shared/track';
 import './hud.css';
 import { bake, CAP, drawGlyph, drawPage, FONT, GOLD, GREEN, post, RED, setPixelScale, sprite, WHITE, type Fill, type Glyph, type Rect } from './pixel';
 
@@ -136,8 +137,9 @@ class TrackMap {
 
   constructor(
     readonly size: number,
-    outline: { x: number; z: number }[],
+    lines: { x: number; z: number }[][],
   ) {
+    const outline = lines.flat();
     let minX = Infinity;
     let minZ = Infinity;
     let maxX = -Infinity;
@@ -161,11 +163,14 @@ class TrackMap {
     g.lineJoin = 'round';
     g.lineCap = 'round';
     g.beginPath();
-    outline.forEach((p, i) => {
-      if (i === 0) g.moveTo(this.px(p.x), this.pz(p.z));
-      else g.lineTo(this.px(p.x), this.pz(p.z));
+    // The main loop closes. A fork is an open line from where it leaves to where it joins.
+    lines.forEach((line, k) => {
+      line.forEach((p, i) => {
+        if (i === 0) g.moveTo(this.px(p.x), this.pz(p.z));
+        else g.lineTo(this.px(p.x), this.pz(p.z));
+      });
+      if (k === 0) g.closePath();
     });
-    g.closePath();
     g.strokeStyle = DARK;
     g.lineWidth = rim;
     g.stroke();
@@ -300,7 +305,7 @@ export class Hud {
   readonly canvas = document.createElement('canvas');
   private readonly ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
   private readonly safe: HTMLElement;
-  private readonly outline: { x: number; z: number }[];
+  private outline: { x: number; z: number }[][] = [];
   private glyphs = new Map<string, Glyph>();
   private view: Rect = { x: 0, y: 0, w: 1, h: 1 };
   /** Canvas pixels per CSS pixel. */
@@ -316,9 +321,16 @@ export class Hud {
   private popFrom = -1e9;
   private helpTo = 0;
 
-  /** The outline is the track's centre line in world x and z, for the map. */
-  constructor(root: HTMLElement, outline: { x: number; z: number }[]) {
-    this.outline = outline;
+  /** The map's lines: the main track's centre line, and the fork's own stretch. */
+  setTrack(track: Track): void {
+    this.outline = [
+      track.samples.map((p) => ({ x: p.x, z: p.z })),
+      ...track.routes.map((r) => r.track.samples.filter((p) => p.s >= r.rfrom && p.s <= r.rto).map((p) => ({ x: p.x, z: p.z }))),
+    ];
+    if (this.layout) this.build();
+  }
+
+  constructor(root: HTMLElement) {
     root.innerHTML = '<div class="hud-safe"></div>';
     this.safe = root.firstElementChild as HTMLElement;
   }

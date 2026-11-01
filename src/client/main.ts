@@ -2,18 +2,22 @@ import './style.css';
 import * as THREE from 'three';
 import { botInput } from '../shared/bot';
 import { driftLevel, grounded, TICK, type CarInput } from '../shared/car';
-import { PIRATE_COVE } from '../shared/circuit';
+import { routeTrack } from '../shared/course';
 import { ITEM_KINDS, ROLL_TIME, type ItemEvent, type ItemKind } from '../shared/items';
+import { DEFAULT_SETTINGS } from '../shared/lobby';
 import { normalizeCode, sanitizeName, type RoomMsg } from '../shared/protocol';
 import { COUNTDOWN, gridFor, gridSlot, MAX_RACERS, Race, type Racer } from '../shared/race';
 import type { ResultRow } from '../shared/results';
 import { ROSTER, type CarModel } from '../shared/roster';
-import { buildTrack, sampleAt, surfaceY } from '../shared/track';
+import { roofed, sampleAt, surfaceY, type Surface, type Track } from '../shared/track';
+import { courseOf, TRACK_IDS, type TrackId } from '../shared/tracks';
 import { Attract } from './attract';
 import { Sound, type Nearby } from './audio';
+import { lastTrack, recordLap, setLastTrack } from './best';
 import { ChaseCamera } from './camera';
 import { Hud } from './hud';
 import { Keyboard } from './input';
+import { LevelSelect } from './levels';
 import { LobbyPanel } from './lobby';
 import { Panel } from './panel';
 import { PartySession, randomCode } from './party';
@@ -41,8 +45,19 @@ const GRID = 8;
 const PRACTICE_SLOT = 5;
 const PRACTICE_LAPS = 3;
 const ENGINE_VOLUME = { quiet: 0.5, normal: 1, off: 0 };
-const SAND = new THREE.Color(0.86, 0.74, 0.55);
-const STONE = new THREE.Color(0.55, 0.52, 0.48);
+/** The colour of the dust each surface throws up. Hard and wet surfaces throw none. */
+const DUST: Partial<Record<Surface, THREE.Color>> = {
+  sand: new THREE.Color(0.86, 0.74, 0.55),
+  rock: new THREE.Color(0.55, 0.52, 0.48),
+  stone: new THREE.Color(0.6, 0.58, 0.55),
+  dirt: new THREE.Color(0.62, 0.48, 0.34),
+  grass: new THREE.Color(0.46, 0.56, 0.3),
+  mud: new THREE.Color(0.36, 0.27, 0.18),
+  dust: new THREE.Color(0.72, 0.72, 0.74),
+};
+/** Surfaces that smoke under a sliding tyre. */
+const HARD: Surface[] = ['wood', 'rock', 'stone', 'metal', 'asphalt', 'glass'];
+const LAMP = new THREE.Color(1.0, 0.92, 0.75);
 const SPARK = [new THREE.Color(0, 0, 0), new THREE.Color(0.45, 0.72, 1.0), new THREE.Color(1.0, 0.58, 0.15)];
 const HOT = new THREE.Color(1.0, 0.9, 0.5);
 const SMOKE = new THREE.Color(0.78, 0.76, 0.74);
@@ -85,11 +100,8 @@ function playerName(): string {
   return made;
 }
 
-const track = buildTrack(PIRATE_COVE);
-const world = new World(
-  track,
-  Array.from({ length: MAX_RACERS }, (_, i) => gridSlot(track, i)),
-);
+const world = new World();
+let track: Track = courseOf('pirate-cove');
 /** Car bodies by model and grid number, made the first time a race needs one and kept for the next. */
 const pool = new Map<string, CarView>();
 function viewFor(model: CarModel, slot: number): CarView {
@@ -115,10 +127,12 @@ renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 const pipeline = new Pipeline(renderer);
 const chase = new ChaseCamera(track);
 const sound = new Sound();
-const hud = new Hud(el('hud'), track.samples);
+const hud = new Hud(el('hud'));
 
 /** The race on screen, or null on the menus. */
 let session: Session | null = null;
+/** The track of the race on screen or the last one. Your best lap on it is kept when the race ends. */
+let raceTrack: TrackId = lastTrack() ?? DEFAULT_SETTINGS.track;
 /** The party this page is in, or null. */
 let party: PartySession | null = null;
 let fx = loadFx();
@@ -156,9 +170,10 @@ interface Session {
   items: ItemView;
   poses: Pose[];
   air: number[];
-  /** Each racer's last bump already shown as sparks, and last boost already shown as a flare. */
+  /** Each racer's last bump already shown as sparks, last boost shown as a flare, and last fall into lava or goo. */
   bumps: number[];
   flares: number[];
+  sinks: number[];
   /** Ages of the followed car's events already turned into sounds. */
   heard: { hop: number; boost: number; bump: number; land: number };
   count: string;
@@ -173,12 +188,27 @@ interface Session {
   resetQueued: boolean;
 }
 
-const showroom = (() => {
+/** Where the car select's turntable stands: on the road just past the start line. */
+const showroom = { at: new THREE.Vector3(), heading: 0 };
+
+/** Puts a track up: its scenery, the camera and map on it, and the fog and textures set up for it. */
+function useTrack(id: TrackId): Track {
+  if (world.id === id) return track;
+  track = courseOf(id);
+  world.load(id, track, Array.from({ length: MAX_RACERS }, (_, i) => gridSlot(track, i)));
+  chase.setTrack(track);
+  hud.setTrack(track);
   const p = sampleAt(track, 14);
-  return { at: new THREE.Vector3(p.x, surfaceY(p, 0), p.z), heading: Math.atan2(-p.tx, -p.tz) };
-})();
+  showroom.at.set(p.x, surfaceY(p, 0), p.z);
+  showroom.heading = Math.atan2(-p.tx, -p.tz);
+  applyFx();
+  return track;
+}
+useTrack(raceTrack);
 
 function endSession(): void {
+  const best = session && session.me >= 0 ? session.race.racers[session.me].bestLap : null;
+  if (best !== null) recordLap(raceTrack, best);
   session?.items.dispose();
   session = null;
   hideCars();
@@ -191,6 +221,8 @@ function endSession(): void {
 function toSelect(): void {
   endSession();
   results.hide();
+  levels.hide();
+  attract.stop();
   select.show();
   syncLobby();
 }
@@ -228,6 +260,7 @@ function beginSession(race: Race, me: number, names: string[], pred: Predictor |
     air: race.racers.map(() => 0),
     bumps: race.racers.map(() => -1),
     flares: race.racers.map(() => -1),
+    sinks: race.racers.map(() => -1),
     heard: { hop: -1, boost: -1, bump: -1, land: -1 },
     count: '',
     acc: 0,
@@ -242,18 +275,22 @@ function beginSession(race: Race, me: number, names: string[], pred: Predictor |
   select.hide();
   lobby.hide();
   results.hide();
+  levels.hide();
   hud.show(true);
   touch.setVisible(me >= 0);
   chase.snap();
 }
 
-function startPractice(): void {
+function startPractice(id = raceTrack): void {
   const seed = Math.floor(Math.random() * 1e9);
   const models = gridFor(ROSTER, select.car, GRID, PRACTICE_SLOT, seed);
-  const race = new Race(track, models, PRACTICE_SLOT, seed, fx.items, { laps: PRACTICE_LAPS });
+  const race = new Race(useTrack(id), models, PRACTICE_SLOT, seed, fx.items, { laps: PRACTICE_LAPS });
   const names = models.map((m) => m.name.toUpperCase());
   names[PRACTICE_SLOT] = playerName().toUpperCase();
+  // After beginSession, which files the last race's best lap under the last race's track.
   beginSession(race, PRACTICE_SLOT, names, null, 0);
+  raceTrack = id;
+  setLastTrack(id);
 }
 
 /** The racer the camera and HUD follow: your own car, or the leader while you watch. */
@@ -265,9 +302,11 @@ function startOnline(room: RoomMsg, myId: string): void {
   const models = room.grid.map((g) => ROSTER.find((m) => m.id === g.car) ?? ROSTER[0]);
   const humans = room.grid.flatMap((g, i) => (g.id ? [i] : []));
   const { settings } = room;
-  const race = new Race(track, models, humans, room.seed, settings.items, { laps: settings.laps, level: settings.level });
+  const race = new Race(useTrack(settings.track), models, humans, room.seed, settings.items, { laps: settings.laps, level: settings.level });
   const me = room.grid.findIndex((g) => g.id === myId);
   beginSession(race, me, room.grid.map((g) => g.name.toUpperCase()), new Predictor(race, room.race, me), room.race);
+  raceTrack = settings.track;
+  setLastTrack(settings.track);
   // Someone watching has no controls, so the party panel stays up with its LEAVE button.
   if (me < 0 && party) lobby.show(party.code, room, myId, party.status);
 }
@@ -293,6 +332,8 @@ function onRoom(room: RoomMsg): void {
     showResults(room.results, room.grid.findIndex((g) => g.id === party?.myId));
     return;
   }
+  // The host picking a track stays in the level select while the lobby changes.
+  if (levels.open && room.host === party.myId) return;
   if (session || results.open || !select.open) toSelect();
   else syncLobby();
 }
@@ -347,12 +388,13 @@ const select = new CarSelect(
   },
   () => {
     if (party) party.start();
-    else startPractice();
+    else toLevels();
   },
   () => (party ? leaveParty() : toTitle()),
 );
 const lobby = new LobbyPanel(el('ui'), {
   settings: (s) => party?.settings(s),
+  pickTrack: () => toLevels(),
   rename: (name) => {
     const clean = sanitizeName(name);
     if (!clean) return;
@@ -369,6 +411,39 @@ results.onNext = () => {
   if (party) party.again();
   else startPractice();
 };
+
+/** The highlighted track flies by behind the level select, after a moment's pause so stepping past one doesn't build it. */
+let previewTimer = 0;
+function preview(id: TrackId): void {
+  clearTimeout(previewTimer);
+  previewTimer = window.setTimeout(() => {
+    if (levels.open) attract.start(useTrack(id));
+  }, 220);
+}
+
+const levels = new LevelSelect(el('select'), {
+  select: () => sound.select(),
+  lengthOf: (id) => courseOf(id).length,
+  outlineOf: (id) => courseOf(id).samples,
+  preview,
+});
+levels.onPick = (id) => {
+  if (!party) startPractice(id);
+  else {
+    party.settings({ track: id });
+    toSelect();
+  }
+};
+levels.onBack = () => toSelect();
+
+/** From the car select to the level select: practice picks the track to race, a party's host the next race's. */
+function toLevels(): void {
+  const room = party?.room;
+  if (party && (room?.host !== party.myId || room.phase !== 'lobby')) return;
+  select.hide();
+  lobby.hide();
+  levels.show(room?.settings.track ?? lastTrack() ?? DEFAULT_SETTINGS.track, party ? 'party' : 'practice');
+}
 
 function requestReset(): void {
   const s = session;
@@ -392,8 +467,16 @@ function back(): void {
   }
 }
 
+/** The title's flyover moves on to the next track each time its race restarts. */
+let titleTrack = Math.floor(Math.random() * TRACK_IDS.length);
+function nextTitleRace(): void {
+  if (levels.open) return attract.start(track);
+  titleTrack = (titleTrack + 1) % TRACK_IDS.length;
+  attract.start(useTrack(TRACK_IDS[titleTrack]));
+}
+
 // The title screen with bots racing behind it.
-const attract = new Attract(track, { viewFor, hideAll: hideCars }, world, dust, embers, chase);
+const attract = new Attract(nextTitleRace, { viewFor, hideAll: hideCars }, world, dust, embers, chase);
 const title = new Title(
   el('select'),
   panel,
@@ -414,11 +497,12 @@ const title = new Title(
 function toTitle(): void {
   endSession();
   results.hide();
+  levels.hide();
   select.hide();
   lobby.hide();
   document.body.classList.remove('party');
   title.show();
-  attract.start();
+  nextTitleRace();
 }
 
 /** Off the title to a lobby or race. The attract race's cars and item boxes go with it. */
@@ -452,10 +536,15 @@ const keys = new Keyboard((code) => {
     title.key(code);
     return;
   }
+  if (levels.open) {
+    levels.key(code);
+    return;
+  }
   if (select.open) {
     if (code === 'ArrowLeft' || code === 'KeyA') select.step(-1);
     if (code === 'ArrowRight' || code === 'KeyD') select.step(1);
     if (code === 'Enter' || code === 'Space') select.go();
+    if (code === 'KeyT' && party) toLevels();
     if (code === 'Escape' && !party) toTitle();
     return;
   }
@@ -478,12 +567,28 @@ function merged(dt: number): CarInput {
   };
 }
 
-function kickUp(r: Racer, view: CarView, i: number, s: Pick<Session, 'air' | 'bumps' | 'flares'>, dt: number): void {
+function kickUp(r: Racer, view: CarView, i: number, s: Pick<Session, 'air' | 'bumps' | 'flares' | 'sinks'>, dt: number): void {
   const car = r.car;
   const speed = Math.hypot(car.vx, car.vz);
+  const dark = (world.theme?.night ?? false) || sampleAt(routeTrack(track, car.route), car.rs).dark;
+  view.lamps(dark);
+  if (dark) {
+    const spot = view.lampSpot();
+    dynamicLight(spot.x, spot.y, spot.z, LAMP, 1.5, 11, 6);
+  }
   const landed = grounded(car) && s.air[i] > 0.25;
   s.air[i] = car.air;
   const wheels = view.rearWheels();
+  if (car.sinkAt > s.sinks[i]) {
+    // Back from the lava or goo: a puff of smoke and sparks where it reappears.
+    s.sinks[i] = car.sinkAt;
+    for (let n = 0; n < 24; n++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 1 + Math.random() * 3;
+      dust.spawn(car.x, car.y + 0.4, car.z, Math.cos(a) * v, 1 + Math.random() * 2, Math.sin(a) * v, 0.3 + Math.random() * 0.25, 0.8, SMOKE);
+      if (n % 2) embers.spawn(car.x, car.y + 0.4, car.z, Math.cos(a) * v * 2, 2 + Math.random() * 3, Math.sin(a) * v * 2, 0.08, 0.4, HOT);
+    }
+  }
   if (car.bumpAt > s.bumps[i]) {
     s.bumps[i] = car.bumpAt;
     for (let n = Math.round(car.bump * 16); n > 0; n--) {
@@ -529,14 +634,14 @@ function kickUp(r: Racer, view: CarView, i: number, s: Pick<Session, 'air' | 'bu
       }
     }
   }
-  const hard = car.surface === 'wood' || car.surface === 'rock' || car.cover === 'ship';
+  const hard = HARD.includes(car.surface);
   const slide = Math.abs(car.vx * Math.cos(car.heading) - car.vz * Math.sin(car.heading));
   if (hard && speed > 8 && (car.drift || slide > 6) && Math.random() < 24 * dt) {
     const w = wheels[Math.floor(Math.random() * wheels.length)];
     dust.spawn(w.x, w.y + 0.2, w.z, (Math.random() - 0.5) * 2, 0.8 + Math.random(), (Math.random() - 0.5) * 2, 0.25 + Math.random() * 0.15, 0.7, SMOKE);
   }
-  if (car.surface === 'wood' || car.cover === 'ship') return;
-  const color = car.surface === 'rock' ? STONE : SAND;
+  const color = roofed(car.cover) && car.surface !== 'rock' ? undefined : DUST[car.surface];
+  if (!color) return;
   const rate = landed ? 1 : speed < 7 ? 0 : (speed / 32) * (car.offroad ? 34 : car.drift ? 22 : 9) * dt;
   for (let n = landed ? 8 : 1; n > 0; n--) {
     if (Math.random() > rate) continue;
@@ -660,6 +765,8 @@ function countdown(s: Session): void {
 
 let last = performance.now();
 let time = 0;
+/** Dev only: a fixed camera for screenshots, or null to follow the race. */
+let pinned: { at: THREE.Vector3; look: THREE.Vector3 } | null = null;
 /** Dev only: your car drives itself, for testing races from a script. */
 let autopilot = false;
 const target = new THREE.Vector3();
@@ -716,7 +823,7 @@ function frame(now: number): void {
   const s = session;
   if (s && !results.open) {
     const mine = s.me >= 0 ? s.race.racers[s.me] : null;
-    const input = autopilot && mine ? botInput(mine.car, mine.spec, track, mine.brain) : merged(dt);
+    const input = autopilot && mine ? botInput(mine.car, mine.spec, track, mine.brain, mine.lap) : merged(dt);
     s.acc += dt;
     while (s.acc >= TICK) {
       tick(s, input);
@@ -737,6 +844,8 @@ function frame(now: number): void {
       drift: player.car.drift,
       boosting: player.car.boost > 0,
       lookBack: keys.lookingBack,
+      route: player.car.route,
+      index: player.car.index,
     });
     s.items.update(s.race, dt, time, chase.camera.position, (e) => hearItem(e, s));
     const held = s.race.items.held[index];
@@ -783,7 +892,7 @@ function frame(now: number): void {
   }
 
   globals.uTime.value = time;
-  world.update(chase.camera, time, dt);
+  world.update(chase.camera, time, dt, s?.race.clock ?? attract.clock ?? time);
   for (const f of world.flames) {
     if (Math.random() < 5 * dt && f.distanceToSquared(chase.camera.position) < 80 * 80) {
       embers.spawn(f.x + (Math.random() - 0.5) * 0.3, f.y - 0.3, f.z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 1.2 + Math.random(), (Math.random() - 0.5) * 0.6, 0.06, 1.2 + Math.random() * 0.6, EMBER);
@@ -791,11 +900,19 @@ function frame(now: number): void {
   }
   dust.update(dt, chase.camera);
   embers.update(dt, chase.camera);
+  draw();
+  panel.tick(dt);
+  requestAnimationFrame(frame);
+}
+
+function draw(): void {
+  if (pinned) {
+    chase.camera.position.copy(pinned.at);
+    chase.camera.lookAt(pinned.look);
+  }
   flushLights(chase.camera.position);
   hud.paint();
   pipeline.render(world.scene, chase.camera);
-  panel.tick(dt);
-  requestAnimationFrame(frame);
 }
 
 /** Party links like /p/ABCDE join that party. Anything else starts on the menus. */
@@ -818,8 +935,14 @@ if (import.meta.env.DEV) {
   };
   const debug = {
     chase,
-    track,
     keys,
+    useTrack,
+    /** Practice on a track: rc.practice('lava-dig'). */
+    practice: (id: TrackId = raceTrack) => {
+      leaveTitle();
+      startPractice(id);
+    },
+    levels,
     select,
     touch,
     sound,
@@ -838,6 +961,60 @@ if (import.meta.env.DEV) {
     title,
     attract,
     toTitle,
+    /** Pins the camera at a point looking at another, for screenshots. With no arguments, lets it follow again. */
+    cam: (at?: [number, number, number], look?: [number, number, number]) => {
+      pinned = at && look ? { at: new THREE.Vector3(...at), look: new THREE.Vector3(...look) } : null;
+    },
+    /** Pins the camera over the track: `back` behind and `up` above the point `s` along a route, looking down the road. */
+    view: (s: number, up = 7, back = 16, route = 0, side = 0) => {
+      const t = routeTrack(track, route);
+      const p = sampleAt(t, s);
+      const q = sampleAt(t, s + 12);
+      pinned = {
+        at: new THREE.Vector3(p.x - p.tx * back - p.tz * side, p.y + up, p.z - p.tz * back + p.tx * side),
+        look: new THREE.Vector3(q.x, q.y + 1, q.z),
+      };
+    },
+    /** Runs the race on for some seconds at once, for a page that isn't on screen. */
+    advance: (seconds: number) => {
+      const s = session;
+      for (let k = 0; k < seconds / TICK; k++) {
+        if (s) tick(s, autopilot && s.me >= 0 ? botInput(s.race.racers[s.me].car, s.race.racers[s.me].spec, track, s.race.racers[s.me].brain, s.race.racers[s.me].lap) : merged(TICK));
+        else attract.update(TICK, time, () => {});
+        time += TICK;
+      }
+      if (s) drawCars(s, TICK);
+    },
+    /**
+     * Draws one frame now and posts it to the dev server's /__shot, which saves it as `name`.jpg where the server's
+     * config says. Works in a tab that isn't on screen.
+     */
+    shot: async (name: string, withHud = false) => {
+      globals.uTime.value = time;
+      world.update(chase.camera, time, 0, session?.race.clock ?? attract.clock ?? time);
+      const shown = session !== null && !results.open;
+      hud.show(withHud && shown);
+      draw();
+      hud.show(shown);
+      const data = canvas.toDataURL('image/jpeg', 0.88);
+      const res = await fetch('/__shot', { method: 'POST', body: JSON.stringify({ name, data }) });
+      return res.ok ? `saved ${name}.jpg` : `failed ${res.status}`;
+    },
+    /** Draw calls and triangles in the last frame drawn. */
+    stats: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
+    /** Milliseconds to draw a frame, averaged over `frames` drawn back to back, waiting for the GPU each time. */
+    bench: (frames = 60) => {
+      const gl = renderer.getContext();
+      const px = new Uint8Array(4);
+      draw();
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) {
+        draw();
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      }
+      return (performance.now() - t0) / frames;
+    },
     /** Shows the results board with made-up racers, over whatever is on screen. */
     results: (rows = mockResults(), me = 3, host = true) => {
       title.hide();
@@ -847,6 +1024,7 @@ if (import.meta.env.DEV) {
     },
   };
   Object.defineProperty(debug, 'race', { get: () => session?.race });
+  Object.defineProperty(debug, 'track', { get: () => track });
   Object.defineProperty(debug, 'session', { get: () => session });
   Object.defineProperty(debug, 'party', { get: () => party });
   Object.assign(window, { rc: debug });
