@@ -70,7 +70,7 @@ const X0 = -400;
 const X1 = 500;
 const Z0 = -440;
 const Z1 = 560;
-const CELL = 7;
+const CELL = 6;
 
 /** The natural heights on the terrain grid, worked out once a page, for the shadow test to read quickly. */
 const field = (() => {
