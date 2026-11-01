@@ -20,7 +20,7 @@ export const cartoonFarm: TrackArt = {
     below: [0.5, 0.74, 0.46],
     fog: [0.8, 0.92, 1.0],
     haze: 1.5,
-    sunDir: [-0.45, 0.72, 0.5],
+    sunDir: [0.16, 0.3, -0.94],
     sunColor: [0.42, 0.38, 0.26],
     skyLight: [0.95, 0.97, 1.04],
     groundLight: [0.8, 0.8, 0.74],

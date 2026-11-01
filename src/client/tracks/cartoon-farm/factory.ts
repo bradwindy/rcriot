@@ -257,7 +257,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
 
   // The glowing pressure dial on the first vat, facing the road, with a needle that strains towards the red.
   const dial = { x: vats[0], y: FLOOR + 5, z: vatZ - 5.2 };
-  batch.geometry(L.gauge, new THREE.CircleGeometry(2.4, 12), xf(dial.x, dial.y, dial.z, Math.PI));
+  batch.geometry(L.gauge, new THREE.CircleGeometry(2.4, 12), xf(dial.x, dial.y, dial.z - 0.06, Math.PI));
   toon.cyl(L.flatIn, 2.7, 2.7, 0.3, xf(dial.x, dial.y, dial.z + 0.15, 0, Math.PI / 2), rgb(C.dark), 0.06, 12);
   lamp(v3(dial.x, dial.y, dial.z - 2.5), new THREE.Color(0.45, 1, 0.55).multiplyScalar(2.2), 13, 40);
   const needle = rig.part([{ g: new THREE.BoxGeometry(0.22, 2.1, 0.06), m: xf(0, 0.9, 0), color: rgb(C.red), t: 0.03 }]);
@@ -309,16 +309,28 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
     lamp(v3(x + 3, FLOOR + 9, midZ), new THREE.Color(0.75, 0.85, 1).multiplyScalar(1.6), 14, 44);
   }
 
+  // A curtain of milk thundering down from the roof into a round tank, the first thing you see inside.
+  {
+    const at = v3(E - 5, FLOOR, vatZ - 1);
+    const fall = HALL - 1.4;
+    tube(toon, L.flatIn, v3(at.x, TOP - 1.2, at.z - 8), v3(at.x, TOP - 1.2, at.z + 6), 1.3, rgb(C.steel), 0.08, 10);
+    batch.geometry(L.pour, sheet(4.4, fall, 2, 4, 1.5, fall / 6), xf(at.x, FLOOR + fall / 2, at.z - 1.6));
+    batch.geometry(L.pour, sheet(4.4, fall, 2, 4, 1.5, fall / 6), xf(at.x, FLOOR + fall / 2, at.z - 0.8, 0.8));
+    toon.shape(L.flatIn, new THREE.CylinderGeometry(5, 5.2, 1.6, 12, 1, true), xf(at.x, FLOOR + 0.8, at.z), rgb(C.steel), 0.08);
+    batch.geometry(L.milk, new THREE.CircleGeometry(4.9, 12), xf(at.x, FLOOR + 1.3, at.z, 0, -Math.PI / 2));
+    lamp(v3(at.x, FLOOR + 4, at.z - 4), new THREE.Color(0.8, 0.9, 1).multiplyScalar(1.5), 15, 46);
+  }
+
   // A pink neon milk bottle hanging over the road, the brightest thing in the building.
   {
-    const p = sampleAt(track, a + (b - a) * 0.46);
+    const p = sampleAt(track, a + 30.5);
     const at = v3(p.x, p.y + 10.4, p.z);
     const m = xf(at.x, at.y, at.z, headingAt(p));
     toon.box(L.flatIn, 0.3, 5.2, 8, m.clone().multiply(xf(0, 0, -0.1, Math.PI / 2)), rgb(C.dark), 0.08);
     const outline: [number, number][] = [[-0.9, -2.1], [0.9, -2.1], [1, -1.9], [1, 0.3], [0.5, 1.1], [0.5, 1.9], [-0.5, 1.9], [-0.5, 1.1], [-1, 0.3], [-1, -1.9]];
     const pts = outline.map(([x, y]) => new THREE.Vector3(x, y, 0.1).applyMatrix4(m));
-    pts.forEach((q, i) => batch.beam(L.neon, q, pts[(i + 1) % pts.length], 0.2, 0.2, [1, 0.45, 0.75]));
-    for (const [dx, tone] of [[-2.8, [0.35, 0.95, 1]], [2.8, [0.35, 0.95, 1]]] as const) {
+    pts.forEach((q, i) => batch.beam(L.neon, q, pts[(i + 1) % pts.length], 0.2, 0.2, [1, 0.1, 0.48]));
+    for (const [dx, tone] of [[-2.8, [0.04, 0.72, 1]], [2.8, [0.04, 0.72, 1]]] as const) {
       for (let i = 0; i < 6; i++) {
         const t = (i / 6) * Math.PI;
         const c = new THREE.Vector3(dx, 0, 0.1);
@@ -344,7 +356,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
       const b0 = m.clone().multiply(xf(x, -0.9, 0.2));
       const outline: [number, number][] = [[-0.5, 0], [0.5, 0], [0.5, 1], [0.24, 1.45], [0.24, 1.9], [-0.24, 1.9], [-0.24, 1.45], [-0.5, 1]];
       const pts = outline.map(([px, py]) => new THREE.Vector3(px, py, 0).applyMatrix4(b0));
-      pts.forEach((q, i) => batch.beam(L.neon, q, pts[(i + 1) % pts.length], 0.13, 0.13, [1, 0.55, 0.8]));
+      pts.forEach((q, i) => batch.beam(L.neon, q, pts[(i + 1) % pts.length], 0.13, 0.13, [1, 0.16, 0.5]));
     }
   }
 
@@ -450,7 +462,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
         rig.set(id, pose(m, x, belt.y, belt.z, 0, 0, wobble));
       });
       const shake = valueNoise(time * 7, 2, 9);
-      rig.set(needle, pose(m, dial.x, dial.y, dial.z - 0.12, Math.PI, 0, -0.9 + 0.5 * Math.sin(time * 0.8) + shake * 0.4));
+      rig.set(needle, pose(m, dial.x, dial.y, dial.z - 0.16, Math.PI, 0, -0.9 + 0.5 * Math.sin(time * 0.8) + shake * 0.4));
       rig.set(wheelPart, pose(m, wheelAt.x, wheelAt.y, wheelAt.z, 0, 0, time * 1.4));
       pistons.forEach((id, i) => {
         const up = Math.abs(Math.sin(time * 2.4 + i * 1.6));
