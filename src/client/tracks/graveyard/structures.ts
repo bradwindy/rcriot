@@ -41,17 +41,17 @@ export function buildSetPieces(track: Track, kit: Kit, grid: { s: number; offset
 
 /** A film light on a stand with a blue gel, for the moonlight on the gates. */
 function filmLight(kit: Kit, at: THREE.Vector3, target: THREE.Vector3): void {
-  const { batch, mats, g } = kit;
+  const { batch, g } = kit;
   const yaw = Math.atan2(-(target.x - at.x), -(target.z - at.z));
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2;
-    batch.beam(mats.metal, at.clone().add(new THREE.Vector3(Math.cos(a) * 1.3, 0, Math.sin(a) * 1.3)), at.clone().setY(at.y + 3.4), 0.12, 0.12, [0.6, 0.6, 0.65]);
+    batch.beam(g.iron, at.clone().add(new THREE.Vector3(Math.cos(a) * 1.3, 0, Math.sin(a) * 1.3)), at.clone().setY(at.y + 3.4), 0.12, 0.12);
   }
-  box(batch, mats.metal, 0.14, 2.6, 0.14, xf(at.x, at.y + 4.5, at.z, yaw));
+  box(batch, g.iron, 0.14, 2.6, 0.14, xf(at.x, at.y + 4.5, at.z, yaw));
   const head = xf(at.x, at.y + 5.9, at.z, yaw, -0.3);
-  batch.geometry(mats.plastic, new THREE.BoxGeometry(2, 1.5, 1.3), head);
+  batch.geometry(g.iron, new THREE.BoxGeometry(2, 1.5, 1.3), head);
   batch.geometry(g.gel, new THREE.PlaneGeometry(1.7, 1.2), head.clone().multiply(xf(0, 0, -0.66, Math.PI)));
-  for (const side of [-1, 1]) batch.geometry(mats.plastic, new THREE.PlaneGeometry(1, 1.5), head.clone().multiply(xf(side * 1.4, 0, -0.8, side * 0.6)));
+  for (const side of [-1, 1]) batch.geometry(g.iron, new THREE.PlaneGeometry(1, 1.5), head.clone().multiply(xf(side * 1.4, 0, -0.8, side * 0.6)));
   kit.light(at.clone().setY(at.y + 4).lerp(target, 0.4), MOONLIT.clone().multiplyScalar(1.1), 30, 2, 0.04);
 }
 
@@ -173,7 +173,7 @@ function buildCrypt(track: Track, kit: Kit): Pick<SetPieces, 'cryptExit' | 'cryp
     const p = sampleAt(track, s + 0.45);
     const h = headingAt(p);
     for (const side of [-1, 1]) {
-      column(kit, g.stoneIndoor, frame(p, side * (limitOf(p) + 0.45), -0.05), 4.6, 0.32, [0.7, 0.7, 0.75]);
+      column(kit, g.blocksIndoor, frame(p, side * (limitOf(p) + 0.45), -0.05), 4.6, 0.32, [0.7, 0.7, 0.75]);
       if (s + 7 > b - 1) continue;
       // A bay of shelves between this rib and the next: coffins below, skulls above.
       const mid = sampleAt(track, s + 4);
@@ -195,7 +195,7 @@ function buildCrypt(track: Track, kit: Kit): Pick<SetPieces, 'cryptExit' | 'cryp
     if (k % 2 === 0) {
       const top = frame(p, 0, 7.4);
       const lamp = frame(p, 0, 5.2);
-      box(batch, g.ironIndoor, 0.1, top.y - lamp.y, 0.1, xf(p.x, (top.y + lamp.y) / 2, p.z, h));
+      box(batch, g.iron, 0.1, top.y - lamp.y, 0.1, xf(p.x, (top.y + lamp.y) / 2, p.z, h));
       cube(batch, kit.mats.lantern, xf(lamp.x, lamp.y - 0.4, lamp.z, h), 0.7, 0.9, 0.7);
       kit.light(lamp.clone().setY(lamp.y - 0.9), WARM.clone().multiplyScalar(1.5), 20, 7, 0.16);
       for (const side of [-1, 1]) {
@@ -545,7 +545,7 @@ function boardwalk(track: Track, kit: Kit): Pick<SetPieces, 'angler' | 'float'> 
   }
   const seat = frame(p, side * (limit + 7.6), -0.1);
   const face = h - side * Math.PI / 2;
-  batch.geometry(mats.barrel, new THREE.CylinderGeometry(1.1, 1.1, 2.4, 8), xf(seat.x, seat.y + 1.2, seat.z));
+  batch.geometry(mats.planks, new THREE.CylinderGeometry(1.1, 1.1, 2.4, 8), xf(seat.x, seat.y + 1.2, seat.z));
   const lamp = frame(p, side * (limit + 8.4), -0.1).add(new THREE.Vector3(p.tx, 0, p.tz).multiplyScalar(1.2));
   cube(batch, mats.lantern, xf(lamp.x, lamp.y + 0.3, lamp.z, h), 0.4, 0.55, 0.4);
   kit.light(lamp.clone().setY(lamp.y + 1.2), WARM.clone().multiplyScalar(1.3), 11, 7, 0.25);

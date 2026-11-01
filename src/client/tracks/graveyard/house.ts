@@ -168,7 +168,7 @@ export function buildHouse(track: Track, kit: Kit): House {
   for (const side of [-1, 1]) {
     for (const al of [backHall - 22, backHall - 8]) {
       const v = at(al, side * (HALL - 0.35), 9.5);
-      box(batch, g.ironIndoor, 0.6, 0.1, 0.1, xf(v.x, v.y, v.z, yaw));
+      box(batch, g.iron, 0.6, 0.1, 0.1, xf(v.x, v.y, v.z, yaw));
       candles(kit, v.clone().setY(v.y + 0.05), yaw, 3, al < backHall - 15);
     }
   }
@@ -230,15 +230,15 @@ export function buildHouse(track: Track, kit: Kit): House {
 function chandelier(kit: Kit, top: THREE.Vector3, drop: number, r: number): void {
   const { batch, g, mats } = kit;
   const hub = top.clone().setY(top.y - drop);
-  box(batch, g.ironIndoor, 0.14, drop, 0.14, xf(top.x, top.y - drop / 2, top.z));
+  box(batch, g.iron, 0.14, drop, 0.14, xf(top.x, top.y - drop / 2, top.z));
   const n = 8;
   for (let k = 0; k < n; k++) {
     const a0 = (k / n) * Math.PI * 2;
     const a1 = ((k + 1) / n) * Math.PI * 2;
     const v0 = hub.clone().add(new THREE.Vector3(Math.cos(a0) * r, 0, Math.sin(a0) * r));
     const v1 = hub.clone().add(new THREE.Vector3(Math.cos(a1) * r, 0, Math.sin(a1) * r));
-    rope(batch, g.ironIndoor, v0, v1, 0.16);
-    rope(batch, g.ironIndoor, hub.clone().setY(hub.y + 1.1), v0, 0.08);
+    rope(batch, g.iron, v0, v1, 0.16);
+    rope(batch, g.iron, hub.clone().setY(hub.y + 1.1), v0, 0.08);
     box(batch, g.bone, 0.13, 0.5, 0.13, xf(v0.x, v0.y + 0.3, v0.z), [1.2, 1.15, 1]);
     for (const turn of [0, Math.PI / 2]) batch.geometry(mats.flame, new THREE.PlaneGeometry(0.34, 0.55), xf(v0.x, v0.y + 0.8, v0.z, turn));
   }

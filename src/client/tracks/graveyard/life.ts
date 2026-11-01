@@ -284,7 +284,8 @@ function buildNoose(track: Track, kit: Kit, group: THREE.Group, pieces: SetPiece
     stretch(rope, pieces.noosePivot, hook);
     loop.position.copy(hook);
     loop.quaternion.copy(rope.quaternion);
-    loop.rotateY((clock * 1.3) % (Math.PI * 2));
+    // The loop keeps facing the traffic, with a little twist, so it reads as a ring on the way up the hill.
+    loop.rotateY(Math.sin(clock * 1.3) * 0.4);
   };
 }
 
