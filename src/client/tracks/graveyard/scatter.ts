@@ -143,9 +143,9 @@ function field(kit: Kit): void {
       const roll = rng();
       if (at && roll < 0.07 + (dense - 0.5) * 0.3) {
         deadTree(kit, at, 11 + rng() * 9);
-      } else if (at && dense > 0.46) {
+      } else if (at && dense > 0.5 && roll < 0.6) {
         const yaw = Math.floor(rng() * 4) * (Math.PI / 2) + (rng() - 0.5) * 0.3;
-        const n = 2 + Math.floor(rng() * 5);
+        const n = 2 + Math.floor(rng() * 3);
         for (let i = 0; i < n; i++) {
           const v = place(kit, px + (i - n / 2) * 2.2 * Math.cos(yaw), pz - (i - n / 2) * 2.2 * Math.sin(yaw), 2.5);
           if (v) headstone(kit, v, yaw + (rng() - 0.5) * 0.25, 0.9 + rng() * 0.5);

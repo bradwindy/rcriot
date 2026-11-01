@@ -37,9 +37,11 @@ export function buildHouse(track: Track, kit: Kit): House {
   const s0 = halls[0][0];
   const s1 = halls[halls.length - 1][1];
   const p0 = sampleAt(track, s0);
-  const yaw = headingAt(p0);
-  const F = new THREE.Vector3(p0.tx, 0, p0.tz);
-  const R = new THREE.Vector3(-p0.tz, 0, p0.tx);
+  const p1 = sampleAt(track, s1);
+  // The house's axis runs door to door along the road, so its floors line up with the road's edges all the way.
+  const F = new THREE.Vector3(p1.x - p0.x, 0, p1.z - p0.z).normalize();
+  const R = new THREE.Vector3(-F.z, 0, F.x);
+  const yaw = Math.atan2(-F.x, -F.z);
   const O = new THREE.Vector3(p0.x, 0, p0.z);
   const at = (al: number, ac: number, y: number) => O.clone().addScaledVector(F, al).addScaledVector(R, ac).setY(y);
   const L = s1 - s0;
@@ -68,7 +70,7 @@ export function buildHouse(track: Track, kit: Kit): House {
     const [a, b] = side < 0 ? [-OUTER, -HALL - 0.2] : [HALL + 0.2, OUTER];
     block(g.siding, -1.5, L + 1.5, a, b, ground, EAVES, 6);
     block(g.blocks, -1.8, L + 1.8, side < 0 ? -OUTER - 0.3 : HALL + 0.2, side < 0 ? -HALL - 0.2 : OUTER + 0.3, ground, floorF + 0.6, 6, [0.75, 0.75, 0.8]);
-    block(g.trim, -2, L + 2, side < 0 ? -OUTER - 0.5 : OUTER - 0.1, side < 0 ? -OUTER + 0.1 : OUTER + 0.5, EAVES - 0.5, EAVES, 4);
+    block(g.iron, -2, L + 2, side < 0 ? -OUTER - 0.5 : OUTER - 0.1, side < 0 ? -OUTER + 0.1 : OUTER + 0.5, EAVES - 0.5, EAVES, 4);
     for (const [al0, al1] of [
       [-1.5, -0.15],
       [L + 0.15, L + 1.5],
@@ -108,10 +110,11 @@ export function buildHouse(track: Track, kit: Kit): House {
 
   // Boards either side of the road, down at hall level under the stairs.
   for (const side of [-1, 1]) {
-    const a0 = side > 0 ? limit : -HALL;
-    const w = HALL - limit;
-    panel(batch, mats.planksIndoor, at(0, a0, floorF), R.clone().multiplyScalar(w), F.clone().multiplyScalar(backHall), 3, boards, [0.7, 0.62, 0.6]);
-    panel(batch, mats.planksIndoor, at(backHall, a0, floorB), R.clone().multiplyScalar(w), F.clone().multiplyScalar(L - backHall), 3, boards, [0.7, 0.62, 0.6]);
+    // They run a little under the road's own edge, so no crack shows between them.
+    const a0 = side > 0 ? limit - 0.6 : -HALL;
+    const w = HALL - limit + 0.6;
+    panel(batch, mats.planksIndoor, at(0, a0, floorF - 0.03), R.clone().multiplyScalar(w), F.clone().multiplyScalar(backHall), 3, boards, [0.7, 0.62, 0.6]);
+    panel(batch, mats.planksIndoor, at(backHall, a0, floorB - 0.03), R.clone().multiplyScalar(w), F.clone().multiplyScalar(L - backHall), 3, boards, [0.7, 0.62, 0.6]);
     block(mats.planksIndoor, backHall - 0.2, backHall + 0.2, side > 0 ? limit : -HALL, side > 0 ? HALL : -limit, floorF, floorB, 4, [0.6, 0.55, 0.55]);
   }
 
@@ -151,7 +154,7 @@ export function buildHouse(track: Track, kit: Kit): House {
     const q = sampleAt(track, stairs[0] - 2);
     const foot = frame(q, side * (limitOf(q) + 0.2), 0);
     cube(batch, mats.planksIndoor, xf(foot.x, foot.y + 1.1, foot.z, yaw), 0.55, 2.2, 0.55, [0.7, 0.55, 0.45]);
-    batch.geometry(g.boneIndoor, new THREE.IcosahedronGeometry(0.32, 1), xf(foot.x, foot.y + 2.5, foot.z));
+    batch.geometry(g.bone, new THREE.IcosahedronGeometry(0.32, 1), xf(foot.x, foot.y + 2.5, foot.z));
     // A splintered stump of banister at the edge of the landing.
     const end = sampleAt(track, lip);
     const stump = frame(end, side * (limitOf(end) + 0.18), 1.15);
@@ -161,6 +164,14 @@ export function buildHouse(track: Track, kit: Kit): House {
   // Chandeliers, candle tables, portraits, a clock and cobwebs.
   chandelier(kit, at(9, 0, CEILING - 1), 5.4, 2.7);
   chandelier(kit, at(backHall + 6.5, 0, CEILING - 1), 4.6, 2.4);
+  chandelier(kit, at(backHall - 15, 0, CEILING - 1), 3, 2.2);
+  for (const side of [-1, 1]) {
+    for (const al of [backHall - 22, backHall - 8]) {
+      const v = at(al, side * (HALL - 0.35), 9.5);
+      box(batch, g.ironIndoor, 0.6, 0.1, 0.1, xf(v.x, v.y, v.z, yaw));
+      candles(kit, v.clone().setY(v.y + 0.05), yaw, 3, al < backHall - 15);
+    }
+  }
   for (const [al, side] of [
     [4, -1],
     [15, 1],
@@ -189,7 +200,7 @@ export function buildHouse(track: Track, kit: Kit): House {
   }
   const clock = at(21, -(HALL - 0.8), floorF);
   cube(batch, mats.planksIndoor, xf(clock.x, clock.y + 2.4, clock.z, yaw), 1.2, 4.8, 1.3, [0.5, 0.36, 0.3]);
-  batch.geometry(g.boneIndoor, new THREE.CircleGeometry(0.46, 10), xf(clock.x + R.x * 0.61, clock.y + 3.9, clock.z + R.z * 0.61, Math.atan2(R.x, R.z)));
+  batch.geometry(g.bone, new THREE.CircleGeometry(0.46, 10), xf(clock.x + R.x * 0.61, clock.y + 3.9, clock.z + R.z * 0.61, Math.atan2(R.x, R.z)));
   for (const [al, side] of [
     [0.6, -1],
     [0.6, 1],
@@ -228,7 +239,7 @@ function chandelier(kit: Kit, top: THREE.Vector3, drop: number, r: number): void
     const v1 = hub.clone().add(new THREE.Vector3(Math.cos(a1) * r, 0, Math.sin(a1) * r));
     rope(batch, g.ironIndoor, v0, v1, 0.16);
     rope(batch, g.ironIndoor, hub.clone().setY(hub.y + 1.1), v0, 0.08);
-    box(batch, g.wax, 0.13, 0.5, 0.13, xf(v0.x, v0.y + 0.3, v0.z));
+    box(batch, g.bone, 0.13, 0.5, 0.13, xf(v0.x, v0.y + 0.3, v0.z), [1.2, 1.15, 1]);
     for (const turn of [0, Math.PI / 2]) batch.geometry(mats.flame, new THREE.PlaneGeometry(0.34, 0.55), xf(v0.x, v0.y + 0.8, v0.z, turn));
   }
   kit.light(hub.clone().setY(hub.y - 0.4), WARM.clone().multiplyScalar(1.7), 24, 9, 0.16);
@@ -256,7 +267,7 @@ function roof(kit: Kit, at: At, L: number): void {
   tri(kit, g.siding, at(L + 1.5, X, EAVES - 0.2), at(L + 1.5, -X, EAVES - 0.2), at(L + 1.5, 0, RIDGE), 6);
   // Dark bargeboards along each gable.
   for (const al of [-3.2, L + 3.2]) {
-    for (const side of [-1, 1]) rope(batch, g.trim, at(al, side * X, EAVES - 0.2), at(al, 0, RIDGE + 0.2), 0.4);
+    for (const side of [-1, 1]) rope(batch, g.iron, at(al, side * X, EAVES - 0.2), at(al, 0, RIDGE + 0.2), 0.4);
   }
   for (const [al, ac] of [
     [16, -4],
@@ -297,12 +308,12 @@ function windowAt(kit: Kit, at: THREE.Vector3, out: THREE.Vector3, w: number, h:
   batch.geometry(g.window, plane, xf(at.x + out.x * 0.04, at.y, at.z + out.z * 0.04, face), hash2(seed, 3, 51) < 0.3 ? [0.55, 0.6, 0.9] : [1, 1, 1]);
   plane.dispose();
   cube(batch, g.stone, xf(at.x, at.y - h / 2 - 0.1, at.z, face), w + 0.7, 0.24, 0.6, [0.7, 0.7, 0.78]);
-  cube(batch, g.trim, xf(at.x, at.y + h / 2 + 0.2, at.z, face), w + 0.4, 0.3, 0.4);
+  cube(batch, g.iron, xf(at.x, at.y + h / 2 + 0.2, at.z, face), w + 0.4, 0.3, 0.4);
   if (hash2(seed, 4, 51) < 0.5) {
     const across = new THREE.Vector3(out.z, 0, -out.x);
     for (const side of [-1, 1]) {
       const c = at.clone().addScaledVector(across, side * (w / 2 + 0.6)).addScaledVector(out, 0.2);
-      cube(batch, g.trim, xf(c.x, c.y, c.z, face, 0, (hash2(seed, side + 5, 51) - 0.5) * 0.3), 1.0, h, 0.14);
+      cube(batch, g.iron, xf(c.x, c.y, c.z, face, 0, (hash2(seed, side + 5, 51) - 0.5) * 0.3), 1.0, h, 0.14);
     }
   }
 }
@@ -332,7 +343,7 @@ function outside(kit: Kit, at: At, F: THREE.Vector3, R: THREE.Vector3, L: number
   batch.geometry(g.siding, shaft, xf(c.x, 14, c.z, 0));
   shaft.dispose();
   slab(batch, g.blocks, xf(c.x, 0.8, c.z, Math.PI / 8), r * 2.3, 4, r * 2.3, 6, [0.75, 0.75, 0.8]);
-  batch.geometry(g.trim, new THREE.CylinderGeometry(r + 0.7, r + 0.7, 0.5, 8), xf(c.x, 29.2, c.z));
+  batch.geometry(g.iron, new THREE.CylinderGeometry(r + 0.7, r + 0.7, 0.5, 8), xf(c.x, 29.2, c.z));
   const hat = new THREE.ConeGeometry(r + 1.2, 13, 8, 1, true);
   const huv = hat.getAttribute('uv');
   for (let i = 0; i < huv.count; i++) huv.setXY(i, huv.getX(i) * 6, huv.getY(i) * 3);
@@ -355,7 +366,7 @@ function frontPorch(kit: Kit, at: At, yaw: number, floorF: number): void {
   const { batch, g } = kit;
   const top = floorF + 7.6;
   const c = at(-7, 0.4, top);
-  slab(batch, g.trim, xf(c.x, top, c.z, yaw), 22, 0.6, 12, 4);
+  slab(batch, g.iron, xf(c.x, top, c.z, yaw), 22, 0.6, 12, 4);
   const pitch = at(-7, 0.4, top + 0.3);
   batch.geometry(g.shingle, new THREE.BoxGeometry(23, 0.5, 13), xf(pitch.x, pitch.y + 1.1, pitch.z, yaw, 0.28));
   for (const ac of [-9.4, 10.2]) {

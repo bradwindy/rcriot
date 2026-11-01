@@ -426,9 +426,7 @@ const gt = {
     }),
   ),
 
-  red: cache(() => make(4, 4, 731, (p) => p.each(() => hex('#ff2a2a')))),
   green: cache(() => make(4, 4, 732, (p) => p.each(() => hex('#30e860')))),
-  wax: cache(() => make(8, 8, 733, (p) => p.each((_x, y) => hex(y < 2 ? '#fff4d8' : '#e8dcc0')))),
   soil: cache(() =>
     make(32, 32, 734, (p) => {
       p.each(() => hex('#3e3226'));
@@ -517,17 +515,10 @@ export const gm = cache(() => ({
   skyline: ps1Material({ map: gt.skyline(), vertexColors: true, lit: false, alphaTest: 0.5, side: THREE.DoubleSide, fog: 0.35 }),
   water: ps1Material({ map: gt.water(), vertexColors: true, lit: false, transparent: true, opacity: 0.92, scroll: [0.004, 0.012] }),
   spider: lit(gt.spider()),
-  eyes: glow(gt.red(), 1.2),
   wisp: ps1Material({ map: gt.green(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide }),
-  wax: lit(gt.wax()),
   soil: lit(gt.soil()),
   flags: lit(gt.flags()),
-  flagsIndoor: lit(gt.flags(), INDOOR),
-  coffinIndoor: lit(gt.coffin(), INDOOR),
-  coffinRed: ps1Material({ map: gt.coffin(), vertexColors: true, tint: 0x9a5a6a }),
-  boneIndoor: lit(gt.bone(), INDOOR),
   gel: glow(gt.gel(), 0.6),
-  trim: lit(gt.iron()),
 }));
 
 export type GraveMats = ReturnType<typeof gm>;

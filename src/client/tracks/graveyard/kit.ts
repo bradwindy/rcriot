@@ -220,7 +220,7 @@ export function candles(kit: Kit, at: THREE.Vector3, yaw: number, count: number,
     const oz = (rng() - 0.5) * 0.5;
     const h = 0.3 + rng() * 0.5;
     const m = xf(at.x, at.y, at.z, yaw).multiply(xf(ox, h / 2, oz));
-    batch.geometry(g.wax, geo.column(), m.clone().multiply(new THREE.Matrix4().makeScale(0.07, h, 0.07)));
+    batch.geometry(g.bone, geo.column(), m.clone().multiply(new THREE.Matrix4().makeScale(0.07, h, 0.07)), [1.2, 1.15, 1]);
     const tip = new THREE.Vector3(0, h / 2 + 0.14, 0).applyMatrix4(m);
     for (const turn of [0, Math.PI / 2]) batch.geometry(mats.flame, new THREE.PlaneGeometry(0.18, 0.3), xf(tip.x, tip.y, tip.z, yaw + turn));
   }
@@ -238,8 +238,9 @@ export function jackOLantern(kit: Kit, at: THREE.Vector3, yaw: number, size: num
 }
 
 /** A coffin, lid on or off. Lying flat along its local z. */
-export function coffin(kit: Kit, m: THREE.Matrix4, open: boolean, mat = kit.g.coffin): void {
+export function coffin(kit: Kit, m: THREE.Matrix4, open: boolean, color?: RGB): void {
   const { batch, g } = kit;
+  const mat = g.coffin;
   // Six-sided outline: wide at the shoulders, narrow at head and feet.
   const shape = new THREE.Shape([
     new THREE.Vector2(-0.35, -1.1),
@@ -251,14 +252,14 @@ export function coffin(kit: Kit, m: THREE.Matrix4, open: boolean, mat = kit.g.co
   ]);
   const body = new THREE.ExtrudeGeometry(shape, { depth: 0.55, bevelEnabled: false });
   body.rotateX(-Math.PI / 2);
-  batch.geometry(mat, body, m);
+  batch.geometry(mat, body, m, color);
   if (open) {
     const lining = new THREE.ShapeGeometry(shape);
     lining.rotateX(-Math.PI / 2);
     batch.geometry(g.satin, lining, m.clone().multiply(xf(0, 0.5, 0, 0, 0, 0, 0.85, 1, 0.9)));
     const lid = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
     lid.rotateX(-Math.PI / 2);
-    batch.geometry(mat, lid, m.clone().multiply(xf(0.75, 0.3, 0.1, 0.25, 0, 1.2)));
+    batch.geometry(mat, lid, m.clone().multiply(xf(0.75, 0.3, 0.1, 0.25, 0, 1.2)), color);
     lid.dispose();
     lining.dispose();
   } else {

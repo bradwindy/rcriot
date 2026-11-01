@@ -141,7 +141,7 @@ export function mist(track: Track, batch: Batch, g: GraveMats, terrain: Terrain)
             ];
             quad.forEach(([v, u, vv], i) => {
               const fade = Math.min(1, Math.min(i === 1 || i === 4 || i === 5 ? j + 1 : j, strip.length - 1 - (i === 1 || i === 4 || i === 5 ? j + 1 : j)) / 3);
-              batch.vertex(g.mist, v, UP, u, vv, [0.42 * fade, 0.48 * fade, 0.62 * fade]);
+              batch.vertex(g.mist, v, UP, u, vv, [0.32 * fade, 0.37 * fade, 0.48 * fade]);
             });
           }
         }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NOOSE, SPIDER } from '../../../shared/tracks/graveyard';
 import { coverRanges, limitOf, sampleAt, zoneRanges, type Sample, type Track } from '../../../shared/track';
-import { xf, type RGB } from '../../render/geometry';
+import { xf } from '../../render/geometry';
 import { hash2 } from '../../render/noise';
 import { box, frame, headingAt, loft, rope, type Profile } from '../../render/road';
 import { TUNNEL_HEIGHT } from '../../render/terrain';
@@ -151,7 +151,7 @@ function buildCrypt(track: Track, kit: Kit): Pick<SetPieces, 'cryptExit' | 'cryp
       spacing: 2,
       vScale: 4,
       outward: true,
-      material: () => g.flagsIndoor,
+      material: () => g.flags,
       profile: (p) => {
         const edge: [number, number, number][] = [
           [side * limitOf(p), 0.01, 0],
@@ -181,9 +181,9 @@ function buildCrypt(track: Track, kit: Kit): Pick<SetPieces, 'cryptExit' | 'cryp
       for (const lvl of [0.9, 2.7]) {
         const shelf = frame(mid, side * (wall(mid) - 1.2), lvl);
         cube(batch, g.blocksIndoor, xf(shelf.x, shelf.y, shelf.z, mh), 2.4, 0.25, 5.4, [0.75, 0.75, 0.8]);
-        if (lvl < 1) coffin(kit, xf(shelf.x, shelf.y + 0.12, shelf.z, mh + (hash2(k, side, 3) - 0.5) * 0.2), hash2(k, side, 5) < 0.3, g.coffinIndoor);
+        if (lvl < 1) coffin(kit, xf(shelf.x, shelf.y + 0.12, shelf.z, mh + (hash2(k, side, 3) - 0.5) * 0.2), hash2(k, side, 5) < 0.3);
         else {
-          for (let i = -3; i <= 3; i++) skull(kit, xf(shelf.x, shelf.y + 0.4, shelf.z, mh - side * Math.PI / 2).multiply(xf(i * 0.72, 0, 0, (hash2(i, k, 7) - 0.5) * 0.6)), 0.3, g.boneIndoor);
+          for (let i = -3; i <= 3; i++) skull(kit, xf(shelf.x, shelf.y + 0.4, shelf.z, mh - side * Math.PI / 2).multiply(xf(i * 0.72, 0, 0, (hash2(i, k, 7) - 0.5) * 0.6)), 0.3, g.bone);
         }
       }
       const top = frame(mid, side * (wall(mid) - 1.2), 4.2);
@@ -264,7 +264,7 @@ function mausoleumFront(kit: Kit, track: Track, s: number, out: number): void {
  * on a dais, crossed by a narrow stone bridge with a gothic arch where the spider waits.
  */
 function buildLair(track: Track, kit: Kit): Pick<SetPieces, 'spiderPivot' | 'lair'> {
-  const { batch, g, mats } = kit;
+  const { batch, g } = kit;
   const route = track.routes[0];
   const ft = route.track;
   const c = sampleAt(ft, SPIDER.s);
@@ -328,7 +328,7 @@ function buildLair(track: Track, kit: Kit): Pick<SetPieces, 'spiderPivot' | 'lai
   const dy = kit.terrain.height(dais.x, dais.z);
   cube(batch, g.flags, xf(dais.x, dy + 0.3, dais.z, h), 6, 0.6, 4.4);
   cube(batch, g.flags, xf(dais.x, dy + 0.75, dais.z, h), 4.6, 0.4, 3.4);
-  coffin(kit, xf(dais.x, dy + 0.95, dais.z, h + Math.PI / 2, 0, 0).multiply(xf(0, 0, 0, 0, 0, 0, 1.35)), true, g.coffinRed);
+  coffin(kit, xf(dais.x, dy + 0.95, dais.z, h + Math.PI / 2, 0, 0).multiply(xf(0, 0, 0, 0, 0, 0, 1.35)), true, [0.75, 0.32, 0.42]);
   for (const [al, ac] of [[-2.6, -1.8], [2.6, -1.8], [-2.6, 1.8], [2.6, 1.8]]) {
     const cd = pos(al, 9 + ac);
     const cy = kit.terrain.height(cd.x, cd.z);
@@ -410,7 +410,6 @@ function buildLair(track: Track, kit: Kit): Pick<SetPieces, 'spiderPivot' | 'lai
       jackOLantern(kit, v.clone().setY(v.y + 3.4), headingAt(q) - side * 0.4, 0.8, side > 0);
     }
   }
-  void mats;
   return { spiderPivot: frame(arch, 0, 10.4), lair: pos(0, 0).setY(dy + 3) };
 }
 
@@ -546,13 +545,13 @@ function boardwalk(track: Track, kit: Kit): Pick<SetPieces, 'angler' | 'float'> 
   }
   const seat = frame(p, side * (limit + 7.6), -0.1);
   const face = h - side * Math.PI / 2;
-  batch.geometry(mats.barrel, new THREE.CylinderGeometry(0.5, 0.5, 1.1, 8), xf(seat.x, seat.y + 0.55, seat.z));
+  batch.geometry(mats.barrel, new THREE.CylinderGeometry(1.1, 1.1, 2.4, 8), xf(seat.x, seat.y + 1.2, seat.z));
   const lamp = frame(p, side * (limit + 8.4), -0.1).add(new THREE.Vector3(p.tx, 0, p.tz).multiplyScalar(1.2));
   cube(batch, mats.lantern, xf(lamp.x, lamp.y + 0.3, lamp.z, h), 0.4, 0.55, 0.4);
   kit.light(lamp.clone().setY(lamp.y + 1.2), WARM.clone().multiplyScalar(1.3), 11, 7, 0.25);
   batch.geometry(g.iron, new THREE.CylinderGeometry(0.35, 0.28, 0.5, 8, 1, true), xf(lamp.x - p.tx * 2.2, lamp.y + 0.25, lamp.z - p.tz * 2.2));
-  const angler = xf(seat.x, seat.y + 1.1, seat.z, face);
-  const float = new THREE.Vector3(0, 0, -7).applyMatrix4(xf(seat.x, 0, seat.z, face)).setY(0.05);
+  const angler = xf(seat.x, seat.y + 2.4, seat.z, face);
+  const float = new THREE.Vector3(0, 0, -15).applyMatrix4(xf(seat.x, 0, seat.z, face)).setY(0.05);
 
   // Reeds round the shore, lily pads on the water.
   for (let i = 0; i < 160; i++) {
@@ -572,7 +571,5 @@ function boardwalk(track: Track, kit: Kit): Pick<SetPieces, 'angler' | 'float'> 
       batch.geometry(g.grass, pad, xf(x, 0.06, z, rng() * 6), [1.4, 1.9, 1.3]);
     }
   }
-  const col: RGB = [1, 1, 1];
-  void col;
   return { angler, float };
 }

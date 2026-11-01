@@ -16,6 +16,8 @@ export interface Life {
 const BATS = 44;
 const GHOSTS = 5;
 const WISPS = 6;
+/** How much bigger than life the skeleton angler is, so he reads from the road. */
+const GIANT = 2.2;
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** One mesh of many quads rewritten every frame, so a flock costs a single draw call. */
@@ -294,23 +296,27 @@ function buildSpider(track: Track, kit: Kit, group: THREE.Group, pieces: SetPiec
     solid((batch) => {
       batch.geometry(g.spider, ball(1, 1, 0.8, 1.25, 7), xf(0, 0.2, 0.75, 0, 0, 0, 1.1));
       batch.geometry(g.spider, ball(0.62, 1, 0.8, 1, 6), xf(0, 0.1, -0.7));
-      for (const [x, y] of [[-0.24, 0.3], [0.24, 0.3], [-0.42, 0.15], [0.42, 0.15]]) batch.geometry(g.eyes, ball(0.12, 1, 1, 1, 4), xf(x, y, -1.2));
-      for (const side of [-1, 1]) batch.geometry(g.eyes, new THREE.ConeGeometry(0.1, 0.5, 4), xf(side * 0.2, -0.2, -1.3, 0, Math.PI, 0));
+      for (const [x, y] of [[-0.24, 0.3], [0.24, 0.3], [-0.42, 0.15], [0.42, 0.15]]) batch.geometry(g.satin, ball(0.12, 1, 1, 1, 4), xf(x, y, -1.2));
+      for (const side of [-1, 1]) batch.geometry(g.satin, new THREE.ConeGeometry(0.1, 0.5, 4), xf(side * 0.2, -0.2, -1.3, 0, Math.PI, 0));
     }),
   );
-  for (const side of [-1, 1]) {
-    for (let k = 0; k < 4; k++) {
-      const leg = solid((batch) => {
-        const knee = new THREE.Vector3(side * 1.6, 0.9, 0);
-        const foot = new THREE.Vector3(side * 2.7, -0.9, 0);
-        limb(batch, g.spider, new THREE.Vector3(), knee, 0.13, 0.1);
-        limb(batch, g.spider, knee, foot, 0.1, 0.04);
-      });
-      leg.position.set(side * 0.35, 0.1, -0.5 + k * 0.32);
-      leg.rotation.y = -side * (k - 1.5) * 0.42;
-      spider.add(leg);
-      legs.push(leg);
-    }
+  // Two sets of alternate legs, which scurry in turn.
+  for (const set of [0, 1]) {
+    const leg = solid((batch) => {
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 4; k++) {
+          if ((k + (side > 0 ? 1 : 0)) % 2 !== set) continue;
+          const turn = xf(side * 0.35, 0.1, -0.5 + k * 0.32, -side * (k - 1.5) * 0.42);
+          const hip = new THREE.Vector3().applyMatrix4(turn);
+          const knee = new THREE.Vector3(side * 1.6, 0.9, 0).applyMatrix4(turn);
+          const foot = new THREE.Vector3(side * 2.7, -0.9, 0).applyMatrix4(turn);
+          limb(batch, g.spider, hip, knee, 0.13, 0.1);
+          limb(batch, g.spider, knee, foot, 0.1, 0.04);
+        }
+      }
+    });
+    spider.add(leg);
+    legs.push(leg);
   }
   const thread = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 4, 1, true), mats.white);
   thread.frustumCulled = false;
@@ -367,20 +373,20 @@ function buildAngler(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: nu
     cube(batch, g.bark, xf(0, 2.46, 0, 0.2, -0.1), 0.48, 0.24, 0.48, [0.55, 0.5, 0.42]);
   });
   bones.applyMatrix4(pieces.angler);
-  bones.position.y -= 0.85;
+  bones.scale.setScalar(GIANT);
+  bones.position.y -= 0.85 * GIANT;
   const rod = solid((batch) => {
     for (const side of [-1, 1]) batch.beam(g.bone, new THREE.Vector3(side * 0.38, -0.5, 0.36), new THREE.Vector3(side * 0.08, 0.02, 0.05), 0.09);
     batch.beam(mats.planks, new THREE.Vector3(0, -0.05, 0.3), new THREE.Vector3(0, 2.1, -5.4), 0.07);
-    batch.geometry(g.iron, new THREE.CylinderGeometry(0.1, 0.1, 0.18, 6), xf(0, 0.12, 0.05, 0, Math.PI / 2));
   });
-  const shoulder = new THREE.Vector3(0, 0.35, -0.55).applyMatrix4(pieces.angler);
+  const shoulder = new THREE.Vector3(0, 0.35 * GIANT, -0.55 * GIANT).applyMatrix4(pieces.angler);
   rod.position.copy(shoulder);
+  rod.scale.setScalar(GIANT);
   rod.rotation.setFromRotationMatrix(pieces.angler);
   const line = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1, 3, 1, true), mats.white);
   line.frustumCulled = false;
   const float = solid((batch) => {
-    batch.geometry(mats.chest, new THREE.OctahedronGeometry(0.2), xf(0, 0.08, 0));
-    batch.geometry(g.bone, ball(0.14, 1, 0.5, 1, 5), xf(0, -0.08, 0));
+    batch.geometry(g.pumpkin, new THREE.OctahedronGeometry(0.32), xf(0, 0.1, 0));
   });
   const fish = solid((batch) => {
     batch.box(g.bone, 0.06, 0.06, 0.9, xf(0, 0, 0));
@@ -405,13 +411,14 @@ function buildAngler(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: nu
     end.y += Math.sin(time * 2.1) * 0.05 + bite * 2 - 0.05;
     if (heave > 0) {
       end.lerp(tip, 0.75 * heave);
-      end.y = Math.max(end.y, tip.y - 3.2);
+      end.y = Math.max(end.y, tip.y - 5);
     }
     float.position.copy(end);
     stretch(line, tip, end);
     fish.visible = heave > 0.15;
     if (fish.visible) {
-      fish.position.copy(end).setY(end.y - 0.6);
+      fish.position.copy(end).setY(end.y - 0.9);
+      fish.scale.setScalar(GIANT);
       fish.rotation.set(Math.PI / 2 - 0.3, time * 2.5, Math.sin(time * 22) * 0.5);
     }
   };
