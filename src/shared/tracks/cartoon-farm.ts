@@ -17,11 +17,11 @@ const MAIN: Row[] = [
   [6, -78, 1.2, 14, 3, 3, 'dirt', 'open', 'lane'],
   [30, -108, 1.5, 13, 2.5, 6, 'dirt', 'open', 'lane'],
   [64, -124, 1.5, 13, 2.5, 0, 'dirt', 'open', 'lane'], // 4 the fork
-  [92, -150, 1.4, 13, 3, -5, 'dirt', 'open', 'pond'],
+  [92, -150, 1.4, 13, 3, 0, 'dirt', 'open', 'pond'],
   [120, -186, 1.2, 13, 2, -6, 'wood', 'deck', 'boardwalk'],
   [160, -196, 1.2, 13, 2, 0, 'wood', 'deck', 'boardwalk'],
   [203, -186, 1.2, 13, 2, -4, 'dirt', 'open', 'pond'],
-  [238, -150, 1.4, 13, 3, -4, 'dirt', 'open', 'pond'],
+  [238, -150, 1.4, 13, 3, 0, 'dirt', 'open', 'pond'],
   [256, -98, 1.5, 14, 3, 0, 'grass', 'open', 'field'], // 10 the join
   [266, -66, 1.5, 14, 3, 0, 'grass', 'open', 'field'],
   [268, -36, 1.5, 14, 3, 0, 'grass', 'open', 'field'], // under the trestle
