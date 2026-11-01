@@ -9,6 +9,20 @@ import type { Terrain } from '../../render/terrain';
 import { C, rgb, type Looks } from './look';
 import type { Toon } from './toon';
 
+/** The stretch of road between s0 and s1 whose surface overlaps the other road's. */
+function touching(t: Track, other: Track, s0: number, s1: number): [number, number] | null {
+  let a = Infinity;
+  let b = -Infinity;
+  for (let s = s0; s <= s1; s++) {
+    const p = sampleAt(t, s);
+    if (other.samples.some((q) => Math.hypot(q.x - p.x, q.z - p.z) < (p.width + q.width) / 2)) {
+      a = Math.min(a, s);
+      b = Math.max(b, s);
+    }
+  }
+  return a < b ? [a, b] : null;
+}
+
 /** The road, its verges and skirts, in farm colours. */
 export function paveFarm(track: Track, batch: Batch, L: Looks, mats: Materials, grid: { s: number; offset: number }[]): void {
   paveRoad(track, batch, {
@@ -34,19 +48,20 @@ export function paveFarm(track: Track, batch: Batch, L: Looks, mats: Materials, 
       return null;
     },
   });
-  // At the fork and the join, a second skin of road with no edge lines, so neither road's verge or kerb lies across the other.
+  // Where the fork and the join's two roads still touch, a second skin of road with no edge lines, so neither road's
+  // verge or kerb lies across the other.
   const fork = track.routes[0];
   for (const [a, b] of fork?.zones ?? []) {
     for (const route of [0, 1]) {
       const t = route ? fork.track : track;
-      const s0 = route ? Math.max(fromMain(track, 1, a), fork.rfrom) : a;
-      const s1 = route ? Math.min(fromMain(track, 1, b), fork.rto) : b;
-      loft(batch, t, s0, s1, {
+      const span = touching(t, route ? track : fork.track, route ? Math.max(fromMain(track, 1, a), fork.rfrom) : a, route ? Math.min(fromMain(track, 1, b), fork.rto) : b);
+      if (!span) continue;
+      loft(batch, t, span[0], span[1], {
         spacing: 2,
         vScale: 6,
         outward: true,
         material: () => L.road,
-        profile: (p) => [-0.43, -0.21, 0, 0.21, 0.43].map((f) => [f * p.width, route ? 0.1 : 0.08, 0.5 + f * 0.8]),
+        profile: (p) => [-0.5, -0.25, 0, 0.25, 0.5].map((f) => [f * p.width, route ? 0.1 : 0.08, 0.5 + f * 0.68]),
       });
     }
   }

@@ -391,7 +391,7 @@ export const looks = cache(() => ({
   stripesIn: gloom(textures.stripes()),
   slab: ps1Material({ map: textures.slab(), vertexColors: true, tint: 0xbcbcc4 }),
   belt: ps1Material({ map: textures.belt(), vertexColors: true, shade: INDOOR, scroll: [1.9, 0] }),
-  picket: ps1Material({ map: textures.picket(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }),
+  picket: ps1Material({ map: textures.picket(), vertexColors: true, lit: false, alphaTest: 0.5, side: THREE.DoubleSide }),
   mesh: ps1Material({ map: textures.mesh(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }),
   milk: ps1Material({ map: textures.milk(), vertexColors: true, lit: false, scroll: [0, -0.35] }),
   pour: ps1Material({ map: textures.milk(), vertexColors: true, lit: false, scroll: [0, 1.6], side: THREE.DoubleSide }),
