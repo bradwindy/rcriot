@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Batch, xf, type RGB } from '../../render/geometry';
+import { Batch, boulder, xf, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box } from '../../render/road';
@@ -94,27 +94,18 @@ export function filmLight(batch: Batch, mats: Materials, looks: Looks, at: THREE
   if (light) addPointLight(at.clone().setY(at.y + 5).lerp(target, 0.4), new THREE.Color(1.0, 0.92, 0.82).multiplyScalar(1.2), 30);
 }
 
-/** A column of smoke: a rising spindle wrapped in scrolling blobs, hot at the foot and fading up into the dusk. */
-export function plume(batch: Batch, looks: Looks, at: THREE.Vector3, size: number): void {
-  const profile: [number, number][] = [
-    [0.5, 0.6],
-    [1, 2.4],
-    [1.7, 5.4],
-    [2.5, 9],
-    [2.1, 12],
-    [0.5, 14],
-  ];
-  const g = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r * size, y * size)), 7);
-  const pos = g.getAttribute('position');
-  const uv = g.getAttribute('uv');
-  const col: number[] = [];
-  for (let i = 0; i < pos.count; i++) {
-    uv.setXY(i, uv.getX(i) * 2, uv.getY(i) * 2.5);
-    const f = pos.getY(i) / (14 * size);
-    col.push(1.5 - f * 0.9, 1 - f * 0.5, 0.8 - f * 0.1);
+/** A column of smoke: faceted puffs growing as they rise and lean on the wind, catching the sunset on one side. */
+export function plume(batch: Batch, looks: Looks, at: THREE.Vector3, size: number, puffs = 7): void {
+  for (let k = 0; k < puffs; k++) {
+    const f = k / (puffs - 1);
+    const r = size * (0.9 + f * 2.2);
+    const x = at.x + size * 5.5 * f * f;
+    const y = at.y + size * (1 + k * 2.1);
+    const z = at.z - size * 2.5 * f * f;
+    const heat = Math.max(0, 1 - k / 2);
+    const tone: RGB = [0.62 + heat * 0.5, 0.56 + heat * 0.12, 0.62 - heat * 0.2];
+    batch.geometry(looks.smoke, boulder(Math.round(at.x) + k * 7, r * 2, 0.85), xf(x, y, z, k * 1.3), tone);
   }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  batch.geometry(looks.smoke, g, xf(at.x, at.y, at.z, size));
 }
 
 /** A big fire: crossed flame sprites and a smoke column, with an orange light. */

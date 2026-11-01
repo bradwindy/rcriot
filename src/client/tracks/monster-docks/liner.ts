@@ -5,7 +5,7 @@ import { Batch, xf, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { smoothstep } from '../../render/noise';
 import { addPointLight, type PointLight } from '../../render/ps1';
-import { box, frame, headingAt, loft, rim, type Profile } from '../../render/road';
+import { box, frame, headingAt, loft, type Profile } from '../../render/road';
 import { beacon, fire, plume, slab } from './kit';
 import { lamp, type Looks } from './look';
 
@@ -30,6 +30,15 @@ interface Half {
 }
 
 const ribShape = (y: number) => (y < -1 ? 0.7 + ((y + 5) / 4) * 0.25 : y < 3 ? 0.95 + ((y + 1) / 4) * 0.05 : 1);
+
+/** Closes the gap between an inner and an outer cross-section with dark plate. */
+function ring(batch: Batch, looks: Looks, p: Sample, inner: THREE.Vector3[], outer: THREE.Vector3[], forward: boolean): void {
+  const n = new THREE.Vector3(p.tx, 0, p.tz).multiplyScalar(forward ? 1 : -1);
+  for (let k = 0; k < inner.length - 1; k++) {
+    const quad = [inner[k], outer[k], inner[k + 1], inner[k + 1], outer[k], outer[k + 1]];
+    quad.forEach((v, i) => batch.vertex(looks.plateIndoor, v, n, (i % 2) * 2, k * 2, [0.34, 0.3, 0.3]));
+  }
+}
 
 /** The liner's hull, decks and funnels: two halves round the fork, broken apart over the hole in the road. */
 export function liner(track: Track, batch: Batch, mats: Materials, looks: Looks): { lights: PointLight[]; flames: THREE.Vector3[]; update(time: number): void } {
@@ -129,6 +138,26 @@ export function liner(track: Track, batch: Batch, mats: Materials, looks: Looks)
         });
       }
     }
+    // Dark plating behind the rips, above and below the corridor, so they show black rather than what lies beyond.
+    for (const [h0, h1] of [
+      [-9, -0.5],
+      [6, 10.4],
+    ]) {
+      loft(batch, t, half.a, half.b, {
+        spacing: 3,
+        vScale: 6,
+        uScale: 6,
+        color: [0.2, 0.18, 0.2],
+        material: () => looks.plateIndoor,
+        profile: (p) => {
+          const o = -(limitOf(p) + 0.3);
+          return [
+            [o, h0],
+            [o, h1],
+          ];
+        },
+      });
+    }
     const roof: Profile = (p) => {
       const l = limitOf(p) + 0.15;
       return [
@@ -151,8 +180,8 @@ export function liner(track: Track, batch: Batch, mats: Materials, looks: Looks)
       const out = (o: number, y: number) => frame(p, o, hull(p, o, y));
       const inner = [frame(p, -l, -0.5), frame(p, -l, 6), frame(p, -l + 1.3, 6.9), frame(p, l - 1.3, 6.9), frame(p, l, 6), frame(p, l, -0.5)];
       const outer = [out(-w, 3), out(-w, DECK), out(-w * 0.5, DECK), out(w * 0.5, DECK), out(w, DECK), out(w, 3)];
-      rim(batch, looks.plateIndoor, p, inner, outer, forward);
-      rim(batch, looks.plateIndoor, p, [frame(p, -l, -0.5), frame(p, l, -0.5)], [out(-w * 0.7, -5), out(w * 0.7, -5)], forward);
+      ring(batch, looks, p, inner, outer, forward);
+      ring(batch, looks, p, [frame(p, -l, -0.5), frame(p, l, -0.5)], [out(-w * 0.7, -5), out(w * 0.7, -5)], forward);
       // Torn plates bristling from the broken edge.
       for (let k = 0; k < 16; k++) {
         const a = (k / 16) * Math.PI * 2;
@@ -203,6 +232,23 @@ export function liner(track: Track, batch: Batch, mats: Materials, looks: Looks)
         if (side < 0 && half.claws.some((c) => Math.abs(s - c) < 5)) continue;
         const at = frame(p, side * limitOf(p), 3.1);
         batch.geometry(looks.glow, lamp(new THREE.CircleGeometry(0.65, 8), 'porthole'), xf(at.x, at.y, at.z, h - side * Math.PI / 2), [1, 0.75, 0.55]);
+      }
+    }
+
+    // Rows of lit portholes down the outside of the hull.
+    for (let s = half.a + 2; s < half.b - 1; s += 3.4) {
+      const p = sampleAt(t, s);
+      const h = headingAt(p);
+      for (const side of [-1, 1]) {
+        for (const [y, band] of [
+          [7.2, 4],
+          [9.8, 5],
+        ]) {
+          if (side < 0 && half.claws.some((c) => Math.abs(s - (c + (band - 4) * 1.7)) < 3.4)) continue;
+          const o = side * (sideAt(p, y) + 0.08);
+          const at = frame(p, o, hull(p, o, y));
+          batch.geometry(looks.glow, lamp(new THREE.CircleGeometry(0.42, 6), 'porthole'), xf(at.x, at.y, at.z, h + (side * Math.PI) / 2));
+        }
       }
     }
 

@@ -132,26 +132,13 @@ const paint = {
         return [255 * v, 255 * v, 255 * v, 255];
       }),
     ),
-  /** Blobs of smoke that wrap round a plume and repeat as they rise. */
+  /** Soft bands of grey that drift across the smoke puffs, so the columns seem to churn. */
   smoke: () =>
-    make(
-      32,
-      64,
-      513,
-      (p) => {
-        const puffs = Array.from({ length: 16 }, () => [p.rng() * 32, p.rng() * 64, 6 + p.rng() * 7] as const);
-        p.each((x, y) => {
-          let best = 0;
-          for (const [cx, cy, r] of puffs) {
-            for (const ox of [-32, 0, 32]) for (const oy of [-64, 0, 64]) best = Math.max(best, 1 - Math.hypot(x - cx - ox, y - cy - oy) / r);
-          }
-          if (best < 0.08) return [0, 0, 0, 0];
-          return hex(best > 0.55 ? '#6a5a62' : best > 0.28 ? '#4e424c' : '#3a3038');
-        });
-      },
-      true,
-      true,
-    ),
+    make(32, 32, 513, (p) => {
+      const n = p.noise(12);
+      const tones = ['#5a5058', '#6a5e66', '#7a6c72', '#8c7e82'].map((c) => hex(c));
+      p.each((x, y) => p.pick(tones, n(x, y)));
+    }),
 };
 
 /** 128px atlas of 32px tiles for the creatures and machines, so they share one material. */
@@ -301,7 +288,7 @@ export const looks = cache(() => {
     skyline: ps1Material({ map: paint.skyline(), vertexColors: true, lit: false, fog: 0.42, glow: 0.3, side: THREE.DoubleSide }),
     beam: ps1Material({ map: beam, vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, fog: 0.3 }),
     tractor: ps1Material({ map: paint.rings(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, scroll: [0, 0.5] }),
-    smoke: ps1Material({ map: paint.smoke(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, scroll: [0.01, -0.09], fog: 0.6 }),
+    smoke: ps1Material({ map: paint.smoke(), vertexColors: true, scroll: [0.015, -0.06], fog: 0.6 }),
     water: ps1Material({ map: tex.water(), vertexColors: true, transparent: true, opacity: 0.86, wave: 0.18, scroll: [0.012, 0.007] }),
   };
 });

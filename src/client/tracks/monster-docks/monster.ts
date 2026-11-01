@@ -146,7 +146,7 @@ export function seaMonster(track: Track, batch: Batch, looks: Looks, hazard: Haz
       const at = hazardAt(track, hazard, clock);
       const a = angle(at.t, hazard.duty, time);
       swing.rotation.z = a;
-      head.rotation.z = -a;
+      head.rotation.set(0.2, 0, -a);
       light.color.copy(base).multiplyScalar(at.live ? 1.6 : 0.6 + 0.2 * Math.sin(time * 3));
     },
   };
