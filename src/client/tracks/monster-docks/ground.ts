@@ -24,11 +24,11 @@ export function naturalHeight(x: number, z: number): number {
 
 export function docksGround(looks: Looks): GroundSpec {
   return {
-    x0: -340,
+    x0: -336,
     x1: 240,
-    z0: -480,
+    z0: -426,
     z1: 180,
-    cell: 5,
+    cell: 6,
     height: naturalHeight,
     paint: () => looks.concrete,
     cliffs: [looks.concrete],

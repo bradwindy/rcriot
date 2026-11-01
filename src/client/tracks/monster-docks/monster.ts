@@ -133,6 +133,8 @@ export function seaMonster(track: Track, batch: Batch, looks: Looks, hazard: Haz
   seat.add(swing);
   const headAt = new THREE.Vector3(30, 0.5, 4);
   head.position.copy(headAt);
+  // The bite takes the whole road, so the jaws span it, barrier to barrier.
+  head.scale.x = 1.38;
   swing.add(neck, head);
   const group = new THREE.Group();
   group.add(seat);
