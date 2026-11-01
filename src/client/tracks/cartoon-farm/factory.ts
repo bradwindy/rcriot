@@ -225,6 +225,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
       for (const dx of [-2.2, 2.2]) toon.box(L.flatIn, 0.7, 3, 4, xf(x + dx, belt.y + 0.9, belt.z), rgb(C.blue), 0.06);
       for (let i = 0; i < 4; i++) toon.box(L.glow, 0.3, 0.3, 0.1, xf(x - 1.5 + i, belt.y + 3.7, belt.z + 2.15), i % 2 ? [1, 0.25, 0.2] : [0.3, 1, 0.45], 0);
       tube(toon, L.flatIn, v3(x, belt.y + 4.7, belt.z), v3(x, TOP, belt.z), 0.7, rgb(C.red), 0.05);
+      lamp(v3(x, belt.y + 2.2, belt.z + 3.5), new THREE.Color(1, 0.9, 0.7).multiplyScalar(1.5), 13, x);
     }
   }
   const { glass, cap } = bottle(1.7);
