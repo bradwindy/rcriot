@@ -38,7 +38,7 @@ const ROWS: Row[] = [
   [34, -204, 2.5, 13, 2.5, -3, 'asphalt', 'quay'],
   [4, -196, 2.5, 13, 2.5, 0, 'asphalt', 'quay'],
   [-28, -204, 2.5, 13, 2.5, -3, 'asphalt', 'quay'],
-  [-52, -226, 2.5, 13, 2.5, 0, 'asphalt', 'quay'],
+  [-61, -224, 2.5, 13, 2.5, 0, 'asphalt', 'quay'], // swings wide of the liner's bow
   [-74, -256, 2.8, 13, 2, 0, 'asphalt', 'quay'], // 15 join
   [-86, -276, 3.0, 12, 1, 0, 'wood', 'pier'], // onto the pier
   [-87, -288, 3.2, 12, 1, 0, 'wood', 'pier'],
