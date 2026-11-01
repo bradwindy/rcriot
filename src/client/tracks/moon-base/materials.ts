@@ -5,7 +5,7 @@ import { cache, hex, make, mixc, scale, type Painter, type RGBA } from '../../re
 
 const CLEAR: RGBA = [0, 0, 0, 0];
 /** Takes the white cladding down, so full sun shows its panels instead of blowing out. */
-const HULL = 0x9a9ea6;
+const HULL = 0xc2c6ce;
 
 /** A little crater pressed into a texture: lit on the upper left of its rim, shaded on the lower right. */
 function dent(p: Painter, cx: number, cy: number, r: number, base: RGBA): void {

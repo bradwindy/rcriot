@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { toMain } from '../../../shared/course';
 import { mulberry32 } from '../../../shared/rng';
-import { limitOf, sampleAt, type Track } from '../../../shared/track';
+import { limitOf, ranges, sampleAt, type Track } from '../../../shared/track';
 import { Batch, boulder, xf } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { addPointLight } from '../../render/ps1';
-import { atJunction, box, frame, headingAt, routeSpans } from '../../render/road';
+import { atJunction, box, frame, headingAt, loft, routeSpans } from '../../render/road';
 import type { Terrain } from '../../render/terrain';
 import type { TrackIndex } from '../../render/trackindex';
 import { SUN } from './ground';
@@ -216,6 +216,31 @@ export function buildProps(track: Track, index: TrackIndex, terrain: Terrain, ba
         const at = frame(p, side * (limitOf(p) + 0.25), 0);
         box(batch, mm.frame, 0.18, 1.3, 0.18, xf(at.x, at.y + 0.65, at.z, headingAt(p)), [0.9, 0.9, 0.9]);
         box(batch, mm.strip, 0.22, 0.3, 0.22, xf(at.x, at.y + 1.35, at.z, headingAt(p)), [1, 0.45, 0.08]);
+      }
+    }
+  }
+
+  // The crevasse is hidden behind its own lip, so a striped band and warning lights mark both edges of it.
+  {
+    const t = track.routes[0].track;
+    for (const [a, b] of ranges(t, (p) => p.surface === 'void')) {
+      for (const [s0, s1] of [
+        [a - 3.2, a - 0.3],
+        [b + 0.3, b + 3.2],
+      ]) {
+        loft(batch, t, s0, s1, {
+          spacing: 1.5,
+          vScale: 4,
+          outward: true,
+          material: () => mm.stripes,
+          profile: (p) => [-1, 0, 1].map((f) => [f * limitOf(p), 0.07, f * 2]),
+        });
+        for (const side of [-1, 1]) {
+          const p = sampleAt(t, (s0 + s1) / 2);
+          const at = frame(p, side * (limitOf(p) + 0.5), 0);
+          box(batch, mm.frame, 0.3, 3.2, 0.3, xf(at.x, at.y + 1.6, at.z, headingAt(p)));
+          box(batch, mm.beacon, 0.7, 0.7, 0.7, xf(at.x, at.y + 3.5, at.z, headingAt(p)));
+        }
       }
     }
   }

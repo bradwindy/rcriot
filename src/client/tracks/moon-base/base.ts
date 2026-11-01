@@ -260,7 +260,7 @@ export function buildBase(track: Track, batch: Batch, mats: Materials, mm: MoonM
       const side = k % 2 ? 1 : -1;
       if (k % 3 === 1 && !inset(p.zone, side) && p.zone !== 'airlock') {
         const at = frame(p, side * (limitOf(p) + 0.1), Math.min(3.4, W - 1.2));
-        screen(batch, mm, mats, xf(at.x, at.y, at.z, h - (side * Math.PI) / 2), 2.8, 1.6, (k + Math.round(s)) % 4);
+        screen(batch, mm, mats, xf(at.x, at.y, at.z, h - (side * Math.PI) / 2), 4, 2.2, (k + Math.round(s)) % 4);
       }
     }
 
