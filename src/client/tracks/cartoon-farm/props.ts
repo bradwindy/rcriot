@@ -211,7 +211,7 @@ export function buildProps(track: Track, toon: Toon, L: Looks, terrain: Terrain,
       const density = fbm(px / 70, pz / 70, 2, 23);
       const hill = Math.hypot(px - MAP.hill.x, pz - MAP.hill.z) < 18;
       const near = index.nearest(px, pz, 55) !== null;
-      if (!hill && density > 0.48 && roll < (density - 0.44) * 2 && clear(px, pz, 6)) lollipop(toon, L, at, rng, near);
+      if (!hill && density > 0.48 && roll < (density - 0.44) * 2.8 && clear(px, pz, 6)) lollipop(toon, L, at, rng, near);
       else if (roll > 0.8 && clear(px, pz, 3)) {
         const tone = fieldTint(px, pz, at.y);
         if (tone[0] > 0.7) {
