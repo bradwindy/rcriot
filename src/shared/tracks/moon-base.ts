@@ -102,9 +102,10 @@ const FORK_ROWS: Row[] = [
   [64, 244, -3, 11, 1.5, 0, 'void', 'chasm'],
   [54, 244, -3, 11, 1.5, 0, 'void', 'chasm'],
   [46, 244, 1, 11, 1.5, 0, 'dust', 'crater'],
-  [24, 242, 1, 11, 1.5, 0, 'dust', 'crater'],
-  [6, 234, 1, 11, 1.5, 0, 'dust', 'crater'],
-  [-4, 228, 1, 12, 2, 0, 'dust', 'crater'],
+  [30, 244, 1, 11, 1.5, 0, 'dust', 'crater'],
+  [16, 244, 1, 11, 1.5, 0, 'dust', 'crater'], // a 26 m arc round to the join, wide enough for bots at speed
+  [3, 240.5, 1, 11, 1.5, 0, 'dust', 'crater'],
+  [-6.5, 231, 1, 12, 2, 0, 'dust', 'crater'],
 ];
 
 function point([x, z, y, width, shoulder, bank, surface, stretch, g]: Row, gravity: number): ControlPoint {
