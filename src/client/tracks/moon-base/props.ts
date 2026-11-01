@@ -250,7 +250,7 @@ export function buildProps(track: Track, index: TrackIndex, terrain: Terrain, ba
     for (let x = -360; x < 470; x += 14) {
       const px = x + (rng() - 0.5) * 12;
       const pz = z + (rng() - 0.5) * 12;
-      if (rng() > 0.32 || !clear(px, pz, 2.5)) continue;
+      if (rng() > 0.2 || !clear(px, pz, 2.5)) continue;
       const at = ground(px, pz);
       const size = 0.8 + rng() * rng() * 6;
       batch.geometry(mm.rock, boulder(Math.floor(rng() * 1e6), size, 0.6 + rng() * 0.3), xf(at.x, at.y + size * 0.15, at.z, rng() * 6));
