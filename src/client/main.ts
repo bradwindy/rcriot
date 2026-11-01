@@ -123,6 +123,8 @@ world.scene.add(dust.mesh, embers.mesh);
 
 const canvas = el('stage') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+// A frame is several passes. Counted across all of them, for rc.stats().
+renderer.info.autoReset = false;
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 const pipeline = new Pipeline(renderer);
 const chase = new ChaseCamera(track);
@@ -912,6 +914,7 @@ function draw(): void {
   }
   flushLights(chase.camera.position);
   hud.paint();
+  renderer.info.reset();
   pipeline.render(world.scene, chase.camera);
 }
 
