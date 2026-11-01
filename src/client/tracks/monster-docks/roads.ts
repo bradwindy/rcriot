@@ -153,17 +153,21 @@ export function viaduct(track: Track, batch: Batch, mats: Materials, looks: Look
     if (deck - ground < 1.5) continue;
     const h = headingAt(p);
     const mid = frame(p, 0, -1.4);
-    if (under(track, mid.x, mid.z, p.y)) {
-      // Over the yard road: a portal frame on legs either side of it instead of one central pier.
-      for (const side of [-1, 1]) {
-        const leg = frame(p, side * (limitOf(p) + 1.2), 0);
-        box(batch, looks.concrete, 1.4, deck - ground, 1.4, xf(leg.x, (deck + ground) / 2, leg.z, h));
-      }
-      box(batch, looks.concrete, limitOf(p) * 2 + 4, 1.2, 1.6, xf(mid.x, deck - 0.6, mid.z, h));
-      continue;
-    }
+    // No pier in the road below: the deck spans it on the steel girders.
+    if (under(track, mid.x, mid.z, p.y)) continue;
     box(batch, looks.concrete, 2.2, deck - ground + 0.5, 2.2, xf(mid.x, (deck + ground) / 2 - 0.5, mid.z, h), [0.92, 0.9, 0.88]);
     box(batch, looks.concrete, limitOf(p) * 2, 1, 2.4, xf(mid.x, deck - 0.5, mid.z, h), [0.85, 0.83, 0.8]);
+  }
+  // Steel girders carrying the deck over the yard road, painted so the crossing reads from below.
+  for (let s = 0; s < L; s += 4) {
+    const p = sampleAt(track, s);
+    if (p.zone !== 'viaduct' || p.grade < -0.2) continue;
+    const near = frame(p, 0, -1.4);
+    if (!under(track, near.x, near.z, p.y + 3)) continue;
+    const q = sampleAt(track, s + 4);
+    for (const o of [-5, -1.7, 1.7, 5]) {
+      batch.beam(looks.plate, frame(p, o, -2.1), frame(q, o, -2.1), 0.7, 1.5, [0.85, 0.5, 0.14]);
+    }
   }
   // The broken end: rebar bristling from the snapped deck over the slumped slab.
   for (let i = 0; i < track.samples.length; i++) {

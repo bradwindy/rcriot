@@ -79,7 +79,7 @@ export function containerYard(track: Track, index: TrackIndex, batch: Batch, mat
   };
   const keepOut: [number, number, number][] = [
     [-198, 6, 15], // under the UFO
-    [-45, -18, 66], // the raptor paddock
+    [-52, -16, 56], // the raptor paddock
     [152, -138, 30], // the big ape
   ];
   const free = (x: number, z: number) => keepOut.every(([cx, cz, r]) => Math.hypot(x - cx, z - cz) > r);
@@ -204,13 +204,13 @@ export function wreckage(track: Track, batch: Batch, mats: Materials, looks: Loo
   const lights: PointLight[] = [];
   const flames: THREE.Vector3[] = [];
   const spots: [number, number, number][] = [
-    [1000 / 1554, 22, 5],
-    [62 / 1554, -18, 3],
-    [262 / 1554, -16, 3.5],
-    [440 / 1554, -15, 3],
-    [800 / 1554, 13, 3.5],
-    [1160 / 1554, 16, 3],
-    [1300 / 1554, -16, 3.5],
+    [1000 / 1554, 24, 3.2],
+    [62 / 1554, -20, 2],
+    [262 / 1554, -22, 2.4],
+    [440 / 1554, -20, 2],
+    [800 / 1554, 16, 2.6],
+    [1160 / 1554, 18, 2.2],
+    [1300 / 1554, -20, 2.6],
   ];
   for (const [share, o, size] of spots) {
     const p = sampleAt(track, share * track.length);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Batch, boulder, xf, type RGB } from '../../render/geometry';
+import { Batch, ball, boulder, xf, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box } from '../../render/road';
@@ -94,29 +94,27 @@ export function filmLight(batch: Batch, mats: Materials, looks: Looks, at: THREE
   if (light) addPointLight(at.clone().setY(at.y + 5).lerp(target, 0.4), new THREE.Color(1.0, 0.92, 0.82).multiplyScalar(1.2), 30);
 }
 
-/** A column of smoke: faceted puffs growing as they rise and lean on the wind, catching the sunset on one side. */
+/** A column of smoke: rounded puffs growing as they rise and lean on the wind, catching the sunset on one side. */
 export function plume(batch: Batch, looks: Looks, at: THREE.Vector3, size: number, puffs = 7): void {
   for (let k = 0; k < puffs; k++) {
     const f = k / (puffs - 1);
-    const r = size * (0.9 + f * 2.2);
-    const x = at.x + size * 5.5 * f * f;
-    const y = at.y + size * (1 + k * 2.1);
-    const z = at.z - size * 2.5 * f * f;
+    const r = size * (0.75 + f * 1.7);
     const heat = Math.max(0, 1 - k / 2);
-    const tone: RGB = [0.62 + heat * 0.5, 0.56 + heat * 0.12, 0.62 - heat * 0.2];
-    batch.geometry(looks.smoke, boulder(Math.round(at.x) + k * 7, r * 2, 0.85), xf(x, y, z, k * 1.3), tone);
+    const tone: RGB = [0.5 + heat * 0.6, 0.46 + heat * 0.16, 0.54 - heat * 0.14];
+    const g = puffs < 7 ? boulder(Math.round(at.x) + k * 7, r * 2, 0.85) : ball(r, 1, 0.82, 1, 7);
+    batch.geometry(looks.smoke, g, xf(at.x + size * 5 * f * f, at.y + size * (1 + k * 1.9), at.z - size * 2.5 * f * f, k * 1.3), tone);
   }
 }
 
 /** A big fire: crossed flame sprites and a smoke column, with an orange light. */
-export function fire(batch: Batch, mats: Materials, looks: Looks, at: THREE.Vector3, size: number, smoke = true, light = true): PointLight | null {
+export function fire(batch: Batch, mats: Materials, looks: Looks, at: THREE.Vector3, size: number, smoke = true, light = true, puffs = 7): PointLight | null {
   for (let k = 0; k < 3; k++) {
     const a = (k / 3) * Math.PI;
     const off = new THREE.Vector3(Math.cos(a * 2.3) * size * 0.3, 0, Math.sin(a * 2.3) * size * 0.3);
     const h = size * (1.4 + (k % 2) * 0.5);
     batch.geometry(mats.flame, new THREE.PlaneGeometry(size, h), xf(at.x + off.x, at.y + h / 2 - 0.2, at.z + off.z, a));
   }
-  if (smoke) plume(batch, looks, at, size);
+  if (smoke) plume(batch, looks, at, size, puffs);
   if (!light) return null;
   return addPointLight(at.clone().setY(at.y + size), new THREE.Color(1.0, 0.45, 0.15).multiplyScalar(1.6), size * 7);
 }

@@ -16,9 +16,10 @@ const BEAM = 11;
 const BLACK: RGB = [0.13, 0.13, 0.16];
 const RED: RGB = [0.62, 0.14, 0.1];
 const WHITE: RGB = [0.95, 0.92, 0.86];
-/** Hull plating heights. The claw marks are cut through the bands from HOLED up. */
+/** Hull plating heights: red up to the waterline band, black above it, and the claw marks cut through from CLAWED up. */
 const LEVELS = [-5, -1, 1.2, 3.6, 6, 8.4, 10.8, 13.2];
-const HOLED = 2;
+const BOOT = 2;
+const CLAWED = 3;
 
 interface Half {
   a: number;
@@ -78,8 +79,8 @@ export function liner(track: Track, batch: Batch, mats: Materials, looks: Looks)
           vScale: 8,
           uScale: 8,
           outward: true,
-          color: j < HOLED ? RED : BLACK,
-          material: (p) => (side < 0 && j >= HOLED && clawed(p.s, j) ? null : looks.plate),
+          color: j < BOOT ? RED : BLACK,
+          material: (p) => (side < 0 && j >= CLAWED && clawed(p.s, j) ? null : looks.plate),
           profile,
         });
       }

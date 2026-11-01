@@ -4,7 +4,7 @@ import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box } from '../../render/road';
 import { LAND } from './ground';
-import { container, PAINT } from './kit';
+import { container, filmLight, PAINT } from './kit';
 import { lamp, skin, type Looks } from './look';
 import { part } from './warehouse';
 
@@ -96,9 +96,9 @@ export function paddock(batch: Batch, mats: Materials, looks: Looks): { group: T
   const group = new THREE.Group();
   const beasts: Beast[] = [];
   const pairs: [number, number, number, number][] = [
-    [-92, -30, 0.5, 1.3],
-    [-58, -22, -0.8, 1.15],
-    [-16, -31, 0.2, 1.25],
+    [-100, -35, Math.PI / 2 + 0.25, 2],
+    [-52, -30, Math.PI / 2 - 0.3, 2.3],
+    [-8, -36, -Math.PI / 2 + 0.2, 2],
   ];
   pairs.forEach(([x, z, yaw, scale], i) => {
     const dx = -Math.sin(yaw) * 5.2 * scale;
@@ -138,7 +138,19 @@ export function paddock(batch: Batch, mats: Materials, looks: Looks): { group: T
     for (let z = -7; z <= 7; z += 2) box(batch, mats.metal, 0.22, 7.6, 0.22, local(x, 4.1, z), [0.45, 0.42, 0.38]);
   }
   container(batch, looks, local(14, 0.1, 9, 0.9, 0, 0.2), PAINT[3]);
-  const lights = [addPointLight(new THREE.Vector3(-58, 9, -20), new THREE.Color(1, 0.55, 0.3), 30)];
+  // Toppled containers and a film light on the fight: the studio showing through.
+  for (const [x, z, yaw, tone] of [
+    [-92, 8, 0.4, 0],
+    [-70, 22, 1.8, 2],
+    [-14, 12, 2.6, 5],
+    [8, 30, 0.9, 1],
+    [-108, 30, 2.2, 3],
+  ] as const) {
+    container(batch, looks, xf(x, LAND + 1.2, z, yaw, 0, 1.2), PAINT[tone]);
+  }
+  const rig = new THREE.Vector3(-30, LAND, -43.5);
+  filmLight(batch, mats, looks, rig, new THREE.Vector3(-52, LAND + 5, -30));
+  const lights = pairs.map(([x, z]) => addPointLight(new THREE.Vector3(x, LAND + 9, z - 9), new THREE.Color(1, 0.72, 0.5).multiplyScalar(1.1), 30));
   return {
     group,
     lights,

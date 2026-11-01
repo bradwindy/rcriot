@@ -49,7 +49,7 @@ export const monsterDocks: TrackArt = {
     const ufo = saucer(look, -198, 6);
     const city = skyline(batch, look);
     const flames = city.fires.map((f, i) => {
-      fire(batch, mats, look, f, 10 + (i % 3) * 4, true, false);
+      fire(batch, mats, look, f, 10 + (i % 3) * 4, true, false, 5);
       return f;
     });
     const beams = searchlights(look, city.lights);
