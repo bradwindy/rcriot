@@ -57,18 +57,20 @@ const ROWS: Row[] = [
   [92, 50, 10, 13, 1, 0, 'metal', 'airlock', 1], // airlock C, high up
   [112, 50, 10, 14, 2, 0, 'dust', 'surface', MOON_G],
   [125, 50, 10, 14, 2, 0, 'dust', 'surface'], // the lip: off the ramp into low gravity
-  [146, 52, 4, 14, 3, 0, 'dust', 'surface'],
-  [164, 58, 1, 14, 3, 0, 'dust', 'surface'],
-  [180, 74, 1, 14, 3, -6, 'dust', 'surface'],
-  [186, 98, 1, 14, 3, 0, 'dust', 'surface'],
+  [146, 50, 4, 14, 3, 0, 'dust', 'surface'],
+  [166, 50.5, 1, 14, 3, 0, 'dust', 'surface'],
+  [179, 54, 1, 14, 3, -3, 'dust', 'surface'], // the bend waits until the landing
+  [188.5, 63.5, 1, 14, 3, -6, 'dust', 'surface'],
+  [192.5, 78, 1, 14, 3, -6, 'dust', 'surface'],
+  [191, 102, 1, 14, 3, 0, 'dust', 'surface'],
   [187, 122, 1, 14, 3, 0, 'dust', 'surface'],
   [187, 134, 1.2, 14, 3, 0, 'dust', 'surface'],
   [187, 143, 3.4, 14, 3, 0, 'dust', 'surface'], // crater rim
   [187, 159, 0, 14, 3, 0, 'dust', 'surface'],
   [186, 178, -0.6, 14, 3, 0, 'dust', 'surface'],
-  [183, 196, 1.5, 14, 3, 0, 'dust', 'surface'],
-  [176, 214, 0.8, 14, 3, 0, 'dust', 'surface'],
-  [162, 236, 1, 14, 3, -6, 'dust', 'surface'],
+  [185.5, 197, 1.5, 14, 3, 0, 'dust', 'surface'], // straight on past the landing, or cars bounce into the bend
+  [183, 216, 1, 14, 3, 0, 'dust', 'surface'],
+  [167, 240, 1, 14, 3, -6, 'dust', 'surface'],
   [140, 258, 1, 14, 3, 0, 'dust', 'surface'], // the fork
   [112, 280, 1, 13, 1, 0, 'metal', 'airlock'], // into the hab ring
   [87, 300, 1, 13, 1, 0, 'metal', 'ring', 1],
@@ -121,12 +123,12 @@ const POINTS = points(ROWS, MOON_G);
 
 export const MOON_BASE: TrackDef = {
   points: POINTS,
-  fork: { from: 42, to: 53, points: points(FORK_ROWS, MOON_G) },
+  fork: { from: 44, to: 55, points: points(FORK_ROWS, MOON_G) },
   hazards: [
     // A mining laser on a gantry, sweeping across the hall. It stops short of the walls, so each wall has a safe lane.
     { kind: 'sweep', route: 0, s: 180, offset: 0, period: 3.2, phase: 0, radius: 1, reach: 5, duty: 1, height: 6, effect: 'spin' },
     // The lander's descent engine, firing down onto the shortcut between its legs.
-    { kind: 'burst', route: 1, s: 1120, offset: 0, period: 3.8, phase: 0.3, radius: 3.2, reach: 0, duty: 0.3, height: 6, effect: 'launch' },
+    { kind: 'burst', route: 1, s: 1141, offset: 0, period: 3.8, phase: 0.3, radius: 3.2, reach: 0, duty: 0.3, height: 6, effect: 'launch' },
   ],
   boxes: [0.07, 0.3, 0.585, 0.88],
 };
