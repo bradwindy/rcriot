@@ -421,9 +421,9 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
   ]);
   const cable = crane.part([{ g: new THREE.BoxGeometry(0.14, 1, 0.14), m: xf(0, -0.5, 0), color: rgb(C.dark), t: 0.03 }]);
   const churnPart = crane.part([
-    { g: churnBody(1.12), color: rgb(C.steel) },
-    { g: new THREE.CylinderGeometry(1.15, 1.15, 0.2, 8), m: xf(0, 0.6, 0), color: rgb(C.red), t: 0 },
-    { g: new THREE.TorusGeometry(0.34, 0.1, 5, 8), m: xf(0, 2.75, 0), color: rgb(C.dark), t: 0.02 },
+    { g: churnBody(1.3), color: rgb(C.steel) },
+    { g: new THREE.CylinderGeometry(1.34, 1.34, 0.24, 8), m: xf(0, 0.7, 0), color: rgb(C.red), t: 0 },
+    { g: new THREE.TorusGeometry(0.4, 0.12, 5, 8), m: xf(0, 3.2, 0), color: rgb(C.dark), t: 0.02 },
   ]);
 
   // Chimney smoke: fat cartoon puffs, rising and swelling.
@@ -463,7 +463,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
       const lean = at.offset * 0.26;
       const topO = at.offset - lean;
       const head = frame(cp, topO, reachTop - 1);
-      const tip = frame(cp, at.offset, 3.4);
+      const tip = frame(cp, at.offset, 4);
       const drop = head.distanceTo(tip);
       const roll = Math.atan2(lean, drop);
       crane.set(trolley, pose(m, head.x, head.y, head.z, cy));

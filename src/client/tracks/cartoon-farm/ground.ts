@@ -10,7 +10,7 @@ export const MAP = {
   hill: { x: 314, z: 16, r: 50, h: 19 },
   /** Where the trestle crosses the sheep field road. The valley floor there is kept low. */
   crossing: { x: 268, z: -53 },
-  pond: { x: 162, z: -158, rx: 42, rz: 25 },
+  pond: { x: 162, z: -163, rx: 44, rz: 30 },
   /** The river of milk, from the milk silo south past the road. */
   river: [
     [70, 140],
