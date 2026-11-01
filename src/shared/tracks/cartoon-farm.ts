@@ -53,8 +53,8 @@ const MAIN: Row[] = [
   [220, 92, 1.8, 14, 3, 6, 'dirt', 'open', 'field'],
   [204, 110, 1.6, 14, 3, 0, 'asphalt', 'open', 'works'],
   [200, 135, 1.5, 14, 3, 0, 'asphalt', 'open', 'works'], // the churn crane
-  [196, 158, 1.5, 14, 3, -4, 'asphalt', 'open', 'works'],
-  [182, 176, 1.5, 14, 2, -6, 'asphalt', 'open', 'works'],
+  [196, 158, 1.5, 14, 3, 0, 'asphalt', 'open', 'works'],
+  [182, 176, 1.5, 14, 2, 0, 'asphalt', 'open', 'works'],
   [160, 184, 1.5, 14, 2, 0, 'metal', 'indoor', 'factory'], // inside the milk factory
   [130, 187, 1.5, 14, 2, 0, 'metal', 'indoor', 'factory'],
   [100, 186, 1.5, 14, 2, 0, 'metal', 'indoor', 'factory'],

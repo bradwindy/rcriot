@@ -360,6 +360,8 @@ const textures = {
 };
 
 const lit = (map: THREE.Texture, shade = 1) => ps1Material({ map, vertexColors: true, shade });
+/** Everything inside is dimmed as well as shaded, so the factory is properly dark between its lamps. */
+const gloom = (map: THREE.Texture) => ps1Material({ map, vertexColors: true, shade: INDOOR, tint: 0x8f8f96 });
 const wired = (m: THREE.ShaderMaterial, tone: number[]) => {
   m.userData.wire = tone;
   return m;
@@ -371,7 +373,7 @@ export const looks = cache(() => ({
   road: lit(textures.road()),
   lawn: lit(textures.lawn()),
   asphalt: lit(textures.asphalt()),
-  floor: lit(textures.floor(), INDOOR),
+  floor: gloom(textures.floor()),
   boards: wired(lit(textures.boards()), [0.45, 0.28, 0.16]),
   boardsIn: lit(textures.boards(), INDOOR * 1.4),
   barn: lit(textures.barn()),
@@ -383,23 +385,23 @@ export const looks = cache(() => ({
   tin: lit(textures.tin()),
   tinBoth: ps1Material({ map: textures.tin(), vertexColors: true, side: THREE.DoubleSide }),
   panels: lit(textures.panels()),
-  hall: lit(textures.hall(), INDOOR),
+  hall: gloom(textures.hall()),
   cow: lit(textures.cow()),
   stripes: lit(textures.stripes()),
-  stripesIn: lit(textures.stripes(), INDOOR),
-  slab: lit(textures.slab()),
+  stripesIn: gloom(textures.stripes()),
+  slab: ps1Material({ map: textures.slab(), vertexColors: true, tint: 0xbcbcc4 }),
   belt: ps1Material({ map: textures.belt(), vertexColors: true, shade: INDOOR, scroll: [-0.6, 0] }),
   picket: ps1Material({ map: textures.picket(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }),
   mesh: ps1Material({ map: textures.mesh(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }),
-  milk: ps1Material({ map: textures.milk(), vertexColors: true, scroll: [0, -0.35], glow: 0.15 }),
-  pour: ps1Material({ map: textures.milk(), vertexColors: true, scroll: [0, 1.6], glow: 0.2, side: THREE.DoubleSide }),
+  milk: ps1Material({ map: textures.milk(), vertexColors: true, lit: false, scroll: [0, -0.35] }),
+  pour: ps1Material({ map: textures.milk(), vertexColors: true, lit: false, scroll: [0, 1.6], side: THREE.DoubleSide }),
   water: ps1Material({ map: textures.water(), vertexColors: true, transparent: true, opacity: 0.88, wave: 0.12, scroll: [0.01, 0.02] }),
   corn: ps1Material({ map: textures.corn(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, sway: 0.25 }),
   flowers: ps1Material({ map: textures.flowers(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, sway: 0.08 }),
   reeds: ps1Material({ map: textures.reeds(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, sway: 0.2 }),
   /** Flat colour from the vertex colours, for most props. */
   flat: wired(lit(tex.white()), [0.3, 0.3, 0.32]),
-  flatIn: lit(tex.white(), INDOOR),
+  flatIn: gloom(tex.white()),
   /** Bold outlines: the back faces of a slightly fattened copy, drawn in ink. */
   ink: ps1Material({ map: tex.white(), tint: INK, lit: false, side: THREE.BackSide }),
   /** Lamps, neon and anything that lights itself. */

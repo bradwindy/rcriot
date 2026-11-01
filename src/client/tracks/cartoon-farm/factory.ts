@@ -203,7 +203,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
     batch.beam(L.flatIn, at, v3(p.x, TOP, p.z), 0.08, 0.08, [0.5, 0.5, 0.5]);
     toon.shape(L.flatIn, new THREE.ConeGeometry(1.5, 0.9, 8, 1, true), xf(at.x, at.y - 0.3, at.z), [0.3, 0.8, 0.55], 0.05);
     toon.ball(L.glow, 0.42, xf(at.x, at.y - 0.65, at.z), [1, 0.92, 0.65], 0);
-    lamp(v3(p.x, p.y + 6.5, p.z), new THREE.Color(1, 0.86, 0.6).multiplyScalar(1.9), 15, k * 3);
+    lamp(v3(p.x, p.y + 6.5, p.z), new THREE.Color(1, 0.86, 0.6).multiplyScalar(2.8), 15, k * 3);
   }
 
   const rig = new InkRig(L, L.flatIn);
@@ -259,7 +259,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
   const dial = { x: vats[0], y: FLOOR + 5, z: vatZ - 5.2 };
   batch.geometry(L.gauge, new THREE.CircleGeometry(2.4, 12), xf(dial.x, dial.y, dial.z, Math.PI));
   toon.cyl(L.flatIn, 2.7, 2.7, 0.3, xf(dial.x, dial.y, dial.z + 0.15, 0, Math.PI / 2), rgb(C.dark), 0.06, 12);
-  lamp(v3(dial.x, dial.y, dial.z - 2.5), new THREE.Color(0.45, 1, 0.55).multiplyScalar(1.5), 13, 40);
+  lamp(v3(dial.x, dial.y, dial.z - 2.5), new THREE.Color(0.45, 1, 0.55).multiplyScalar(2.2), 13, 40);
   const needle = rig.part([{ g: new THREE.BoxGeometry(0.22, 2.1, 0.06), m: xf(0, 0.9, 0), color: rgb(C.red), t: 0.03 }]);
 
   // A flywheel on the back wall, turning.
@@ -306,14 +306,14 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
     glow.geometry(L.pour, sheet(2.7, len, 1, 8, 1, len / 4), m.clone().multiply(xf(0, 0.2, 0, 0, Math.PI / 2 + Math.PI)));
     const fall = to.y - (FLOOR + 10);
     glow.geometry(L.pour, sheet(2.4, fall + 0.4, 1, 1, 1, 0.6), xf(to.x, FLOOR + 10 + fall / 2, to.z - 0.6));
-    lamp(v3(x + 3, FLOOR + 9, midZ), new THREE.Color(0.75, 0.85, 1).multiplyScalar(1.1), 14, 44);
+    lamp(v3(x + 3, FLOOR + 9, midZ), new THREE.Color(0.75, 0.85, 1).multiplyScalar(1.6), 14, 44);
   }
 
   // A pink neon milk bottle hanging over the road, the brightest thing in the building.
   {
     const p = sampleAt(track, a + (b - a) * 0.46);
     const at = v3(p.x, p.y + 10.4, p.z);
-    const m = xf(at.x, at.y, at.z, headingAt(p) + Math.PI);
+    const m = xf(at.x, at.y, at.z, headingAt(p));
     toon.box(L.flatIn, 0.3, 5.2, 8, m.clone().multiply(xf(0, 0, -0.1, Math.PI / 2)), rgb(C.dark), 0.08);
     const outline: [number, number][] = [[-0.9, -2.1], [0.9, -2.1], [1, -1.9], [1, 0.3], [0.5, 1.1], [0.5, 1.9], [-0.5, 1.9], [-0.5, 1.1], [-1, 0.3], [-1, -1.9]];
     const pts = outline.map(([x, y]) => new THREE.Vector3(x, y, 0.1).applyMatrix4(m));
@@ -326,7 +326,7 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
         batch.beam(L.neon, c.clone().add(e).applyMatrix4(m), c.clone().sub(e).applyMatrix4(m), 0.16, 0.16, [tone[0], tone[1], tone[2]]);
       }
     }
-    lamp(at.clone().setY(at.y - 3.5), new THREE.Color(1, 0.42, 0.72).multiplyScalar(1.5), 15, 50);
+    lamp(at.clone().setY(at.y - 3.5), new THREE.Color(1, 0.42, 0.72).multiplyScalar(2.2), 15, 50);
   }
 
   // Sun through the skylights, in two thin blades across the dark.
