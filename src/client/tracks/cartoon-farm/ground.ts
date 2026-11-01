@@ -21,7 +21,7 @@ export const MAP = {
   ] as [number, number][],
   milkLevel: -1.3,
   /** The milk factory's floor plan and the yard in front of it. */
-  factory: { x0: 90, x1: 170, z0: 164, z1: 208 },
+  factory: { x0: 84, x1: 162, z0: 164, z1: 208 },
   yard: { x0: 150, x1: 232, z0: 100, z1: 214 },
   barns: { x0: 98, x1: 212, z0: -130, z1: -100 },
   inner: { x0: -150, x1: 520, z0: -330, z1: 330 },
@@ -62,6 +62,7 @@ export function naturalHeight(x: number, z: number): number {
   const pond = ellipse(x, z, MAP.pond);
   h += (-2.6 - h) * smoothstep(1.05, 0.55, pond);
   h += (1.0 - h) * inRect(x, z, MAP.yard, 18);
+  h += (1.0 - h) * inRect(x, z, MAP.factory, 8);
   h += (1.4 - h) * inRect(x, z, MAP.barns, 14);
   h += (-3.2 - h) * smoothstep(11, 5, riverDist(x, z));
   return h;

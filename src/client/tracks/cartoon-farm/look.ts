@@ -36,6 +36,20 @@ const textures = {
     }),
   ),
 
+  stripes: cache(() =>
+    make(32, 32, 327, (p) => p.each((x, y) => hex(Math.floor((x + y) / 8) % 2 ? '#ffcf2e' : '#2b2b33'))),
+  ),
+
+  slab: cache(() =>
+    make(32, 32, 328, (p) => {
+      p.each((x, y) => (x === 0 || y === 0 ? hex('#8f93a6') : (x * 3 + y * 5) % 41 === 0 ? hex('#b4b8c8') : hex('#c4c8d6')));
+    }),
+  ),
+
+  belt: cache(() =>
+    make(16, 16, 329, (p) => p.each((x) => hex(x % 8 < 2 ? '#14141a' : '#3a3a46'))),
+  ),
+
   lawn: cache(() =>
     make(32, 32, 326, (p) => {
       p.each(() => hex('#5cc23f'));
@@ -367,9 +381,14 @@ export const looks = cache(() => ({
   hayIn: lit(textures.hay(), INDOOR * 1.6),
   shingles: lit(textures.shingles()),
   tin: lit(textures.tin()),
+  tinBoth: ps1Material({ map: textures.tin(), vertexColors: true, side: THREE.DoubleSide }),
   panels: lit(textures.panels()),
   hall: lit(textures.hall(), INDOOR),
   cow: lit(textures.cow()),
+  stripes: lit(textures.stripes()),
+  stripesIn: lit(textures.stripes(), INDOOR),
+  slab: lit(textures.slab()),
+  belt: ps1Material({ map: textures.belt(), vertexColors: true, shade: INDOOR, scroll: [-0.6, 0] }),
   picket: ps1Material({ map: textures.picket(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }),
   mesh: ps1Material({ map: textures.mesh(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }),
   milk: ps1Material({ map: textures.milk(), vertexColors: true, scroll: [0, -0.35], glow: 0.15 }),

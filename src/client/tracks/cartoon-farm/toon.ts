@@ -54,6 +54,26 @@ export class Toon {
   }
 }
 
+const pv = new THREE.Vector3();
+const pq = new THREE.Quaternion();
+const pe = new THREE.Euler(0, 0, 0, 'YXZ');
+const ps = new THREE.Vector3();
+
+/** Like xf, but fills `m` without making new objects, for the parts that move every frame. */
+export function pose(m: THREE.Matrix4, x: number, y: number, z: number, ry = 0, rx = 0, rz = 0, sx = 1, sy = sx, sz = sx): THREE.Matrix4 {
+  pe.set(rx, ry, rz);
+  return m.compose(pv.set(x, y, z), pq.setFromEuler(pe), ps.set(sx, sy, sz));
+}
+
+/** A straight round pipe from a to b. */
+export function tube(toon: Toon, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, r: number, color: RGB, t = 0.08, seg = 8): void {
+  const d = b.clone().sub(a);
+  const len = d.length();
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
+  const m = new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), q, new THREE.Vector3(1, 1, 1));
+  toon.cyl(mat, r, r, len, m, color, t, seg);
+}
+
 interface Part {
   start: number;
   pos: Float32Array;

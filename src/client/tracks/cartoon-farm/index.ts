@@ -3,7 +3,8 @@ import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
 import { valueNoise } from '../../render/noise';
 import { barns } from './barns';
-import { farHills, farmGround, MAP, milkRiver, outerGround, pondWater } from './ground';
+import { milkFactory } from './factory';
+import { farHills, farmGround, milkRiver, outerGround, pondWater } from './ground';
 import { looks } from './look';
 import { decks, fences, paveFarm, startArch } from './roadside';
 import { cartoonSky } from './sky';
@@ -38,12 +39,14 @@ export const cartoonFarm: TrackArt = {
     fences(track, toon, L);
     decks(track, toon, L, terrain, 0);
     const lamps = barns(track, toon, L);
+    const factory = milkFactory(track, toon, L, track.hazards[1]);
+    lamps.push(...factory.lights);
     const sky = cartoonSky(L);
-    group.add(farHills(L), pondWater(L), sky.group);
-    void MAP;
+    group.add(farHills(L), pondWater(L), sky.group, ...factory.group);
     return {
-      update(time, _dt, _clock, camera) {
+      update(time, _dt, clock, camera) {
         sky.update(time, camera);
+        factory.update(time, clock);
         for (const l of lamps) l.light.color.copy(l.base).multiplyScalar(0.85 + 0.25 * valueNoise(time * 6 + l.seed, l.seed, 3));
       },
     };
