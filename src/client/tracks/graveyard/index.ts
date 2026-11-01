@@ -38,7 +38,7 @@ export const graveyard: TrackArt = {
       road: (p) => road(p, kit),
       verge: (p) => verge(p, kit),
       skirt: (p) => {
-        if (p.cover === 'indoor' || p.cover === 'tunnel') return null;
+        if (p.cover === 'indoor' || p.cover === 'tunnel' || inHouse(p)) return null;
         if (p.zone === 'pond') return { mat: mats.planks, drop: 0.5, out: 0 };
         if (p.zone === 'lair') return { mat: g.blocks, drop: 1.4, out: 0 };
         if (p.zone === 'porch' && p.surface === 'wood') return { mat: mats.planks, drop: 2.5, out: 0 };
@@ -65,11 +65,13 @@ export const graveyard: TrackArt = {
   },
 };
 
+const inHouse = (p: Sample) => p.zone === 'house' || p.zone === 'stairs' || p.zone === 'landing';
+
 function road(p: Sample, kit: Kit): THREE.Material {
   const { g, mats } = kit;
   if (p.cover === 'tunnel') return g.cobbleIndoor;
   if (p.zone === 'stairs') return g.stairs;
-  if (p.zone === 'house') return g.floor;
+  if (inHouse(p)) return g.floor;
   if (p.zone === 'lair' || p.surface === 'stone') return g.cobble;
   if (p.surface === 'wood') return mats.planks;
   return g.path;
@@ -78,7 +80,7 @@ function road(p: Sample, kit: Kit): THREE.Material {
 function verge(p: Sample, kit: Kit): THREE.Material {
   const { g, mats } = kit;
   if (p.cover === 'tunnel') return g.cobbleIndoor;
-  if (p.cover === 'indoor') return mats.planksIndoor;
+  if (p.cover === 'indoor' || inHouse(p)) return mats.planksIndoor;
   if (p.zone === 'lair' || p.surface === 'stone') return g.flags;
   if (p.surface === 'wood') return mats.planks;
   return g.grass;

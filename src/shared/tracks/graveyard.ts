@@ -2,7 +2,7 @@ import type { TrackDef } from '../course';
 import type { Hazard } from '../hazards';
 import { buildTrack, type ControlPoint, type Cover, type Surface } from '../track';
 
-type Stretch = 'gate' | 'avenue' | 'crypt' | 'yard' | 'hill' | 'pond' | 'porch' | 'house' | 'stairs' | 'lawn' | 'secret' | 'lair';
+type Stretch = 'gate' | 'avenue' | 'crypt' | 'yard' | 'hill' | 'pond' | 'porch' | 'house' | 'stairs' | 'landing' | 'lawn' | 'secret' | 'lair';
 type Row = [x: number, z: number, y: number, width: number, shoulder: number, bank: number, surface: Surface, stretch: Stretch];
 
 const COVER: Record<Stretch, Cover> = {
@@ -14,7 +14,9 @@ const COVER: Record<Stretch, Cover> = {
   pond: 'deck',
   porch: 'open',
   house: 'indoor',
-  stairs: 'indoor',
+  // Decks, not indoors, so the ground stays down at the hall floor instead of climbing the stairs with the road.
+  stairs: 'deck',
+  landing: 'deck',
   lawn: 'open',
   secret: 'open',
   lair: 'deck',
@@ -73,7 +75,7 @@ const ROWS: Row[] = [
   [-102, 176, 2.3, 12, 1, 0, 'wood', 'house'],
   [-110, 176, 3.0, 12, 1, 0, 'wood', 'stairs'],
   [-124, 176, 6.6, 12, 1, 0, 'wood', 'stairs'],
-  [-130, 176, 7.3, 12, 1, 0, 'wood', 'house'], // off the landing
+  [-130, 176, 7.3, 12, 1, 0, 'wood', 'landing'], // off the landing
   [-142, 176, 3.4, 12, 1, 0, 'wood', 'house'],
   [-156, 176, 3.4, 12, 1, 0, 'wood', 'porch'], // out of the back door
   [-162, 175, 3.6, 12, 1, 0, 'wood', 'porch'],

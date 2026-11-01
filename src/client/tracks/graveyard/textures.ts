@@ -232,7 +232,7 @@ const gt = {
     }, false),
   ),
 
-  bone: cache(() => make(16, 16, 716, (p) => p.each((x, y) => hex((x + y) % 7 === 0 ? '#c8bea6' : '#e6ddc6')))),
+  bone: cache(() => make(16, 16, 716, (p) => p.each((x, y) => hex((x + y) % 7 === 0 ? '#a89e88' : '#c2b9a4')))),
 
   moon: cache(() =>
     make(64, 64, 717, (p) => {
@@ -406,12 +406,12 @@ const gt = {
 
   water: cache(() =>
     make(64, 64, 729, (p) => {
-      p.each(() => hex('#1a2436'));
+      p.each(() => hex('#1c3448'));
       for (let i = 0; i < 40; i++) {
         const x = Math.floor(p.rng() * 64);
         const y = Math.floor(p.rng() * 64);
         const len = 2 + Math.floor(p.rng() * 5);
-        for (let k = 0; k < len; k++) p.set(x + k, y, hex(k === 0 || k === len - 1 ? '#3a4a66' : '#6a80a8'));
+        for (let k = 0; k < len; k++) p.set(x + k, y, hex(k === 0 || k === len - 1 ? '#3e6480' : '#8cb4dc'));
       }
     }),
   ),
@@ -427,7 +427,7 @@ const gt = {
   ),
 
   red: cache(() => make(4, 4, 731, (p) => p.each(() => hex('#ff2a2a')))),
-  green: cache(() => make(4, 4, 732, (p) => p.each(() => hex('#9affa0')))),
+  green: cache(() => make(4, 4, 732, (p) => p.each(() => hex('#30e860')))),
   wax: cache(() => make(8, 8, 733, (p) => p.each((_x, y) => hex(y < 2 ? '#fff4d8' : '#e8dcc0')))),
   soil: cache(() =>
     make(32, 32, 734, (p) => {
@@ -503,22 +503,22 @@ export const gm = cache(() => ({
   pumpkin: lit(gt.pumpkin()),
   face: glow(gt.face(), 0.9, 0.5),
   bone: lit(gt.bone()),
-  moon: ps1Material({ map: gt.moon(), lit: false, fog: 0, alphaTest: 0.5, depthWrite: false, glow: 0.35 }),
+  moon: ps1Material({ map: gt.moon(), lit: false, fog: 0, alphaTest: 0.5, depthWrite: false, tint: 0xd8d8d0 }),
   halo: ps1Material({ map: gt.halo(), lit: false, fog: 0, additive: true, depthWrite: false }),
-  mist: ps1Material({ map: gt.mist(), vertexColors: true, lit: false, transparent: true, opacity: 0.42, side: THREE.DoubleSide, scroll: [0, 0.03] }),
-  ghost: ps1Material({ map: gt.ghost(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, glow: 0.3, fog: 0.5 }),
+  mist: ps1Material({ map: gt.mist(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, scroll: [0, 0.03] }),
+  ghost: ps1Material({ map: gt.ghost(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, tint: 0x8a9aaa, fog: 0.5 }),
   bat: ps1Material({ map: gt.bat(), vertexColors: true, lit: false, alphaTest: 0.5, side: THREE.DoubleSide, fog: 0.5 }),
-  web: ps1Material({ map: gt.web(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, lit: false, fog: 0.8 }),
+  web: ps1Material({ map: gt.web(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, tint: 0xb0b8c8 }),
   coffin: lit(gt.coffin()),
   satin: glow(gt.satin(), 0.7),
   weeds: cutout(gt.weeds(), 1, 0.12),
   portrait: lit(gt.portrait(), INDOOR),
   glass: glow(gt.glass(), 0.45, 0.5),
   skyline: ps1Material({ map: gt.skyline(), vertexColors: true, lit: false, alphaTest: 0.5, side: THREE.DoubleSide, fog: 0.35 }),
-  water: ps1Material({ map: gt.water(), vertexColors: true, transparent: true, opacity: 0.88, scroll: [0.004, 0.012], shade: 0.6 }),
+  water: ps1Material({ map: gt.water(), vertexColors: true, lit: false, transparent: true, opacity: 0.92, scroll: [0.004, 0.012] }),
   spider: lit(gt.spider()),
   eyes: glow(gt.red(), 1.2),
-  wisp: ps1Material({ map: gt.green(), vertexColors: true, lit: false, additive: true, glow: 0.8, side: THREE.DoubleSide }),
+  wisp: ps1Material({ map: gt.green(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide }),
   wax: lit(gt.wax()),
   soil: lit(gt.soil()),
   flags: lit(gt.flags()),

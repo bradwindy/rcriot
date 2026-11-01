@@ -99,8 +99,8 @@ function lamps(track: Track, kit: Kit): void {
     const sd = k % 2 ? 1 : -1;
     const at = frame(p, sd * (limitOf(p) + 1.1), 0);
     at.y = kit.terrain.height(at.x, at.z);
-    jackOLantern(kit, at, headingAt(p) + Math.PI + sd * 0.5, 0.9 + kit.rng() * 0.5, true);
-    if (kit.rng() < 0.6) jackOLantern(kit, at.clone().addScaledVector(new THREE.Vector3(p.tx, 0, p.tz), -1.6), headingAt(p) + Math.PI, 0.65, false);
+    jackOLantern(kit, at, headingAt(p) - sd * 0.5, 0.9 + kit.rng() * 0.5, true);
+    if (kit.rng() < 0.6) jackOLantern(kit, at.clone().addScaledVector(new THREE.Vector3(p.tx, 0, p.tz), -1.6), headingAt(p) - sd * 0.5, 0.65, false);
   }
 }
 
@@ -108,12 +108,12 @@ function lamps(track: Track, kit: Kit): void {
 function rows(track: Track, kit: Kit): void {
   const { rng } = kit;
   for (const { route, t, s0, s1 } of routeSpans(track)) {
-    for (let s = s0 + 8; s < s1 - 8; s += 2.9) {
+    for (let s = s0 + 8; s < s1 - 8; s += 3.5) {
       const p = sampleAt(t, s);
       if (!CEMETERY.has(p.zone) || atJunction(track, main(track, route, s), 6)) continue;
       for (const side of [-1, 1]) {
-        for (const o of [2.4, 5.6, 8.8, 12]) {
-          if (rng() < 0.32) continue;
+        for (const o of [2.4, 5.6, 9.2]) {
+          if (rng() < 0.36) continue;
           const v = frame(p, side * (limitOf(p) + o + (rng() - 0.5) * 0.9), 0);
           const g = place(kit, v.x, v.z, 2);
           if (g) headstone(kit, g, headingAt(p) + (side > 0 ? -Math.PI / 2 : Math.PI / 2) + (rng() - 0.5) * 0.3, 0.9 + rng() * 0.4);
@@ -141,7 +141,7 @@ function field(kit: Kit): void {
       const at = place(kit, px, pz, 5);
       const dense = fbm(px / 70, pz / 70, 2, 77);
       const roll = rng();
-      if (at && roll < 0.1 + (dense - 0.5) * 0.35) {
+      if (at && roll < 0.07 + (dense - 0.5) * 0.3) {
         deadTree(kit, at, 11 + rng() * 9);
       } else if (at && dense > 0.46) {
         const yaw = Math.floor(rng() * 4) * (Math.PI / 2) + (rng() - 0.5) * 0.3;
@@ -197,7 +197,7 @@ function openGraves(track: Track, kit: Kit): void {
         const q = sampleAt(track, lip - 12 + k * 6);
         const v = frame(q, side * (limitOf(q) + 1.8), 0);
         v.y = kit.terrain.height(v.x, v.z);
-        batch.geometry(g.soil, new THREE.IcosahedronGeometry(1, 1), xf(v.x, v.y, v.z, k, 0, 0, 2 + (k % 2), 1.3 + q.y - v.y, 3));
+        batch.geometry(g.soil, new THREE.IcosahedronGeometry(1, 0), xf(v.x, v.y, v.z, k, 0, 0, 2 + (k % 2), 1.3 + q.y - v.y, 3));
       }
     }
     const lid = frame(p, -(limitOf(p) + 1.4), 0.9);

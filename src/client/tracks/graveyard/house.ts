@@ -33,7 +33,9 @@ const UP = new THREE.Vector3(0, 1, 0);
  */
 export function buildHouse(track: Track, kit: Kit): House {
   const { batch, g, mats } = kit;
-  const [s0, s1] = coverRanges(track, 'indoor')[0];
+  const halls = coverRanges(track, 'indoor');
+  const s0 = halls[0][0];
+  const s1 = halls[halls.length - 1][1];
   const p0 = sampleAt(track, s0);
   const yaw = headingAt(p0);
   const F = new THREE.Vector3(p0.tx, 0, p0.tz);
@@ -63,19 +65,19 @@ export function buildHouse(track: Track, kit: Kit): House {
 
   // The shell.
   for (const side of [-1, 1]) {
-    const [a, b] = side < 0 ? [-OUTER, -HALL] : [HALL, OUTER];
+    const [a, b] = side < 0 ? [-OUTER, -HALL - 0.2] : [HALL + 0.2, OUTER];
     block(g.siding, -1.5, L + 1.5, a, b, ground, EAVES, 6);
-    block(g.blocks, -1.8, L + 1.8, side < 0 ? -OUTER - 0.3 : HALL, side < 0 ? -HALL : OUTER + 0.3, ground, floorF + 0.6, 6, [0.75, 0.75, 0.8]);
+    block(g.blocks, -1.8, L + 1.8, side < 0 ? -OUTER - 0.3 : HALL + 0.2, side < 0 ? -HALL - 0.2 : OUTER + 0.3, ground, floorF + 0.6, 6, [0.75, 0.75, 0.8]);
     block(g.trim, -2, L + 2, side < 0 ? -OUTER - 0.5 : OUTER - 0.1, side < 0 ? -OUTER + 0.1 : OUTER + 0.5, EAVES - 0.5, EAVES, 4);
     for (const [al0, al1] of [
-      [-1.5, 0],
-      [L, L + 1.5],
+      [-1.5, -0.15],
+      [L + 0.15, L + 1.5],
     ]) {
       block(g.siding, al0, al1, side < 0 ? -HALL : DOOR, side < 0 ? -DOOR : HALL, ground, EAVES, 6);
     }
   }
-  block(g.siding, -1.5, 0, -DOOR, DOOR, floorF + DOOR_TALL, EAVES, 6);
-  block(g.siding, L, L + 1.5, -DOOR, DOOR, floorB + DOOR_TALL, EAVES, 6);
+  block(g.siding, -1.5, -0.15, -DOOR, DOOR, floorF + DOOR_TALL, EAVES, 6);
+  block(g.siding, L + 0.15, L + 1.5, -DOOR, DOOR, floorB + DOOR_TALL, EAVES, 6);
 
   // Door frames, and each door swung open inside the hall.
   for (const [al, floor] of [
@@ -317,9 +319,9 @@ function outside(kit: Kit, at: At, F: THREE.Vector3, R: THREE.Vector3, L: number
     }
     for (const ac of [10, 13.4]) {
       if (ac > OUTER) continue;
-      windowAt(kit, at(-1.72, side * ac, floorF + 10.2), F.clone().negate(), 2.2, 3.6, seed++);
+      windowAt(kit, at(-1.72, side * ac, floorF + 12.4), F.clone().negate(), 2.2, 3.6, seed++);
     }
-    windowAt(kit, at(-1.72, side * 3.6, floorF + 10.4), F.clone().negate(), 2.8, 3.8, seed++);
+    windowAt(kit, at(-1.72, side * 3.6, floorF + 12.6), F.clone().negate(), 2.8, 3.8, seed++);
   }
   // The tower on the front corner nearest the approach.
   const c = at(-3, OUTER + 3, 0);
@@ -360,7 +362,7 @@ function frontPorch(kit: Kit, at: At, yaw: number, floorF: number): void {
     const v = at(-12, ac, 0);
     v.y = kit.terrain.height(v.x, v.z) - 0.2;
     column(kit, g.stone, v, top - v.y, 0.5, [0.75, 0.75, 0.82]);
-    jackOLantern(kit, at(-13.6, ac - Math.sign(ac) * 0.1, Math.max(kit.terrain.height(v.x, v.z), 1)), yaw + Math.PI, 1.3, ac > 0);
+    jackOLantern(kit, at(-13.6, ac - Math.sign(ac) * 0.1, Math.max(kit.terrain.height(v.x, v.z), 1)), yaw - Math.sign(ac) * 0.4, 1.3, ac > 0);
     const lamp = at(-6, ac * 0.84, top - 1.6);
     cube(batch, kit.mats.lantern, xf(lamp.x, lamp.y, lamp.z, yaw), 0.6, 0.85, 0.6);
     kit.light(lamp.clone().setY(lamp.y - 0.4), WARM.clone().multiplyScalar(1.4), 16, 7, 0.2);

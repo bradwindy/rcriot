@@ -53,7 +53,7 @@ const PUMPKIN = new THREE.Color(1.0, 0.45, 0.12);
 
 const geo = {
   halfDisc: cache(() => {
-    const g = new THREE.CylinderGeometry(0.5, 0.5, 1, 8, 1, false, 0, Math.PI);
+    const g = new THREE.CylinderGeometry(0.5, 0.5, 1, 5, 1, false, 0, Math.PI);
     g.rotateX(Math.PI / 2);
     g.rotateZ(Math.PI / 2);
     return g;
@@ -73,6 +73,7 @@ const geo = {
   column: cache(() => new THREE.CylinderGeometry(1, 1, 1, 8)),
   log: cache(() => new THREE.CylinderGeometry(1, 1, 1, 5, 1, true)),
   pumpkin: cache(() => ball(1, 1, 0.72, 1, 8)),
+  mound: cache(() => new THREE.ConeGeometry(1, 1, 4, 1, true)),
   skull: cache(() => ball(1, 1, 1.05, 1.15, 6)),
 };
 
@@ -114,11 +115,11 @@ export function cube(batch: Batch, mat: THREE.Material, m: THREE.Matrix4, w: num
 }
 
 /** A tapered log from a to b, for branches and roots. */
-export function limb(batch: Batch, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, r0: number, r1: number, color?: RGB): void {
+export function limb(batch: Batch, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, r0: number, r1: number, color?: RGB, sides = 5): void {
   const d = b.clone().sub(a);
   const len = d.length();
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
-  const g = new THREE.CylinderGeometry(r1, r0, len, 5, 1, true);
+  const g = new THREE.CylinderGeometry(r1, r0, len, sides, 1, true);
   batch.geometry(mat, g, new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), q, new THREE.Vector3(1, 1, 1)), color);
   g.dispose();
 }
@@ -161,7 +162,7 @@ export function headstone(kit: Kit, at: THREE.Vector3, yaw: number, size = 1, ki
   }
   if (k !== 'tablet' && k !== 'obelisk' && rng() < 0.45) {
     const mound = xf(at.x, at.y - 0.05, at.z, yaw).multiply(xf(0, 0, 1.25 * size));
-    batch.geometry(g.soil, geo.pumpkin(), mound.multiply(new THREE.Matrix4().makeScale(0.6 * size, 0.28, 1.1 * size)), [0.85, 0.85, 0.9]);
+    batch.geometry(g.soil, geo.mound(), mound.multiply(new THREE.Matrix4().makeScale(0.6 * size, 0.3, 1.1 * size)), [0.85, 0.85, 0.9]);
   }
 }
 
@@ -173,9 +174,12 @@ export function deadTree(kit: Kit, base: THREE.Vector3, height: number, depth = 
     const bend = dir.clone().add(new THREE.Vector3((rng() - 0.5) * 0.5, (rng() - 0.3) * 0.25, (rng() - 0.5) * 0.5)).normalize();
     const mid = from.clone().addScaledVector(bend, len * 0.5);
     const to = mid.clone().addScaledVector(bend.clone().add(new THREE.Vector3((rng() - 0.5) * 0.6, 0, (rng() - 0.5) * 0.6)).normalize(), len * 0.5);
+    if (level === 0) {
+      limb(batch, g.bark, from, to, r, r * 0.3, undefined, 3);
+      return;
+    }
     limb(batch, g.bark, from, mid, r, r * 0.85);
     limb(batch, g.bark, mid, to, r * 0.85, r * 0.62);
-    if (level === 0) return;
     const n = level >= 2 ? 3 : 2;
     const spin = rng() * Math.PI * 2;
     for (let i = 0; i < n; i++) {
@@ -270,7 +274,7 @@ export function skull(kit: Pick<Kit, 'batch' | 'g'>, m: THREE.Matrix4, size = 0.
   const { batch, g } = kit;
   batch.geometry(mat, geo.skull(), m.clone().multiply(new THREE.Matrix4().makeScale(size, size, size)));
   for (const side of [-1, 1]) {
-    batch.geometry(g.iron, geo.cube(), m.clone().multiply(xf(side * size * 0.38, size * 0.1, size * 0.95, 0, 0, 0, size * 0.3, size * 0.3, size * 0.2)));
+    batch.geometry(g.iron, geo.cube(), m.clone().multiply(xf(side * size * 0.42, size * 0.12, size * 0.98, 0, 0, 0, size * 0.42, size * 0.42, size * 0.2)));
   }
   batch.geometry(mat, geo.cube(), m.clone().multiply(xf(0, -size * 0.75, size * 0.45, 0, 0, 0, size * 0.75, size * 0.35, size * 0.6)));
 }

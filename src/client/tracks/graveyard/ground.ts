@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { limitOf, type Sample, type Track } from '../../../shared/track';
-import type { Batch, RGB } from '../../render/geometry';
+import { xf, type Batch, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { fbm, smoothstep, valueNoise } from '../../render/noise';
 import { atJunction, frame, routeSpans } from '../../render/road';
@@ -10,9 +10,12 @@ import type { GraveMats } from './textures';
 /** Where the full moon hangs, low in the north-east, and the way its light falls. */
 export const MOON_DIR: [number, number, number] = [0.55, 0.42, -0.72];
 
+/** Where the moon's disc sits in the sky: lower than its light comes from, so it shows over the road ahead. */
+export const MOON_SKY: [number, number, number] = [0.55, 0.2, -0.72];
+
 /** Height of the open ground, a little under the road. */
 export const GROUND = 0.8;
-export const AREA = { x0: -292, x1: 248, z0: -292, z1: 260 };
+export const AREA = { x0: -290, x1: 250, z0: -290, z1: 260, cell: 5 };
 
 /** The pond the boardwalk crosses: centre and radii. */
 export const POND = { x: -34, z: 120, rx: 30, rz: 26 };
@@ -107,7 +110,11 @@ export function pondWater(batch: Batch, g: GraveMats): void {
   geo.rotateX(-Math.PI / 2);
   const uv = geo.getAttribute('uv');
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 5, uv.getY(i) * 5);
-  batch.geometry(g.water, geo, new THREE.Matrix4().compose(new THREE.Vector3(POND.x, 0, POND.z), new THREE.Quaternion(), new THREE.Vector3(POND.rx * 0.98, 1, POND.rz * 0.98)), [0.9, 1, 1.1]);
+  batch.geometry(g.water, geo, new THREE.Matrix4().compose(new THREE.Vector3(POND.x, 0, POND.z), new THREE.Quaternion(), new THREE.Vector3(POND.rx * 0.98, 1, POND.rz * 0.98)));
+  // The moon's smear on the water, on the far side from the road.
+  const smear = new THREE.PlaneGeometry(1, 1);
+  smear.rotateX(-Math.PI / 2);
+  batch.geometry(g.halo, smear, xf(POND.x - 12, 0.05, POND.z - 4, 0.65, 0, 0, 34, 1, 13));
 }
 
 /**
@@ -132,7 +139,10 @@ export function mist(track: Track, batch: Batch, g: GraveMats, terrain: Terrain)
               [b.pts[k], k / (a.pts.length - 1), b.p.s / 22],
               [b.pts[k + 1], (k + 1) / (a.pts.length - 1), b.p.s / 22],
             ];
-            for (const [v, u, vv] of quad) batch.vertex(g.mist, v, UP, u, vv, [0.75, 0.82, 1]);
+            quad.forEach(([v, u, vv], i) => {
+              const fade = Math.min(1, Math.min(i === 1 || i === 4 || i === 5 ? j + 1 : j, strip.length - 1 - (i === 1 || i === 4 || i === 5 ? j + 1 : j)) / 3);
+              batch.vertex(g.mist, v, UP, u, vv, [0.42 * fade, 0.48 * fade, 0.62 * fade]);
+            });
           }
         }
         strip = [];
@@ -140,7 +150,8 @@ export function mist(track: Track, batch: Batch, g: GraveMats, terrain: Terrain)
       for (let s = s0; s <= s1; s += 4) {
         const p = t.samples[Math.round(s / t.step) % t.samples.length];
         const ms = route === 0 ? s : track.routes[route - 1].from + s - track.routes[route - 1].rfrom;
-        if (p.cover === 'indoor' || p.cover === 'tunnel' || p.zone === 'lair' || atJunction(track, ms, 6) || p.zone === 'stairs') {
+        const covered = p.cover === 'indoor' || p.cover === 'tunnel' || ['lair', 'stairs', 'landing', 'hill'].includes(p.zone);
+        if (covered || atJunction(track, ms, 6)) {
           flush();
           continue;
         }

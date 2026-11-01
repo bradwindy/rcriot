@@ -191,14 +191,18 @@ function buildCrypt(track: Track, kit: Kit): Pick<SetPieces, 'cryptExit' | 'cryp
       if ((k + (side > 0 ? 1 : 0)) % 2 === 0) candles(kit, top.clone().setY(top.y + 0.12), mh, 4, true);
       else candles(kit, frame(mid, side * (wall(mid) - 1.2), 1.5).setY(frame(mid, 0, 1.5).y + 0.6), mh, 2, false);
     }
-    // Cobwebs in the corners of every other bay.
+    // An iron cage lantern on a chain from every other rib, to pool light on the road, and cobwebs in the corners.
     if (k % 2 === 0) {
+      const top = frame(p, 0, 7.4);
+      const lamp = frame(p, 0, 5.2);
+      box(batch, g.ironIndoor, 0.1, top.y - lamp.y, 0.1, xf(p.x, (top.y + lamp.y) / 2, p.z, h));
+      cube(batch, kit.mats.lantern, xf(lamp.x, lamp.y - 0.4, lamp.z, h), 0.7, 0.9, 0.7);
+      kit.light(lamp.clone().setY(lamp.y - 0.9), WARM.clone().multiplyScalar(1.5), 20, 7, 0.16);
       for (const side of [-1, 1]) {
         const at = frame(p, side * (wall(p) - 1.2), 5.6);
         batch.geometry(g.web, new THREE.PlaneGeometry(3, 3), xf(at.x, at.y, at.z, h, 0, side * 0.6));
       }
     }
-    void h;
   }
   for (const [s, out] of [
     [a - 3.6, -1],
@@ -218,7 +222,7 @@ function mausoleumFront(kit: Kit, track: Track, s: number, out: number): void {
     const v = frame(p, o, hh);
     return v.add(new THREE.Vector3(p.tx, 0, p.tz).multiplyScalar(out * d));
   };
-  const h = headingAt(p) + (out < 0 ? Math.PI : 0);
+  const h = headingAt(p) + (out > 0 ? Math.PI : 0);
   const limit = limitOf(p);
   // Voussoirs round the arch opening.
   for (let k = 0; k <= 12; k++) {
@@ -226,7 +230,7 @@ function mausoleumFront(kit: Kit, track: Track, s: number, out: number): void {
     const bulge = Math.sin(ang);
     const o = Math.cos(ang) * (limit + 1.3 * Math.sqrt(bulge)) * 0.96 * 1.06;
     const v = at(o, bulge * TUNNEL_HEIGHT * 0.96 + 0.35, 0.5);
-    cube(batch, g.stone, xf(v.x, v.y, v.z, h, 0, -Math.cos(ang) * 1.2 * out), 1.3, 1.1, 1.3, [0.82, 0.82, 0.88]);
+    cube(batch, g.stone, xf(v.x, v.y, v.z, h, 0, Math.cos(ang) * 1.2 * out), 1.3, 1.1, 1.3, [0.82, 0.82, 0.88]);
   }
   for (const side of [-1, 1]) {
     for (const o of [limit + 2.3, limit + 4.6]) column(kit, g.stone, at(side * o, -0.1, 1.2), 9, 0.6, [0.85, 0.85, 0.9]);
@@ -304,7 +308,7 @@ function buildLair(track: Track, kit: Kit): Pick<SetPieces, 'spiderPivot' | 'lai
   const fp = floor.getAttribute('position');
   const fuv = floor.getAttribute('uv');
   for (let i = 0; i < fp.count; i++) {
-    const v = pos(-fp.getZ(i), fp.getX(i));
+    const v = pos(fp.getX(i), fp.getZ(i));
     fp.setXYZ(i, v.x, kit.terrain.height(v.x, v.z) + 0.06, v.z);
     fuv.setXY(i, fuv.getX(i) * 7, fuv.getY(i) * 5);
   }
@@ -391,19 +395,19 @@ function buildLair(track: Track, kit: Kit): Pick<SetPieces, 'spiderPivot' | 'lai
   skull(kit, xf(...frame(arch, 0, 11.6).toArray(), ah), 0.55, g.bone);
   batch.geometry(g.web, new THREE.PlaneGeometry(7, 6), xf(...frame(arch, 0, 7.4).toArray(), ah));
   // Gargoyle-ish urns and a toppled angel at the secret way in.
-  const way = sampleAt(ft, route.rfrom + 40);
+  const way = sampleAt(ft, route.rfrom + 112);
   angel(kit, kit.ground(...xz(frame(way, -(limitOf(way) + 3.5), 0))), headingAt(way) + 1.2, 0.8);
   const fallen = frame(way, limitOf(way) + 3, 0);
   fallen.y = kit.terrain.height(fallen.x, fallen.z);
   const fm = xf(fallen.x, fallen.y + 0.4, fallen.z, headingAt(way) + 0.3, Math.PI / 2 - 0.15);
   cube(batch, g.stone, fm, 1.2, 3.2, 1.0);
   for (const side of [-1, 1]) {
-    for (const s of [route.rfrom + 32, route.rto - 30]) {
+    for (const s of [route.rfrom + 112, route.rto - 86]) {
       const q = sampleAt(ft, s);
       const v = frame(q, side * (limitOf(q) + 0.9), 0);
       v.y = Math.min(v.y, kit.terrain.height(v.x, v.z));
       cube(batch, g.blocks, xf(v.x, v.y + 1.6, v.z, headingAt(q)), 1.4, 3.6, 1.4, [0.7, 0.85, 0.7]);
-      jackOLantern(kit, v.clone().setY(v.y + 3.4), headingAt(q) + Math.PI, 0.8, side > 0);
+      jackOLantern(kit, v.clone().setY(v.y + 3.4), headingAt(q) - side * 0.4, 0.8, side > 0);
     }
   }
   void mats;
@@ -449,7 +453,7 @@ function hangmansTree(track: Track, kit: Kit): THREE.Vector3 {
     const v = base.clone().add(new THREE.Vector3((hash2(i, 1, 31) - 0.5) * 3, 0.5 + (i > 3 ? 0.4 : 0), (hash2(i, 2, 31) - 0.5) * 3));
     skull(kit, xf(v.x, v.y, v.z, hash2(i, 3, 31) * 6), 0.35);
   }
-  jackOLantern(kit, frame(p, limit + 2.2, 0), headingAt(p) + Math.PI / 2, 1.3, true);
+  jackOLantern(kit, frame(p, limit + 2.2, 0), headingAt(p) - 0.6, 1.3, true);
   return pivot;
 }
 

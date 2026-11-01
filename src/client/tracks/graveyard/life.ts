@@ -5,7 +5,7 @@ import type { Track } from '../../../shared/track';
 import { ball, Batch, xf } from '../../render/geometry';
 import { hash2 } from '../../render/noise';
 import { dynamicLight } from '../../render/ps1';
-import { MOON_DIR, POND } from './ground';
+import { MOON_SKY, POND } from './ground';
 import { cube, type Kit, limb, skull } from './kit';
 import type { SetPieces } from './structures';
 
@@ -101,7 +101,7 @@ export function buildLife(track: Track, kit: Kit, group: THREE.Group, pieces: Se
 
 function buildMoon(kit: Kit, group: THREE.Group): (camera: THREE.Camera) => void {
   const { g } = kit;
-  const dir = new THREE.Vector3(...MOON_DIR).normalize();
+  const dir = new THREE.Vector3(...MOON_SKY).normalize();
   const moon = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), g.moon);
   const halo = new THREE.Mesh(new THREE.PlaneGeometry(620, 620), g.halo);
   moon.renderOrder = -1;
@@ -210,7 +210,7 @@ function buildGhosts(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: nu
       c.copy(house.at(al, ac, y));
       to.copy(camera.position).sub(c).setY(0).normalize();
       across.crossVectors(UP, to).normalize();
-      const size = 2 + (i % 2) * 0.7;
+      const size = 1.4 + (i % 2) * 0.5;
       const lean = Math.sin(time * 1.4 + i) * 0.4;
       corners[0].copy(c).addScaledVector(across, -size).setY(c.y - size * 1.2);
       corners[1].copy(c).addScaledVector(across, size).setY(c.y - size * 1.2);
@@ -267,7 +267,7 @@ function stretch(mesh: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3): void {
 /** The noose: its loop rides at car height exactly where the hazard is, swinging from the branch. */
 function buildNoose(track: Track, kit: Kit, group: THREE.Group, pieces: SetPieces): (clock: number) => void {
   const { mats } = kit;
-  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1, 5, 1, true), mats.rope);
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1, 5, 1, true), mats.rope);
   const loop = solid((batch) => {
     batch.geometry(mats.rope, new THREE.TorusGeometry(0.72, 0.13, 5, 10), xf(0, -0.7, 0));
     batch.geometry(mats.rope, new THREE.CylinderGeometry(0.2, 0.17, 0.75, 6), xf(0, 0.25, 0));
