@@ -101,6 +101,11 @@ export function fences(track: Track, toon: Toon, L: Looks): void {
   }
 }
 
+/** True where a lower stretch of road runs under this spot, so no leg may stand there. */
+function overRoad(track: Track, at: THREE.Vector3): boolean {
+  return track.samples.some((q) => q.y < at.y - 4 && Math.hypot(q.x - at.x, q.z - at.z) < limitOf(q) + 0.8);
+}
+
 /** Rails and rickety legs under every deck: the trestle, the boardwalk and the hayloft chutes. */
 export function decks(track: Track, toon: Toon, L: Looks, terrain: Terrain, water: number): void {
   for (const { route, t, s0, s1 } of routeSpans(track)) {
@@ -123,9 +128,9 @@ export function decks(track: Track, toon: Toon, L: Looks, terrain: Terrain, wate
         if (k % 2 === 0 || chute) {
           const ground = Math.max(terrain.height(edge.x, edge.z), p.zone === 'boardwalk' ? water - 1.5 : -10);
           const top = edge.y - 0.3;
-          if (top - ground > 0.4) {
+          const foot = frame(p, side * (lim - 0.6), 0).setY(ground);
+          if (top - ground > 0.4 && !overRoad(track, foot.clone().setY(top))) {
             const lean = (hash2(k, side * 3, 7 + route) - 0.5) * 0.08;
-            const foot = frame(p, side * (lim - 0.6), 0).setY(ground);
             toon.beam(L.wood, foot, frame(p, side * (lim - 0.6 + lean * (top - ground)), -0.3), 0.45, 0.45, [0.85, 0.85, 0.85], 0.06);
           }
         }
@@ -135,9 +140,11 @@ export function decks(track: Track, toon: Toon, L: Looks, terrain: Terrain, wate
       }
       rails = now;
       // Cross bracing between the legs of the tall trestle.
-      if (p.zone === 'trestle' && k % 2 === 0) {
-        const l = frame(p, -(lim - 0.6), -0.3);
-        const r = frame(p, lim - 0.6, -0.3);
+      const left = frame(p, -(lim - 0.6), -0.3);
+      const right = frame(p, lim - 0.6, -0.3);
+      if (p.zone === 'trestle' && k % 2 === 0 && !overRoad(track, left) && !overRoad(track, right)) {
+        const l = left;
+        const r = right;
         const ground = Math.min(terrain.height(l.x, l.z), terrain.height(r.x, r.z));
         for (let y = l.y; y - 3.2 > ground; y -= 3.4) {
           const a = l.clone().setY(y);
