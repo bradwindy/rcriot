@@ -2,10 +2,12 @@ import { buildTerrain } from '../../render/terrain';
 import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
 import { valueNoise } from '../../render/noise';
+import { menagerie } from './animals';
 import { barns } from './barns';
 import { milkFactory } from './factory';
 import { farHills, farmGround, milkRiver, outerGround, pondWater } from './ground';
 import { looks } from './look';
+import { buildProps } from './props';
 import { decks, fences, paveFarm, startArch } from './roadside';
 import { cartoonSky } from './sky';
 import { Toon } from './toon';
@@ -41,12 +43,16 @@ export const cartoonFarm: TrackArt = {
     const lamps = barns(track, toon, L);
     const factory = milkFactory(track, toon, L, track.hazards[1]);
     lamps.push(...factory.lights);
+    const animals = menagerie(track, toon, L, terrain, index, track.hazards[0]);
+    const props = buildProps(track, toon, L, terrain, index);
     const sky = cartoonSky(L);
-    group.add(farHills(L), pondWater(L), sky.group, ...factory.group);
+    group.add(farHills(L), pondWater(L), sky.group, ...factory.group, ...animals.group, ...props.group);
     return {
       update(time, _dt, clock, camera) {
         sky.update(time, camera);
         factory.update(time, clock);
+        animals.update(time, clock);
+        props.update(time);
         for (const l of lamps) l.light.color.copy(l.base).multiplyScalar(0.85 + 0.25 * valueNoise(time * 6 + l.seed, l.seed, 3));
       },
     };
