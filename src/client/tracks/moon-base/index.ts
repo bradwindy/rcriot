@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { COUNTDOWN } from '../../../shared/race';
 import { buildTerrain } from '../../render/terrain';
 import { TrackIndex } from '../../render/trackindex';
@@ -21,7 +22,7 @@ export const moonBase: TrackArt = {
     sunDir: [SUN.x, SUN.y, SUN.z],
     sunColor: [1.55, 1.5, 1.42],
     skyLight: [0.1, 0.11, 0.16],
-    groundLight: [0.2, 0.2, 0.22],
+    groundLight: [0.28, 0.28, 0.3],
     sun: true,
     clouds: false,
     stars: true,
@@ -34,7 +35,7 @@ export const moonBase: TrackArt = {
     paveRoad(track, batch, {
       road: (p) => (p.surface === 'void' ? null : p.cover === 'indoor' ? mm.platesIn : p.zone === 'tube' ? mm.plates : mm.lane),
       verge: (p) => (p.surface === 'void' ? null : p.cover === 'indoor' ? mm.stripesIn : p.zone === 'tube' ? mm.chase : mm.regolith),
-      skirt: (p) => (p.cover === 'open' ? { mat: mm.regolith, drop: 1, out: 0.8 } : null),
+      skirt: (p) => (p.cover === 'open' ? { mat: mm.regolith, drop: 1, out: 3.5 } : null),
     });
     startLine(track, batch, mats, grid);
     const base = buildBase(track, batch, mats, mm, group);
@@ -44,6 +45,10 @@ export const moonBase: TrackArt = {
     const globe = earth(mm);
     group.add(globe, farMountains(mm));
     const { rover } = props;
+    const holo = new THREE.Mesh(new THREE.SphereGeometry(5.2, 14, 10), mm.holo);
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(1.3, 8, 6), mm.holo);
+    holo.position.copy(base.core).setY(base.core.y - 0.5);
+    group.add(holo, moon);
 
     return {
       flames: [...laser.flames, ...lander.flames],
@@ -53,6 +58,8 @@ export const moonBase: TrackArt = {
         lander.update(clock, time);
         globe.position.copy(camera.position).addScaledVector(EARTH_DIR, 640);
         globe.rotation.y = 2.2 + time * 0.01;
+        holo.rotation.y = time * 0.35;
+        moon.position.set(holo.position.x + Math.cos(time * 0.8) * 8, holo.position.y + Math.sin(time * 0.8) * 1.6, holo.position.z + Math.sin(time * 0.8) * 8);
 
         const blink = time % 1.4 < 0.35;
         mm.beacon.uniforms.uTint.value.setScalar(blink ? 1.3 : 0.3);

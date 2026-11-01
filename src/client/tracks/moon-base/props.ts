@@ -152,7 +152,7 @@ function greenhouse(batch: Batch, mm: MoonMats, mats: Materials, terrain: Terrai
       const a = (k / n) * Math.PI * 2 + ring;
       const x = HAB.x + Math.cos(a) * r;
       const z = HAB.z + Math.sin(a) * r;
-      const s = 2.2 + rng() * 1.8 - ring * 0.3;
+      const s = 4.2 + rng() * 2.6 - ring * 0.5;
       for (const turn of [0, Math.PI / 2]) batch.geometry(mm.plant, new THREE.PlaneGeometry(s * 1.2, s), xf(x, y + 1.4 + s / 2, z, a + turn));
     }
     batch.geometry(mats.dirt, new THREE.TorusGeometry(r, 1.1, 3, 24), xf(HAB.x, y + 1.0, HAB.z, 0, Math.PI / 2), [0.7, 0.55, 0.4]);
@@ -256,7 +256,7 @@ export function buildProps(track: Track, index: TrackIndex, terrain: Terrain, ba
     solarRow(batch, mm, mats, terrain, new THREE.Vector3(x, 0, z), yaw, n);
   }
   for (const [x, z, h] of [
-    [60, -205, 30],
+    [60, -232, 30],
     [150, 20, 22],
     [-30, 350, 24],
   ]) {

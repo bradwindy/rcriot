@@ -129,7 +129,7 @@ export function moonGround(mm: MoonMats): GroundSpec {
       }
       // Pale highlands and darker seas in broad sweeps, rays of bright ejecta round the big craters.
       const sea = smoothstep(0.42, 0.62, fbm(x / 160, z / 160, 2, 63));
-      let v = (1.04 - sea * 0.22) * (0.96 + valueNoise(x / 14, z / 14, 64) * 0.08);
+      let v = (1.3 - sea * 0.28) * (0.96 + valueNoise(x / 14, z / 14, 64) * 0.08);
       for (const [cx, cz, r] of CRATERS.slice(0, 6)) {
         const d = Math.hypot(x - cx, z - cz);
         if (d < r * 1.2 || d > r * 4) continue;

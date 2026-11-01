@@ -21,7 +21,7 @@ const ROOMS: Record<string, Room> = {
   hall: { wall: 7.2, ceil: 10.5, light: [0.8, 0.9, 1.25], tint: [0.86, 0.9, 0.96] },
   rotunda: { wall: 5.6, ceil: 8.6, light: [0.5, 1.0, 1.3], tint: [0.9, 1, 1.05] },
   gallery: { wall: 5.2, ceil: 7.4, light: [0.75, 0.9, 1.35], tint: [1, 1, 1] },
-  ring: { wall: 4.8, ceil: 7.2, light: [1.35, 1.05, 0.7], tint: [1.05, 0.98, 0.9] },
+  ring: { wall: 4.8, ceil: 7.2, light: [1.6, 1.25, 0.85], tint: [1.05, 0.98, 0.9] },
 };
 const room = (p: Sample): Room => ROOMS[p.zone] ?? ROOMS.airlock;
 
@@ -71,7 +71,7 @@ function interior(mm: MoonMats, track: Track, p: Sample, s: number): Corner[] {
     const sill = kind === 'belt' ? mm.belt : mm.wall;
     const back = kind === 'window' ? mm.glass : kind === 'belt' ? mm.ceiling : mm.wall;
     const up: Corner[] = [
-      { o: dir * L, h: -0.6, u: u(-0.6), m: mm.ceiling },
+      { o: dir * L, h: 0.03, u: u(0), m: mm.ceiling },
       { o: dir * L, h: KICK, u: 0, m: mm.wall, c: tint },
       { o: dir * L, h: bot, u: u(bot), m: sill, c: tint },
       { o: dir * (L + d), h: bot, u: kind === 'belt' ? 0 : u(bot), m: back, c: kind === 'window' ? [1, 1, 1] : tint },
@@ -87,12 +87,14 @@ function interior(mm: MoonMats, track: Track, p: Sample, s: number): Corner[] {
     return up;
   };
   return [
+    { o: -L + 0.6, h: 0.03, u: 0, m: mm.ceiling },
     ...side(-1),
     { o: -L + 1.6, h: C - 0.5, u: (-L + 1.6) / 4, m: mm.ceiling },
     { o: -L / 3, h: C, u: -L / 12, m: mm.ceiling },
     { o: L / 3, h: C, u: L / 12, m: mm.ceiling },
     { o: L - 1.6, h: C - 0.5, u: (L - 1.6) / 4, m: mm.ceiling },
-    ...side(1),
+    ...side(1).map((c, k, all) => (k === all.length - 1 ? { ...c, m: mm.ceiling } : c)),
+    { o: L - 0.6, h: 0.03, u: 0 },
   ];
 }
 

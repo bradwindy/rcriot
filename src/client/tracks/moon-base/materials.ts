@@ -4,6 +4,8 @@ import { ps1Material } from '../../render/ps1';
 import { cache, hex, make, mixc, scale, type Painter, type RGBA } from '../../render/textures';
 
 const CLEAR: RGBA = [0, 0, 0, 0];
+/** Takes the white cladding down, so full sun shows its panels instead of blowing out. */
+const HULL = 0x9a9ea6;
 
 /** A little crater pressed into a texture: lit on the upper left of its rim, shaded on the lower right. */
 function dent(p: Painter, cx: number, cy: number, r: number, base: RGBA): void {
@@ -107,7 +109,7 @@ const T = {
       p.each((x, y) => {
         const streak = (x + y) % 32;
         if (streak === 3 || streak === 4 || streak === 9) return [235, 250, 255, 120];
-        return [150, 210, 235, 46];
+        return [160, 215, 240, 64];
       });
     }, true, false),
   ),
@@ -275,8 +277,8 @@ export const moonMats = cache(() => {
     stripesIn: lit(T.stripes(), INDOOR),
     wall: lit(T.wall(), INDOOR),
     ceiling: lit(T.ceiling(), INDOOR),
-    hull: lit(T.hull()),
-    frame: wired(lit(T.hull()), [0.62, 0.63, 0.64]),
+    hull: ps1Material({ map: T.hull(), vertexColors: true, tint: HULL }),
+    frame: wired(ps1Material({ map: T.hull(), vertexColors: true, tint: HULL }), [0.62, 0.63, 0.64]),
     glass: ps1Material({ map: T.glass(), vertexColors: true, lit: false, transparent: true, side: THREE.DoubleSide, fog: 0.6 }),
     strip: glow(T.strip(), 0.9),
     screens: glow(T.screens(), 0.5),
