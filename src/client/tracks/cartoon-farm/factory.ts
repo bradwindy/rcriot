@@ -354,11 +354,11 @@ export function milkFactory(track: Track, toon: Toon, L: Looks, churnHazard: Haz
     const at = v3(E + 1.2, FLOOR + DOOR + 2.4, pa.z);
     const m = xf(at.x, at.y, at.z, Math.PI / 2);
     toon.box(L.flat, 12, 3.2, 0.3, m, rgb(C.blue), 0.1);
-    for (const x of [-4.6, -2.3, 0, 2.3, 4.6]) {
-      const b0 = m.clone().multiply(xf(x, -0.9, 0.2));
-      const outline: [number, number][] = [[-0.5, 0], [0.5, 0], [0.5, 1], [0.24, 1.45], [0.24, 1.9], [-0.24, 1.9], [-0.24, 1.45], [-0.5, 1]];
+    for (const x of [-3.8, 0, 3.8]) {
+      const b0 = m.clone().multiply(xf(x, -1.3, 0.2));
+      const outline: [number, number][] = [[-0.7, 0], [0.7, 0], [0.7, 1.4], [0.34, 2], [0.34, 2.6], [-0.34, 2.6], [-0.34, 2], [-0.7, 1.4]];
       const pts = outline.map(([px, py]) => new THREE.Vector3(px, py, 0).applyMatrix4(b0));
-      pts.forEach((q, i) => batch.beam(L.neon, q, pts[(i + 1) % pts.length], 0.13, 0.13, [1, 0.16, 0.5]));
+      pts.forEach((q, i) => batch.beam(L.neon, q, pts[(i + 1) % pts.length], 0.26, 0.26, [1, 0.16, 0.5]));
     }
   }
 

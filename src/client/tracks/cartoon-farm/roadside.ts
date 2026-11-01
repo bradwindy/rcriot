@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { fromMain, toMain } from '../../../shared/course';
+import { fromMain } from '../../../shared/course';
 import { limitOf, sampleAt, type Sample, type Track } from '../../../shared/track';
 import { xf, type Batch } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { hash2, valueNoise } from '../../render/noise';
-import { atJunction, frame, headingAt, loft, paveRoad, routeSpans, startLine } from '../../render/road';
+import { frame, headingAt, loft, paveRoad, routeSpans, startLine } from '../../render/road';
 import type { Terrain } from '../../render/terrain';
 import { C, rgb, type Looks } from './look';
 import type { Toon } from './toon';
@@ -53,11 +53,24 @@ export function paveFarm(track: Track, batch: Batch, L: Looks, mats: Materials, 
   startLine(track, batch, mats, grid);
 }
 
-/** Where the main track or the fork runs, sample by sample, with the main-track distance of each. */
-function eachSample(track: Track, step: number, f: (p: Sample, ms: number, route: number, t: Track, s: number) => void): void {
+/** Where the main track or the fork runs, sample by sample. */
+function eachSample(track: Track, step: number, f: (p: Sample, route: number, s: number) => void): void {
   for (const { route, t, s0, s1 } of routeSpans(track)) {
-    for (let s = s0 + (route ? 1 : 0); s < s1 - (route ? 1 : 0); s += step) f(sampleAt(t, s), toMain(track, route, s), route, t, s);
+    for (let s = s0 + (route ? 1 : 0); s < s1 - (route ? 1 : 0); s += step) f(sampleAt(t, s), route, s);
   }
+}
+
+/**
+ * True where a fence would stand across the other road at a fork or join. Fences then run round the outside of both
+ * roads and leave only the mouths open. The fork gives way, so one fence stays where the two roads still coincide.
+ */
+function acrossOtherRoad(track: Track, route: number, at: THREE.Vector3): boolean {
+  const fork = track.routes[0];
+  if (!fork) return false;
+  const other = route ? track : fork.track;
+  const [a, b] = route ? [fork.from - 30, fork.to + 30] : [fork.rfrom - 30, fork.rto + 30];
+  const margin = route ? 1 : -0.5;
+  return other.samples.some((q) => q.s > a && q.s < b && Math.hypot(q.x - at.x, q.z - at.z) < limitOf(q) + margin);
 }
 
 /** Wobbly white picket fences along the open road, with chunky posts. */
@@ -67,18 +80,17 @@ export function fences(track: Track, toon: Toon, L: Looks): void {
   for (const side of [-1, 1]) {
     let last: { foot: THREE.Vector3; top: THREE.Vector3; u: number } | null = null;
     let k = 0;
-    eachSample(track, 2.5, (p, ms, route, _t, s) => {
+    eachSample(track, 2.5, (p, route, s) => {
       const falling = p.surface === 'wood' && p.grade < -0.1;
-      const skip = p.cover !== 'open' || p.surface === 'goo' || falling || p.zone === 'works' || atJunction(track, ms, 3);
-      if (skip) {
+      const foot = frame(p, side * (limitOf(p) + 0.2), -0.25);
+      if (p.cover !== 'open' || p.surface === 'goo' || falling || p.zone === 'works' || acrossOtherRoad(track, route, foot)) {
         last = null;
         return;
       }
       const wob = valueNoise(s * 0.21, side * 7 + route * 3, 5);
-      const foot = frame(p, side * (limitOf(p) + 0.2), -0.25);
       const top = frame(p, side * (limitOf(p) + 0.2 + (wob - 0.5) * 0.35), H + (wob - 0.5) * 0.3);
       const prev: { foot: THREE.Vector3; top: THREE.Vector3; u: number } | null = last;
-      const u = prev ? prev.u + prev.foot.distanceTo(foot) / 1.15 : 0;
+      const u = prev ? prev.u + prev.foot.distanceTo(foot) / 2.7 : 0;
       if (prev && prev.foot.distanceTo(foot) < 6) {
         const n = new THREE.Vector3().crossVectors(foot.clone().sub(prev.foot), prev.top.clone().sub(prev.foot)).normalize();
         const quad: [THREE.Vector3, number, number][] = [
