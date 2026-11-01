@@ -94,6 +94,29 @@ export function filmLight(batch: Batch, mats: Materials, looks: Looks, at: THREE
   if (light) addPointLight(at.clone().setY(at.y + 5).lerp(target, 0.4), new THREE.Color(1.0, 0.92, 0.82).multiplyScalar(1.2), 30);
 }
 
+/** A column of smoke: a rising spindle wrapped in scrolling blobs, hot at the foot and fading up into the dusk. */
+export function plume(batch: Batch, looks: Looks, at: THREE.Vector3, size: number): void {
+  const profile: [number, number][] = [
+    [0.5, 0.6],
+    [1, 2.4],
+    [1.7, 5.4],
+    [2.5, 9],
+    [2.1, 12],
+    [0.5, 14],
+  ];
+  const g = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r * size, y * size)), 7);
+  const pos = g.getAttribute('position');
+  const uv = g.getAttribute('uv');
+  const col: number[] = [];
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, uv.getX(i) * 2, uv.getY(i) * 2.5);
+    const f = pos.getY(i) / (14 * size);
+    col.push(1.5 - f * 0.9, 1 - f * 0.5, 0.8 - f * 0.1);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  batch.geometry(looks.smoke, g, xf(at.x, at.y, at.z, size));
+}
+
 /** A big fire: crossed flame sprites and a smoke column, with an orange light. */
 export function fire(batch: Batch, mats: Materials, looks: Looks, at: THREE.Vector3, size: number, smoke = true, light = true): PointLight | null {
   for (let k = 0; k < 3; k++) {
@@ -102,11 +125,7 @@ export function fire(batch: Batch, mats: Materials, looks: Looks, at: THREE.Vect
     const h = size * (1.4 + (k % 2) * 0.5);
     batch.geometry(mats.flame, new THREE.PlaneGeometry(size, h), xf(at.x + off.x, at.y + h / 2 - 0.2, at.z + off.z, a));
   }
-  if (smoke) {
-    for (const turn of [0, Math.PI / 2]) {
-      batch.geometry(looks.smoke, new THREE.PlaneGeometry(size * 2.2, size * 9), xf(at.x, at.y + size * 5.5, at.z, turn + 0.4), [1, 1, 1]);
-    }
-  }
+  if (smoke) plume(batch, looks, at, size);
   if (!light) return null;
   return addPointLight(at.clone().setY(at.y + size), new THREE.Color(1.0, 0.45, 0.15).multiplyScalar(1.6), size * 7);
 }

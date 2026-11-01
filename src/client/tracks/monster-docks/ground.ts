@@ -98,7 +98,7 @@ function building(batch: Batch, looks: Looks, x: number, z: number, w: number, d
       [bx, h, bz, run + len, h],
       [ax, h, az, run, h],
     ];
-    for (const [lx, y, lz, u, v] of quad) batch.vertex(looks.skyline, at(lx, y, lz), n, u / 16, v / 24, tone);
+    for (const [lx, y, lz, u, v] of quad) batch.vertex(looks.skyline, at(lx, y, lz), n, u / 44, v / 44, tone);
     run += len;
   }
   const up = new THREE.Vector3(0, 1, 0);
@@ -121,20 +121,20 @@ export function skyline(batch: Batch, looks: Looks): Skyline {
   const fires: THREE.Vector3[] = [];
   const lights: THREE.Vector3[] = [];
   const beacons: THREE.Vector3[] = [];
-  const n = 150;
+  const n = 92;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + hash2(i, 1, 61) * 0.03;
     const north = Math.max(0, -Math.sin(a));
-    const r = 560 + hash2(i, 2, 61) * 160 - north * 60;
+    const r = 600 + hash2(i, 2, 61) * 170;
     const x = -50 + Math.cos(a) * r;
     const z = -150 + Math.sin(a) * r * 1.05;
-    const tall = 18 + hash2(i, 3, 61) ** 2 * 60 + north * north * (40 + hash2(i, 4, 61) * 90);
-    const w = 18 + hash2(i, 5, 61) * 26;
-    const d = 16 + hash2(i, 6, 61) * 20;
+    const tall = 16 + hash2(i, 3, 61) ** 2 * 46 + north * north * (22 + hash2(i, 4, 61) * 60);
+    const w = 24 + hash2(i, 5, 61) * 22;
+    const d = 22 + hash2(i, 6, 61) * 18;
     const tone: RGB = [0.85 + hash2(i, 7, 61) * 0.3, 0.8 + hash2(i, 8, 61) * 0.25, 0.9 + hash2(i, 9, 61) * 0.3];
     const yaw = a + Math.PI / 2;
     building(batch, looks, x, z, w, d, tall, yaw, tone);
-    if (tall > 60 && hash2(i, 10, 61) < 0.6) {
+    if (tall > 50 && hash2(i, 10, 61) < 0.6) {
       building(batch, looks, x, z, w * 0.6, d * 0.6, tall + 14 + hash2(i, 11, 61) * 18, yaw, tone);
       if (hash2(i, 12, 61) < 0.5) {
         const top = tall + 32 + hash2(i, 11, 61) * 18;
@@ -142,8 +142,8 @@ export function skyline(batch: Batch, looks: Looks): Skyline {
         beacons.push(new THREE.Vector3(x, top + 17, z));
       }
     }
-    if (hash2(i, 13, 61) < 0.16) fires.push(new THREE.Vector3(x, tall, z));
-    if (i % 19 === 4) lights.push(new THREE.Vector3(x, tall + 2, z));
+    if (hash2(i, 13, 61) < 0.2) fires.push(new THREE.Vector3(x, tall, z));
+    if (i % 13 === 4) lights.push(new THREE.Vector3(x, tall + 2, z));
   }
   return { fires, lights, beacons };
 }

@@ -8,7 +8,7 @@ import { lamp, skin, type Looks } from './look';
 import { part } from './warehouse';
 
 /** How far the head swings down on its neck to bite, and up to rear back before it does. */
-const BITE = -0.235;
+const BITE = -0.215;
 const REAR = 0.09;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
@@ -93,31 +93,37 @@ export function seaMonster(track: Track, batch: Batch, looks: Looks, hazard: Haz
     for (const [x, y, z, r] of pts) {
       b.geometry(m, skin(ball(r, 1, 1, 1, 8), 'scales'), xf(x, y, z), green);
       b.geometry(m, skin(new THREE.ConeGeometry(1, 3.4, 4), 'fin'), xf(x, y + r + 0.8, z - 0.5, 0, -0.5));
-      b.geometry(m, skin(ball(r * 0.75, 1, 0.6, 1.2, 6), 'belly'), xf(x + 1, y - r * 0.55, z + 1.4));
+      b.geometry(m, skin(ball(r * 0.62, 1, 0.5, 1.1, 6), 'belly'), xf(x + 1, y - r * 0.68, z + 1.2), [0.8, 0.85, 0.6]);
     }
   });
   const head = part((b) => {
-    // Skull and snout, the snout towards the oncoming cars.
-    b.geometry(m, skin(taper(9.5, 18, 6.5, 13, 5.5, 1.5), 'scales'), xf(0, -2.5, 0), green);
-    b.geometry(m, skin(new THREE.BoxGeometry(9, 0.5, 17), 'gum'), xf(0, -2.6, 0.4));
-    b.geometry(m, skin(ball(4.8, 1, 0.8, 1, 8), 'scales'), xf(0, 1.5, -5.5), green);
+    // A long rounded snout towards the oncoming cars, a heavy skull behind it, and the palate under both.
+    b.geometry(m, skin(ball(5, 0.98, 0.66, 1.75, 10), 'scales'), xf(0, 0.5, 2.6), green);
+    b.geometry(m, skin(ball(5.7, 1, 0.9, 1.05, 10), 'scales'), xf(0, 2, -5), green);
+    b.geometry(m, skin(new THREE.CylinderGeometry(1, 1, 0.5, 12).scale(4.75, 1, 9.2), 'gum'), xf(0, -2.65, 0.2));
     for (const side of [-1, 1]) {
-      b.geometry(m, skin(new THREE.BoxGeometry(2.4, 1.4, 5), 'scales'), xf(side * 3.3, 3.4, -1.5, side * 0.15), [0.8, 0.85, 0.8]);
-      b.geometry(m, skin(new THREE.ConeGeometry(0.8, 5, 5), 'bone'), xf(side * 3.6, 4.8, -6.5, 0, -1.1, side * 0.35));
-      b.geometry(m, skin(new THREE.ConeGeometry(0.5, 3, 5), 'bone'), xf(side * 4.4, 3.2, -8, side * 0.4, -1.3));
-      b.geometry(looks.glow, lamp(new THREE.BoxGeometry(0.4, 1.3, 2.2), 'eye'), xf(side * 4.15, 2.6, -1.2, side * 0.25));
-      b.geometry(m, skin(new THREE.BoxGeometry(0.8, 0.4, 0.9), 'gum'), xf(side * 1.6, 3.15, 7.4));
-      // Fangs down both sides of the upper jaw, longest at the front.
+      // Nostrils on a bump at the tip of the snout.
+      b.geometry(m, skin(ball(1.1, 1, 0.8, 1.2, 6), 'scales'), xf(side * 1.5, 2.1, 8.2), [0.82, 0.9, 0.8]);
+      b.geometry(m, skin(new THREE.BoxGeometry(0.8, 0.45, 0.5), 'iron'), xf(side * 1.5, 2.45, 9.2, side * 0.2));
+      // Glaring eyes under a heavy brow, set to look down the road at you.
+      b.geometry(m, skin(ball(2, 1.25, 0.8, 1.2, 7), 'scales'), xf(side * 3.5, 3.1, -0.8), [0.7, 0.8, 0.68]);
+      b.geometry(looks.glow, lamp(new THREE.BoxGeometry(2.3, 1.5, 0.5), 'eye'), xf(side * 3.5, 2.7, 1.1, side * 0.32));
+      b.geometry(m, skin(new THREE.BoxGeometry(3.8, 0.9, 2.2), 'fin'), xf(side * 3.5, 4.1, 0.9, side * 0.32, 0.5, side * -0.3));
+      // Horns swept back, a fin at the cheek.
+      b.geometry(m, skin(new THREE.ConeGeometry(0.9, 6, 5), 'bone'), xf(side * 3.8, 6, -6.5, 0, -1.1, side * 0.35));
+      b.geometry(m, skin(new THREE.ConeGeometry(0.55, 3.4, 5), 'bone'), xf(side * 5.2, 3.4, -8, side * 0.4, -1.3));
+      b.geometry(m, skin(new THREE.ConeGeometry(1.5, 5, 4), 'fin'), xf(side * 6, 0.8, -3, 0, 0, side * -1.2));
+      // Fangs following the curve of the jaw, the longest at the front.
       for (let k = 0; k < 7; k++) {
         const z = -7 + k * 2.3;
-        const v = new THREE.Vector3(side * (4.4 - k * 0.22), -2.8, z);
-        fang(b, looks, v, 2.4 + (k % 2) * 0.8 + (k === 6 ? 1.6 : 0), true, 0.45);
+        const x = side * 4.45 * Math.sqrt(Math.max(0.05, 1 - (z / 9.6) ** 2));
+        fang(b, looks, new THREE.Vector3(x, -2.8, z), 2.4 + (k % 2) * 0.9 + (k === 5 ? 1.8 : 0), true, 0.5);
       }
     }
-    for (const x of [-1.4, 1.4]) fang(b, looks, new THREE.Vector3(x, -2.8, 8.4), 3.4, true, 0.5);
+    for (const x of [-1.2, 1.2]) fang(b, looks, new THREE.Vector3(x, -2.8, 8.9), 3.2, true, 0.5);
     // A frill of fins down the back of the skull.
     for (let k = 0; k < 3; k++) {
-      b.geometry(m, skin(new THREE.ConeGeometry(1.2, 4, 4), 'fin'), xf(0, 5.8 - k * 0.6, -4 - k * 2.4, 0, -0.6));
+      b.geometry(m, skin(new THREE.ConeGeometry(1.2, 4, 4), 'fin'), xf(0, 7.4 - k * 0.8, -4 - k * 2.4, 0, -0.6));
     }
   });
   const swing = new THREE.Group();

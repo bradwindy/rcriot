@@ -6,7 +6,7 @@ import type { Materials } from '../../render/materials';
 import { smoothstep } from '../../render/noise';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box, frame, headingAt, loft, rim, type Profile } from '../../render/road';
-import { beacon, fire, slab } from './kit';
+import { beacon, fire, plume, slab } from './kit';
 import { lamp, type Looks } from './look';
 
 /** World height of the lower deck the road runs along, and of the open deck on top of the hull. */
@@ -243,9 +243,7 @@ export function liner(track: Track, batch: Batch, mats: Materials, looks: Looks)
       batch.geometry(looks.plate, new THREE.CylinderGeometry(2.6, 2.9, 9, 10), m.clone().multiply(xf(0, 4.5, 0)), RED);
       batch.geometry(looks.plate, new THREE.CylinderGeometry(2.7, 2.65, 2.6, 10), m.clone().multiply(xf(0, 10.2, 0)), [0.09, 0.09, 0.11]);
       const top = new THREE.Vector3(0, 12, 0).applyMatrix4(m);
-      for (const turn of [0.3, 1.9]) {
-        batch.geometry(looks.smoke, new THREE.PlaneGeometry(9, 36), xf(top.x, top.y + 17, top.z, turn), [0.9, 0.85, 0.9]);
-      }
+      plume(batch, looks, top, 2.6);
     });
     // Fires on deck, at the break and forward of the funnels.
     const blaze = on(rng() * 4 - 2, deck + 0.3, half === halves[0] ? -len / 2 + 1.5 : len / 2 - 1.5);

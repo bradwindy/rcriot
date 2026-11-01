@@ -96,15 +96,17 @@ const paint = {
       true,
     ),
   stripes: () => make(32, 32, 510, (p) => p.each((x, y) => ((x + y) % 16 < 8 ? hex('#f0c020') : hex('#1c1c1c')))),
+  /** Big, sparse windows: at the city's distance a fine grid only shimmers into speckle. */
   skyline: () =>
     make(64, 64, 511, (p) => {
       p.each((x, y) => {
-        const wx = x % 4;
-        const wy = y % 6;
-        if (wx === 0 || wy < 2) return hex('#2a2236');
-        const lit = ((Math.floor(x / 4) * 37 + Math.floor(y / 6) * 91) ^ 0x5a) % 9;
-        if (lit < 3) return hex(lit === 0 ? '#ffd27a' : lit === 1 ? '#ffe9b0' : '#ff9a4a');
-        return hex('#1a1626');
+        const cx = Math.floor(x / 8);
+        const cy = Math.floor(y / 8);
+        const pane = x % 8 > 1 && x % 8 < 7 && y % 8 > 1 && y % 8 < 7;
+        const lit = ((cx * 37 + cy * 91) ^ 0x5a) % 7;
+        if (pane && lit === 0) return hex('#ffd27a');
+        if (pane && lit === 1) return hex('#ff9a4a');
+        return hex('#231c30');
       });
     }),
   beam: () =>
@@ -130,22 +132,21 @@ const paint = {
         return [255 * v, 255 * v, 255 * v, 255];
       }),
     ),
+  /** Blobs of smoke that wrap round a plume and repeat as they rise. */
   smoke: () =>
     make(
       32,
       64,
       513,
       (p) => {
-        const puffs = Array.from({ length: 14 }, () => [p.rng() * 32, p.rng() * 64, 5 + p.rng() * 6] as const);
+        const puffs = Array.from({ length: 16 }, () => [p.rng() * 32, p.rng() * 64, 6 + p.rng() * 7] as const);
         p.each((x, y) => {
           let best = 0;
           for (const [cx, cy, r] of puffs) {
-            for (const oy of [-64, 0, 64]) best = Math.max(best, 1 - Math.hypot((x - cx) * 1.5, y - cy - oy) / r);
+            for (const ox of [-32, 0, 32]) for (const oy of [-64, 0, 64]) best = Math.max(best, 1 - Math.hypot(x - cx - ox, y - cy - oy) / r);
           }
-          const edge = 1 - Math.abs(x - 15.5) / 16;
-          const v = best * edge * 1.6;
-          if (v < 0.25 || (v < 0.5 && (x + y) % 2 === 1)) return [0, 0, 0, 0];
-          return scale(hex('#3a3238'), 0.8 + v * 0.5);
+          if (best < 0.08) return [0, 0, 0, 0];
+          return hex(best > 0.55 ? '#6a5a62' : best > 0.28 ? '#4e424c' : '#3a3038');
         });
       },
       true,
@@ -295,12 +296,12 @@ export const looks = cache(() => {
     container: lit(paint.container()),
     truss: wired(ps1Material({ map: paint.truss(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide }), [0.7, 0.45, 0.15]),
     stripes: lit(paint.stripes()),
-    creature: ps1Material({ map: atlas, vertexColors: true }),
-    glow: ps1Material({ map: glowTexture(), vertexColors: true, lit: false, glow: 0.9 }),
-    skyline: ps1Material({ map: paint.skyline(), vertexColors: true, lit: false, fog: 0.55, glow: 0.25, side: THREE.DoubleSide }),
+    creature: ps1Material({ map: atlas, vertexColors: true, fog: 0.5 }),
+    glow: ps1Material({ map: glowTexture(), vertexColors: true, lit: false, glow: 0.9, fog: 0.4 }),
+    skyline: ps1Material({ map: paint.skyline(), vertexColors: true, lit: false, fog: 0.42, glow: 0.3, side: THREE.DoubleSide }),
     beam: ps1Material({ map: beam, vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, fog: 0.3 }),
     tractor: ps1Material({ map: paint.rings(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, scroll: [0, 0.5] }),
-    smoke: ps1Material({ map: paint.smoke(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, scroll: [0, -0.12], fog: 0.7 }),
+    smoke: ps1Material({ map: paint.smoke(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, scroll: [0.01, -0.09], fog: 0.6 }),
     water: ps1Material({ map: tex.water(), vertexColors: true, transparent: true, opacity: 0.86, wave: 0.18, scroll: [0.012, 0.007] }),
   };
 });

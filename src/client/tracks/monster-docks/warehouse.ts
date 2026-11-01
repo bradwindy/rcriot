@@ -86,9 +86,9 @@ export function warehouse(track: Track, batch: Batch, mats: Materials, looks: Lo
   const M = xf(mid.x, LAND, mid.z, h);
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(M);
   const local = (x: number, y: number, z: number, ry = 0, rx = 0, rz = 0) => M.clone().multiply(xf(x, y, z, ry, rx, rz));
-  const outer: [number, number, number] = [0.42, 0.52, 0.62];
+  const outer: [number, number, number] = [0.68, 0.34, 0.24];
   const inside: [number, number, number] = [0.7, 0.7, 0.72];
-  const roofTone: [number, number, number] = [0.5, 0.42, 0.38];
+  const roofTone: [number, number, number] = [0.34, 0.38, 0.46];
 
   // Side walls: corrugated outside, a dim lining inside.
   for (const side of [-1, 1]) {
