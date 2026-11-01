@@ -154,7 +154,7 @@ function signpost(toon: Toon, L: Looks, at: THREE.Vector3, yaw: number): void {
   const m = xf(at.x, at.y, at.z, yaw);
   const part = (x: number, y: number, z: number, rz = 0) => m.clone().multiply(xf(x, y, z, 0, 0, rz));
   toon.box(L.wood, 0.5, 8, 0.5, part(0, 4, 0, 0.04), [1, 1, 1], 0.07);
-  const arrow = (y: number, dir: number, color: RGB, tilt: number) => {
+  const arrow = (y: number, turn: number, color: RGB, tilt: number) => {
     const s = new THREE.Shape();
     s.moveTo(-3, -0.8);
     s.lineTo(1.6, -0.8);
@@ -165,11 +165,10 @@ function signpost(toon: Toon, L: Looks, at: THREE.Vector3, yaw: number): void {
     s.lineTo(-3, 0.8);
     s.closePath();
     const g = new THREE.ExtrudeGeometry(s, { depth: 0.24, bevelEnabled: false });
-    g.scale(dir, 1, 1);
-    toon.shape(L.flat, g, part(dir * 1.2, y, 0.3, dir * tilt), color, 0.09);
+    toon.shape(L.flat, g, part(Math.cos(turn) * 1.2, y, 0.3, tilt).multiply(xf(0, 0, 0, turn)), color, 0.09);
   };
-  arrow(6.2, 1, rgb(C.barnRed), -0.08);
-  arrow(4.2, -1, rgb(C.yellow), 0.1);
+  arrow(6.2, 0, rgb(C.barnRed), -0.08);
+  arrow(4.2, Math.PI, rgb(C.yellow), 0.1);
 }
 
 export function buildProps(track: Track, toon: Toon, L: Looks, terrain: Terrain, index: TrackIndex): { group: THREE.Object3D[]; update(time: number): void } {

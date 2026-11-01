@@ -34,7 +34,7 @@ export function paveFarm(track: Track, batch: Batch, L: Looks, mats: Materials, 
       return null;
     },
   });
-  // At the fork and the join, a second skin of road, so neither road's verge lies across the other's surface.
+  // At the fork and the join, a second skin of road with no edge lines, so neither road's verge or kerb lies across the other.
   const fork = track.routes[0];
   for (const [a, b] of fork?.zones ?? []) {
     for (const route of [0, 1]) {
@@ -46,7 +46,7 @@ export function paveFarm(track: Track, batch: Batch, L: Looks, mats: Materials, 
         vScale: 6,
         outward: true,
         material: () => L.road,
-        profile: (p) => [-0.5, -0.25, 0, 0.25, 0.5].map((f) => [f * p.width, route ? 0.1 : 0.08, f + 0.5]),
+        profile: (p) => [-0.43, -0.21, 0, 0.21, 0.43].map((f) => [f * p.width, route ? 0.1 : 0.08, 0.5 + f * 0.8]),
       });
     }
   }
@@ -68,7 +68,8 @@ export function fences(track: Track, toon: Toon, L: Looks): void {
     let last: { foot: THREE.Vector3; top: THREE.Vector3; u: number } | null = null;
     let k = 0;
     eachSample(track, 2.5, (p, ms, route, _t, s) => {
-      const skip = p.cover !== 'open' || p.surface === 'goo' || p.surface === 'wood' || p.zone === 'works' || atJunction(track, ms, 3);
+      const falling = p.surface === 'wood' && p.grade < -0.1;
+      const skip = p.cover !== 'open' || p.surface === 'goo' || falling || p.zone === 'works' || atJunction(track, ms, 3);
       if (skip) {
         last = null;
         return;

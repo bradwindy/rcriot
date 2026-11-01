@@ -85,15 +85,11 @@ const BARNS: Row[] = [
   [230, -116, 1.5, 13, 2, 0, 'dirt', 'open', 'farm'],
 ];
 
-/** Main-track distances of the set pieces, for the scenery to find them. */
-export const SHEEP_S = 519;
-export const CHURN_S = 1140;
-
 const HAZARDS: Hazard[] = [
   // A giant sheep bounces back and forth across the road, landing in the middle once a cycle.
-  { kind: 'burst', route: 0, s: SHEEP_S, offset: 0, period: 2.4, phase: 0.5, radius: 2.4, reach: 0, duty: 0.3, height: 2.6, effect: 'launch' },
+  { kind: 'burst', route: 0, s: 519, offset: 0, period: 2.4, phase: 0.5, radius: 2.4, reach: 0, duty: 0.3, height: 2.6, effect: 'launch' },
   // A milk churn on the yard crane, swung side to side across the road.
-  { kind: 'sweep', route: 0, s: CHURN_S, offset: 0, period: 3.4, phase: 0, radius: 1.4, reach: 6.5, duty: 1, height: 2.4, effect: 'spin' },
+  { kind: 'sweep', route: 0, s: 1140, offset: 0, period: 3.4, phase: 0, radius: 1.4, reach: 6.5, duty: 1, height: 2.4, effect: 'spin' },
 ];
 
 export const CARTOON_FARM: TrackDef = {
