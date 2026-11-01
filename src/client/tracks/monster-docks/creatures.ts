@@ -4,9 +4,8 @@ import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box } from '../../render/road';
 import { LAND } from './ground';
-import { container, filmLight, PAINT } from './kit';
+import { container, filmLight, PAINT, part } from './kit';
 import { lamp, skin, type Looks } from './look';
-import { part } from './warehouse';
 
 interface Beast {
   root: THREE.Group;

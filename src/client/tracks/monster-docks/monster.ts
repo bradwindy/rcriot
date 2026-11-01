@@ -4,8 +4,8 @@ import { sampleAt, type Track } from '../../../shared/track';
 import { Batch, ball, taper, xf } from '../../render/geometry';
 import { addPointLight } from '../../render/ps1';
 import { headingAt } from '../../render/road';
+import { part } from './kit';
 import { lamp, skin, type Looks } from './look';
-import { part } from './warehouse';
 
 /** How far the head swings down on its neck to bite, and up to rear back before it does. */
 const BITE = -0.175;

@@ -9,9 +9,8 @@ import { addPointLight, dynamicLight, type PointLight } from '../../render/ps1';
 import { box, frame, headingAt, loft } from '../../render/road';
 import type { TrackIndex } from '../../render/trackindex';
 import { LAND, landDepth, QUAY_EDGE } from './ground';
-import { beacon, container, fire, PAINT, stack } from './kit';
+import { beacon, container, fire, PAINT, part, stack } from './kit';
 import { lamp, skin, type Looks } from './look';
-import { part } from './warehouse';
 
 const ORANGE: RGB = [0.95, 0.5, 0.12];
 const BLUE: RGB = [0.2, 0.42, 0.72];

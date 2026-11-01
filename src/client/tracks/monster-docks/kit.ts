@@ -20,6 +20,15 @@ export const PAINT: RGB[] = [
 
 export const SODIUM = new THREE.Color(1.0, 0.62, 0.3);
 
+/** A rigid moving part: whatever `build` adds, merged into meshes under one group. */
+export function part(build: (b: Batch) => void): THREE.Group {
+  const b = new Batch();
+  build(b);
+  const g = new THREE.Group();
+  for (const m of b.meshes()) g.add(m);
+  return g;
+}
+
 /** A box whose uvs repeat every `unit` along its long faces, so a texture keeps its scale whatever the box size. */
 export function slab(w: number, h: number, d: number, unit: number, wrapV = false): THREE.BoxGeometry {
   const g = new THREE.BoxGeometry(w, h, d);

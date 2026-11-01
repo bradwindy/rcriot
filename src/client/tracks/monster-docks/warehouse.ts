@@ -6,17 +6,8 @@ import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box, headingAt } from '../../render/road';
 import { LAND } from './ground';
-import { slab, SODIUM } from './kit';
+import { part, slab, SODIUM } from './kit';
 import { lamp, skin, type Looks } from './look';
-
-/** A rigid moving part: whatever `build` adds, merged into meshes under one group. */
-export function part(build: (b: Batch) => void): THREE.Group {
-  const b = new Batch();
-  build(b);
-  const g = new THREE.Group();
-  for (const m of b.meshes()) g.add(m);
-  return g;
-}
 
 interface Ape {
   root: THREE.Group;
