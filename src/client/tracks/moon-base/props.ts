@@ -8,7 +8,7 @@ import { addPointLight } from '../../render/ps1';
 import { atJunction, box, frame, headingAt, loft, routeSpans } from '../../render/road';
 import type { Terrain } from '../../render/terrain';
 import type { TrackIndex } from '../../render/trackindex';
-import { SUN } from './ground';
+import { SUN, X0, X1, Z0, Z1 } from './ground';
 import type { MoonMats } from './materials';
 
 /** The middle of the hab ring, where the greenhouse dome stands. */
@@ -250,7 +250,8 @@ export function buildProps(track: Track, index: TrackIndex, terrain: Terrain, ba
     for (let x = -360; x < 470; x += 14) {
       const px = x + (rng() - 0.5) * 12;
       const pz = z + (rng() - 0.5) * 12;
-      if (rng() > 0.32 || !clear(px, pz, 2.5)) continue;
+      const keep = rng() <= 0.32 && px > X0 + 10 && px < X1 - 10 && pz > Z0 + 10 && pz < Z1 - 10;
+      if (!keep || !clear(px, pz, 2.5)) continue;
       const at = ground(px, pz);
       const size = 0.8 + rng() * rng() * 6;
       batch.geometry(mm.rock, boulder(Math.floor(rng() * 1e6), size, 0.6 + rng() * 0.3), xf(at.x, at.y + size * 0.15, at.z, rng() * 6));

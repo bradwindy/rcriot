@@ -66,10 +66,11 @@ export function moonHeight(x: number, z: number): number {
   return h + rille(x, z);
 }
 
-const X0 = -400;
-const X1 = 500;
-const Z0 = -440;
-const Z1 = 560;
+/** The ground stops where the far mountains take over, so it costs no vertices nobody can see. */
+export const X0 = -340;
+export const X1 = 440;
+export const Z0 = -380;
+export const Z1 = 502;
 const CELL = 6;
 
 /** The natural heights on the terrain grid, worked out once a page, for the shadow test to read quickly. */
