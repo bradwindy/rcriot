@@ -266,7 +266,7 @@ export function coffin(kit: Kit, m: THREE.Matrix4, open: boolean, mat = kit.g.co
   body.dispose();
 }
 
-export function skull(kit: Kit, m: THREE.Matrix4, size = 0.3, mat = kit.g.bone): void {
+export function skull(kit: Pick<Kit, 'batch' | 'g'>, m: THREE.Matrix4, size = 0.3, mat = kit.g.bone): void {
   const { batch, g } = kit;
   batch.geometry(mat, geo.skull(), m.clone().multiply(new THREE.Matrix4().makeScale(size, size, size)));
   for (const side of [-1, 1]) {

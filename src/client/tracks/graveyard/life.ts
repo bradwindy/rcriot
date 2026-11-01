@@ -347,7 +347,7 @@ function buildSpider(track: Track, kit: Kit, group: THREE.Group, pieces: SetPiec
 function buildAngler(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: number) => void {
   const { g, mats } = kit;
   const bones = solid((batch) => {
-    skull(kit, xf(0, 2.0, 0.05, 0, 0.25), 0.34);
+    skull({ batch, g }, xf(0, 2.0, 0.05, Math.PI, -0.25), 0.34);
     for (let i = 0; i < 5; i++) {
       const w = 0.72 - Math.abs(i - 1.6) * 0.08;
       batch.box(g.bone, w, 0.08, 0.46, xf(0, 1.18 + i * 0.13, 0), [0.92, 0.9, 0.85]);
@@ -384,7 +384,7 @@ function buildAngler(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: nu
   });
   const fish = solid((batch) => {
     batch.box(g.bone, 0.06, 0.06, 0.9, xf(0, 0, 0));
-    skull(kit, xf(0, 0, -0.52), 0.16);
+    skull({ batch, g }, xf(0, 0, -0.52, Math.PI), 0.16);
     for (let i = 0; i < 5; i++) batch.box(g.bone, 0.03, 0.38 - i * 0.05, 0.04, xf(0, 0, -0.26 + i * 0.16));
     batch.geometry(g.bone, new THREE.ConeGeometry(0.2, 0.3, 3), xf(0, 0, 0.56, 0, Math.PI / 2));
   });
