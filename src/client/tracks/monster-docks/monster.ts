@@ -8,7 +8,7 @@ import { lamp, skin, type Looks } from './look';
 import { part } from './warehouse';
 
 /** How far the head swings down on its neck to bite, and up to rear back before it does. */
-const BITE = -0.215;
+const BITE = -0.175;
 const REAR = 0.09;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
@@ -102,13 +102,13 @@ export function seaMonster(track: Track, batch: Batch, looks: Looks, hazard: Haz
     b.geometry(m, skin(ball(5.7, 1, 0.9, 1.05, 10), 'scales'), xf(0, 2, -5), green);
     b.geometry(m, skin(new THREE.CylinderGeometry(1, 1, 0.5, 12).scale(4.75, 1, 9.2), 'gum'), xf(0, -2.65, 0.2));
     for (const side of [-1, 1]) {
-      // Nostrils on a bump at the tip of the snout.
-      b.geometry(m, skin(ball(1.1, 1, 0.8, 1.2, 6), 'scales'), xf(side * 1.5, 2.1, 8.2), [0.82, 0.9, 0.8]);
-      b.geometry(m, skin(new THREE.BoxGeometry(0.8, 0.45, 0.5), 'iron'), xf(side * 1.5, 2.45, 9.2, side * 0.2));
-      // Glaring eyes under a heavy brow, set to look down the road at you.
-      b.geometry(m, skin(ball(2, 1.25, 0.8, 1.2, 7), 'scales'), xf(side * 3.5, 3.1, -0.8), [0.7, 0.8, 0.68]);
-      b.geometry(looks.glow, lamp(new THREE.BoxGeometry(2.3, 1.5, 0.5), 'eye'), xf(side * 3.5, 2.7, 1.1, side * 0.32));
-      b.geometry(m, skin(new THREE.BoxGeometry(3.8, 0.9, 2.2), 'fin'), xf(side * 3.5, 4.1, 0.9, side * 0.32, 0.5, side * -0.3));
+      // Small nostrils on a ridge at the tip of the snout, well below the eyes.
+      b.geometry(m, skin(ball(0.9, 1, 0.7, 1.1, 6), 'scales'), xf(side * 1.3, 1.5, 8.6), [0.82, 0.9, 0.8]);
+      b.geometry(m, skin(new THREE.BoxGeometry(0.42, 0.24, 0.3), 'iron'), xf(side * 1.3, 1.7, 9.5, side * 0.2));
+      // Glaring eyes under a heavy brow, set out on the skull to look down the road at you.
+      b.geometry(m, skin(ball(2, 1.2, 0.85, 1.1, 7), 'scales'), xf(side * 3.2, 3.5, 2), [0.7, 0.8, 0.68]);
+      b.geometry(looks.glow, lamp(new THREE.BoxGeometry(2.5, 1.9, 0.5), 'eye'), xf(side * 3.2, 3.5, 4, side * 0.28, 0.25));
+      b.geometry(m, skin(new THREE.BoxGeometry(3.8, 0.7, 2.6), 'fin'), xf(side * 3.25, 4.9, 3.1, side * 0.28, 0.4, side * -0.34));
       // Horns swept back, a fin at the cheek.
       b.geometry(m, skin(new THREE.ConeGeometry(0.9, 6, 5), 'bone'), xf(side * 3.8, 6, -6.5, 0, -1.1, side * 0.35));
       b.geometry(m, skin(new THREE.ConeGeometry(0.55, 3.4, 5), 'bone'), xf(side * 5.2, 3.4, -8, side * 0.4, -1.3));
