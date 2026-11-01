@@ -13,7 +13,7 @@ export interface Life {
   update(time: number, dt: number, clock: number, camera: THREE.Camera): void;
 }
 
-const BATS = 44;
+const BATS = 64;
 const GHOSTS = 5;
 const WISPS = 6;
 /** How much bigger than life the skeleton angler is, so he reads from the road. */
@@ -146,8 +146,8 @@ function buildBats(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: numb
       let scale = 0.9 + seed * 0.7;
       if (i < swarm) {
         // Out of the mouth in a stream, fanning up and away, gone before the next burst.
-        const t = ((time / 7 + (i / swarm) * 0.16 + seed * 0.05) % 1) * 1.0;
-        const fly = t / 0.5;
+        const t = (time / 7 + (i / swarm) * 0.16 + seed * 0.05) % 1;
+        const fly = t / 0.62;
         if (fly >= 1) {
           scale = 0;
           body.copy(cryptExit);
@@ -155,7 +155,7 @@ function buildBats(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: numb
           const d = fly * 95 - 5;
           const spread = (seed - 0.5) * (6 + fly * 46) + Math.sin(time * 3 + i) * 1.4;
           body.copy(cryptExit).addScaledVector(cryptDir, d).addScaledVector(side, spread);
-          body.y += fly * fly * 34 * (0.4 + hash2(i, 5, 61)) + Math.sin(time * 5 + i * 2) * 0.7 - 0.5;
+          body.y += fly * fly * 18 * (0.4 + hash2(i, 5, 61)) + Math.sin(time * 5 + i * 2) * 0.7 - 0.5;
         }
         lead.copy(cryptDir).addScaledVector(side, (seed - 0.5) * 1.2).normalize();
       } else {
@@ -173,8 +173,8 @@ function buildBats(kit: Kit, group: THREE.Group, pieces: SetPieces): (time: numb
       fwd.copy(lead);
       across.crossVectors(fwd, UP).normalize();
       const flap = Math.sin(time * 18 + i * 1.7) * 0.9;
-      const span = 0.9 * scale;
-      const chord = 0.5 * scale;
+      const span = 1.6 * scale;
+      const chord = 0.8 * scale;
       wing.copy(across).multiplyScalar(Math.cos(flap) * span).addScaledVector(UP, Math.sin(flap) * span);
       tip.copy(body).add(wing);
       tail.copy(body).addScaledVector(fwd, chord);

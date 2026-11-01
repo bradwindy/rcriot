@@ -304,7 +304,7 @@ const gt = {
         const scallop = 10 + 2.2 * Math.abs(Math.sin((dx / 15.5) * Math.PI * 2.5)) - dx * 0.25;
         const wing = dx < 15.5 && y > top && y < scallop;
         if (dx < 1.6 && y === 6 && dx > 0.4) return hex('#ff3a2a');
-        if (body || ears || wing) return hex(dx > 10 ? '#2a2232' : '#1a1520');
+        if (body || ears || wing) return hex(y > scallop - 1.5 ? '#9484b8' : dx > 10 ? '#6e5e92' : '#4a3e66');
         return CLEAR;
       });
     }, false),
