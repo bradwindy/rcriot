@@ -5,6 +5,7 @@ import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
 import { docksGround, harbourWater, searchlights, skyline } from './ground';
 import { fire } from './kit';
+import { liner } from './liner';
 import { looks } from './look';
 import { seaMonster } from './monster';
 import { barriers, pave, startGate, viaduct } from './roads';
@@ -36,6 +37,7 @@ export const monsterDocks: TrackArt = {
     startGate(track, batch, mats, look);
     const shed = warehouse(track, batch, mats, look);
     const monster = seaMonster(track, batch, look, BITE);
+    const ship = liner(track, batch, mats, look);
     const city = skyline(batch, look);
     const flames = city.fires.map((f, i) => {
       fire(batch, mats, look, f, 10 + (i % 3) * 4, true, false);
@@ -44,10 +46,11 @@ export const monsterDocks: TrackArt = {
     const beams = searchlights(look, city.lights);
     group.add(harbourWater(look, terrain), beams.mesh, shed.group, monster.group);
     return {
-      flames,
+      flames: [...flames, ...ship.flames],
       update(time, _dt, clock) {
         beams.update(time);
         monster.update(time, clock);
+        ship.update(time);
         shed.update(time);
         for (const [i, l] of lamps.entries()) {
           if (i % 7 === 3) l.color.setRGB(1, 0.62, 0.3).multiplyScalar(valueNoise(time * 9, i, 4) > 0.25 ? 1.3 : 0.2);

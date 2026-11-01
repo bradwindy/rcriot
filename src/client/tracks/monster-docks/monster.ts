@@ -121,14 +121,15 @@ export function seaMonster(track: Track, batch: Batch, looks: Looks, hazard: Haz
     }
   });
   const swing = new THREE.Group();
-  const shoulder = new THREE.Vector3().copy(pivot).applyMatrix4(M);
-  swing.position.copy(shoulder);
-  swing.quaternion.setFromRotationMatrix(M);
+  const seat = new THREE.Group();
+  seat.position.copy(pivot).applyMatrix4(M);
+  seat.quaternion.setFromRotationMatrix(M);
+  seat.add(swing);
   const headAt = new THREE.Vector3(30, 0.5, 4);
   head.position.copy(headAt);
   swing.add(neck, head);
   const group = new THREE.Group();
-  group.add(swing);
+  group.add(seat);
 
   const glow = new THREE.Vector3(0, 5, 0).applyMatrix4(M);
   const light = addPointLight(glow, new THREE.Color(0.6, 1.0, 0.3), 22);

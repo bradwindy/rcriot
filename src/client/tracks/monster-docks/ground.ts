@@ -33,7 +33,7 @@ export function docksGround(looks: Looks): GroundSpec {
     paint: () => looks.concrete,
     cliffs: [looks.concrete],
     headwall: looks.concrete,
-    blend: 10,
+    blend: 6,
     tint: (x, z, h): RGB => {
       if (h < LAND - 0.6) {
         const wet = smoothstep(LAND - 0.6, 0, h);
