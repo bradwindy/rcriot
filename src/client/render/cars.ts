@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { grounded, type Car } from '../../shared/car';
 import type { Body, CarModel } from '../../shared/roster';
 import { routeTrack } from '../../shared/course';
@@ -317,6 +318,8 @@ export class CarView {
       this.materials.push(m);
       return m;
     };
+    // Body parts are merged into one mesh per material, so each car costs a handful of draw calls rather than dozens.
+    const pieces = new Map<THREE.Material, THREE.BufferGeometry[]>();
     const paint = mat(livery(model.color, model.stripe, number, model.pattern));
     const dark = mat(tex.plastic());
     const parts: Parts = {
@@ -333,9 +336,11 @@ export class CarView {
       lamp: mat(tex.lens(), false, 0.4),
       glow: (color) => tinted(color, false, 0.6),
       add: (g, m, matrix) => {
-        const mesh = new THREE.Mesh(g, m);
-        mesh.applyMatrix4(matrix);
-        this.body.add(mesh);
+        const part = (g.index ? g.toNonIndexed() : g.clone()).applyMatrix4(matrix);
+        for (const name of Object.keys(part.attributes)) if (!['position', 'normal', 'uv'].includes(name)) part.deleteAttribute(name);
+        const list = pieces.get(m) ?? [];
+        list.push(part);
+        pieces.set(m, list);
       },
       rod: (a, b, m, w = 0.06) => {
         const [g, matrix] = beam(new THREE.Vector3(...a), new THREE.Vector3(...b), w);
@@ -349,6 +354,11 @@ export class CarView {
       for (const s of [-1, 1]) parts.add(box(0.2, 0.1, 0.05), tail, xf(s * 0.38, k.wheel + 0.12, k.tail));
     }
     parts.add(new THREE.PlaneGeometry(0.42, 0.42), mat(numberPlate(number)), xf(k.plate[0], k.plate[1] + 0.01, k.plate[2], 0, -UP));
+    for (const [m, list] of pieces) {
+      const merged = mergeGeometries(list);
+      if (merged) this.body.add(new THREE.Mesh(merged, m));
+      for (const g of list) g.dispose();
+    }
 
     this.antenna.position.set(...k.antenna);
     const whip = new THREE.Mesh(box(0.035, 1.1, 0.035), dark);
