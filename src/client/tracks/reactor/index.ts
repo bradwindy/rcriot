@@ -55,7 +55,7 @@ export const reactor: TrackArt = {
     upper: [0.05, 0.03, 0.1],
     below: [0.03, 0.03, 0.05],
     fog: [0.08, 0.07, 0.16],
-    haze: 0.85,
+    haze: 1.3,
     sunDir: [0.55, 0.32, -0.77],
     sunColor: [0.34, 0.24, 0.3],
     skyLight: [0.16, 0.16, 0.26],
@@ -88,12 +88,12 @@ export const reactor: TrackArt = {
     const spire = buildSilo(track, batch, m, neonRig, pulses);
     const apron = buildApron(track, index, batch, m, pulses);
     const hazards = track.hazards.map((h) => (h.kind === 'sweep' ? robotArm(track, h, batch, m, armRig, neonRig) : plasmaVent(track, h, batch, m)));
-    for (const v of apron.vents) batch.box(m.gratingOut, 2, 0.3, 2, xf(v.x, v.y + 0.1, v.z));
+    const vents = [...apron.vents, ...hall.vents];
+    for (const v of vents) batch.box(m.gratingOut, 2, 0.3, 2, xf(v.x, v.y + 0.1, v.z));
     const sparks = new Quads(m.spark, 500, 3);
     const steam = new Quads(m.smoke, 200, 2);
     const beams = new Quads(m.beam, 60, 4);
     const sky = planet(m);
-    Object.assign(window, { __fx: { sparks, steam, beams } });
     group.add(neonRig.mesh, armRig.mesh, sparks.mesh, steam.mesh, beams.mesh, sky);
     const ray = new THREE.Vector3();
     const tip = new THREE.Vector3();
@@ -112,10 +112,8 @@ export const reactor: TrackArt = {
         sparks.begin(camera);
         steam.begin(camera);
         beams.begin(camera);
-        const dbg = (window as unknown as { __t?: number[] }).__t;
-        if (dbg) { sparks.puff(dbg[0], dbg[1], dbg[2], 4, [1, 1, 1], 1); steam.puff(dbg[0] + 10, dbg[1], dbg[2], 4, [1, 1, 1], 1); }
         for (const hz of hazards) hz.update(clock, time, sparks);
-        for (const [k, v] of apron.vents.entries()) {
+        for (const [k, v] of vents.entries()) {
           if (v.distanceToSquared(camera.position) > 140 * 140) continue;
           const t = (time / 5 + k * 0.37) % 1;
           if (t > 0.5) continue;

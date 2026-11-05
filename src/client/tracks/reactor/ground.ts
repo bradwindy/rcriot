@@ -59,7 +59,7 @@ export function buildGround(index: TrackIndex, batch: Batch, m: ReactorMats): Te
     const v = 0.94 + valueNoise(x / 23, z / 23, 4) * 0.08;
     if (mat === m.concrete || mat === m.concreteIn) return [v * 0.9, v * 0.9, v * 0.88];
     if (inside) return [v * 0.86, v * 0.92, v * 0.95];
-    // Scorch round the silo, where the exhaust has blackened the apron.
+    // Scorch round the spire, where plasma spills from its shaft.
     const burn = smoothstep(40, 14, Math.hypot(x - SILO.x, z - SILO.z));
     return [v * (0.78 - burn * 0.45), v * (0.8 - burn * 0.45), v * (0.76 - burn * 0.42)];
   };

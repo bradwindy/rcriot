@@ -46,6 +46,8 @@ export interface Hall {
   pulses: Pulse[];
   /** The core's containment rings, which ride up and down it. */
   rings: number[];
+  /** Floor grates that puff steam. */
+  vents: THREE.Vector3[];
 }
 
 export function buildHall(track: Track, batch: Batch, m: ReactorMats, neonRig: Rig): Hall {
@@ -107,7 +109,8 @@ export function buildHall(track: Track, batch: Batch, m: ReactorMats, neonRig: R
     [-112, -132, -112, -84, new THREE.Vector3(-1, 0, 0)],
     [-112, -84, -76, -84, new THREE.Vector3(0, 0, 1)],
   ] as const) {
-    wallFace(batch, m.windows, ax + n.x * 0.3, az + n.z * 0.3, bx + n.x * 0.3, bz + n.z * 0.3, GOO_ROOF, REACTOR_ROOF, n, 8, 8);
+    wallFace(batch, m.windows, ax + n.x * 0.3, az + n.z * 0.3, bx + n.x * 0.3, bz + n.z * 0.3, GOO_ROOF, REACTOR_ROOF, n, 14, 7);
+    wallFace(batch, m.wall, ax - n.x * 0.3, az - n.z * 0.3, bx - n.x * 0.3, bz - n.z * 0.3, GOO_ROOF - 1.2, REACTOR_ROOF, n.clone().negate(), 8, 4);
   }
 
   // Roofs: ceiling panels inside, cladding on top, and roof trusses.
@@ -144,7 +147,8 @@ export function buildHall(track: Track, batch: Batch, m: ReactorMats, neonRig: R
   buildRing(track, batch, m, pulses);
   buildConduits(batch, m);
   buildPool(track, batch, m, pulses);
-  return { pulses, rings };
+  const vents = hangLamps(track, batch, m, pulses);
+  return { pulses, rings, vents };
 }
 
 /** The reactor: a glowing vessel in a cage on a plinth, through the roof and on up as a beam into the sky. */
@@ -330,4 +334,27 @@ function buildPool(track: Track, batch: Batch, m: ReactorMats, pulses: Pulse[]):
       railing(batch, m.paintIn, t, s0 + 4, s1 - 4, side, [0.9, 0.75, 0.2], (s) => sampleAt(t, s).y < BASE - 0.1 || atJunction(track, toMain(track, 1, s), 4), 2);
     }
   }
+}
+
+/** Lamps hung from the goo hall roof over both roads, and steam grates beside the main road. */
+function hangLamps(track: Track, batch: Batch, m: ReactorMats, pulses: Pulse[]): THREE.Vector3[] {
+  const vents: THREE.Vector3[] = [];
+  const fork = track.routes[0];
+  const stretches: [Track, number, number][] = [
+    ...zoneRanges(track, 'goo').map(([a, b]) => [track, a, b] as [Track, number, number]),
+    ...zoneRanges(fork.track, 'catwalk').map(([a, b]) => [fork.track, Math.max(a, fork.rfrom), Math.min(b, fork.rto)] as [Track, number, number]),
+  ];
+  for (const [t, a, b] of stretches) {
+    for (let s = a + 12, k = 0; s < b - 6; s += 22, k++) {
+      const p = sampleAt(t, s);
+      const at = frame(p, (k % 2 ? 1 : -1) * 2.5, 0).setY(GOO_ROOF - 3.2);
+      batch.beam(m.paintIn, at.clone().setY(at.y + 0.3), at.clone().setY(GOO_ROOF), 0.12, 0.12, DARK);
+      batch.box(m.paintIn, 2.2, 0.5, 1, xf(at.x, at.y + 0.2, at.z, headingAt(p)), DARK);
+      batch.box(m.neon, 1.8, 0.15, 0.7, xf(at.x, at.y - 0.08, at.z, headingAt(p)), [0.75, 1, 0.85]);
+      const c = new THREE.Color(0.75, 1.05, 0.9);
+      pulses.push({ light: addPointLight(at.clone().setY(at.y - 2), c, 20), base: c, speed: 0, phase: 0, depth: 0 });
+      if (t === track && k % 2 === 0 && p.y < 1) vents.push(frame(p, (k % 4 ? 1 : -1) * (limitOf(p) + 2.2), 0).setY(0.1));
+    }
+  }
+  return vents;
 }

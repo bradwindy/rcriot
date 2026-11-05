@@ -43,7 +43,7 @@ export function buildBarriers(track: Track, batch: Batch, m: ReactorMats): void 
   ], (p) => (p.cover === 'indoor' ? m.neon : null), 2, CYAN);
 }
 
-/** The launch apron: the start gantry, floodlight masts, the fuel farm, the kickers' dressing and the skyline. */
+/** The apron: the start gantry, floodlight masts, the fuel farm, the kickers' dressing and the skyline. */
 export function buildApron(track: Track, index: TrackIndex, batch: Batch, m: ReactorMats, pulses: Pulse[]): Apron {
   const beacons: Beacon[] = [];
   const vents: THREE.Vector3[] = [];

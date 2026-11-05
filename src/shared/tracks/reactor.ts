@@ -4,16 +4,16 @@ import { buildTrack, type ControlPoint, type Cover, type Surface } from '../trac
 
 /** The reactor's centre and the radius of the gantry ring round it. */
 export const CORE = { x: -45, z: -180, r: 46 };
-/** The rocket silo's centre and the radius of the tube that spirals up round it. */
+/** The plasma spire's centre and the radius of the accelerator coil that spirals up round it. */
 export const SILO = { x: -204, z: 74, r: 46 };
 /** The goo pool: a sunk basin in the corner of the L the main road takes round it, and its surface. */
 export const POOL = { x0: -212, x1: -116, z0: -124, z1: -16, floor: -5, level: -3.2 };
 /** The hairpin before the start straight. */
 export const HAIRPIN = { x: 40, z: 167, r: 21 };
-/** Height the tube climbs in one full turn. */
+/** Height the coil climbs in one full turn. */
 const CLIMB = 13;
 export const BASE = 0.3;
-/** Where the tube ends and the open gantry over its mouth begins, in degrees round the silo. */
+/** Where the coil's hoops end and the open gantry begins, in degrees round the spire. */
 export const TUBE_END = 470;
 
 type Stretch = 'apron' | 'hall' | 'ring' | 'goo' | 'catwalk' | 'ramp' | 'tube' | 'gantry';
@@ -46,9 +46,9 @@ function arc(c: { x: number; z: number; r: number }, a0: number, a1: number, ste
 export const RING_Y = 5.6;
 export const helixY = (a: number) => 5 + (CLIMB * (a - 180)) / 360;
 
-/** Reactor: out of the launch apron, round the reactor core on a gantry, past the goo pool and up the rocket tube. */
+/** Reactor: out of the apron, round the reactor core on a gantry, past the coolant pool and up the plasma coil. */
 const ROWS: Row[] = [
-  [0, 0, BASE, 14, 3, 0, 'asphalt', 'apron'], // start line on the launch apron
+  [0, 0, BASE, 14, 3, 0, 'asphalt', 'apron'], // start line on the apron
   [0, -36, BASE, 14, 3, 0, 'asphalt', 'apron'],
   [0, -50, BASE + 0.5, 14, 3, 0, 'asphalt', 'apron'], // kicker over the blast deflector
   [0, -57, BASE + 2.4, 14, 3, 0, 'metal', 'apron'],
@@ -71,7 +71,7 @@ const ROWS: Row[] = [
   [-186, 8, BASE, 14, 2, 0, 'metal', 'goo'],
   [-216, 6, BASE, 14, 2, 0, 'metal', 'goo'], // the catwalk joins again
   [-240, 14, 1.8, 14, 2, 10, 'metal', 'ramp'],
-  [-250, 40, 3.2, 14, 1.5, 6, 'metal', 'ramp'], // up the ramp into the tube
+  [-250, 40, 3.2, 14, 1.5, 6, 'metal', 'ramp'], // up the ramp into the coil
   ...arc(SILO, 180, 580, 40, (a) => [helixY(a), 14, 1, a < 190 ? 12 : a > 560 ? 10 : 24, 'metal', a < TUBE_END ? 'tube' : 'gantry']),
   [-216, 131, helixY(580) - 0.4, 13, 1, 0, 'metal', 'gantry'],
   [-198, 145, helixY(580) - 0.6, 13, 1, 0, 'metal', 'gantry'], // a kicker off the end of the gantry
@@ -132,7 +132,7 @@ const tubeAt = (a: number) => {
   return (marks[i] + marks[i + 1]) / 2;
 };
 
-/** The robot arm that swings across the ring behind the core, and the rocket's exhaust venting into the tube. */
+/** The welding robot that sweeps across the ring behind the core, and the plasma vent in the coil. */
 export const HAZARDS: Hazard[] = [
   { kind: 'sweep', route: 0, s: ringAt(90), offset: 0, period: 3.6, phase: 0.1, radius: 1.8, reach: 5.6, duty: 1, height: 2.2, effect: 'spin' },
   { kind: 'burst', route: 0, s: tubeAt(260), offset: -3.6, period: 16, phase: 0.4, radius: 3.4, reach: 0, duty: 0.17, height: 4, effect: 'launch' },

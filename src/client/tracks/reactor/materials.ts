@@ -129,9 +129,6 @@ const T = {
       });
     }),
   ),
-  glow: cache(() => make(8, 8, 112, (p) => p.each((x, y) => (x === 0 || x === 7 || y === 0 || y === 7 ? hex('#4cff70') : hex('#d6ffd8'))))),
-  amber: cache(() => make(8, 8, 113, (p) => p.each((x, y) => (x + y < 5 ? hex('#fff0b0') : hex('#ffa412'))))),
-  red: cache(() => make(8, 8, 114, (p) => p.each((x, y) => (x + y < 5 ? hex('#ffc0a8') : hex('#ff2a14'))))),
   core: cache(() =>
     make(32, 32, 115, (p) => {
       p.each((x, y) => {
@@ -211,18 +208,6 @@ const T = {
       });
     }),
   ),
-  barrel: cache(() =>
-    make(16, 32, 117, (p) => {
-      p.each((x, y) => {
-        if (y < 3 || y > 28 || y === 15 || y === 16) return hex('#2a2a26');
-        const d = Math.hypot(x - 7.5, y - 9.5);
-        const a = Math.atan2(y - 9.5, x - 7.5);
-        if (d < 1.2) return INK;
-        if (d < 4.2 && d > 1.8 && Math.cos(a * 3) > 0.3) return INK;
-        return x % 4 === 3 ? scale(YELLOW, 0.85) : YELLOW;
-      });
-    }),
-  ),
 };
 
 const wired = <M extends THREE.Material>(m: M, tone: [number, number, number]): M => {
@@ -252,7 +237,6 @@ export const reactorMats = cache(() => ({
   tube: lit(T.tube(), INDOOR),
   paintIn: wired(lit(T.paint(), INDOOR), [0.3, 0.32, 0.34]),
   paintOut: wired(lit(T.paint()), [0.42, 0.44, 0.46]),
-  barrel: lit(T.barrel(), INDOOR),
   tank: lit(T.tank()),
   windows: glowing(T.windows(), 0.15),
   screen: glowing(T.screen(), 0.5),
@@ -261,10 +245,6 @@ export const reactorMats = cache(() => ({
   planet: ps1Material({ map: T.planet(), fog: 0, lit: false }),
   rings: ps1Material({ map: T.rings(), fog: 0, lit: false, depthWrite: false, alphaTest: 0.5, side: THREE.DoubleSide }),
   goo: glowing(T.goo(), 0.55, { scroll: [0.015, 0.008], wave: 0.05 }),
-  gooFall: glowing(T.goo(), 0.7, { scroll: [0, 1.1] }),
-  glow: glowing(T.glow(), 0.8),
-  amber: glowing(T.amber(), 0.9),
-  red: glowing(T.red(), 0.9),
   core: glowing(T.core(), 0.7, { scroll: [0, 0.35] }),
   shine: ps1Material({ map: T.neon(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, glow: 0.5, fog: 0.4 }),
   beam: ps1Material({ map: tex.beam(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, glow: 0.3 }),

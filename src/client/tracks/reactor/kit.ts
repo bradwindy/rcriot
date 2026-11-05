@@ -39,18 +39,6 @@ export function edgeLoft(
   }
 }
 
-/** Calls `at` every `step` along every route, skipping the fork and join mouths. */
-export function along(track: Track, step: number, at: (p: Sample, k: number, route: number, ms: number) => void, offset = 0): void {
-  for (const { route, t, s0, s1, main } of spans(track)) {
-    let k = 0;
-    for (let s = s0 + offset; s < s1; s += step, k++) {
-      const ms = main(s);
-      if (atJunction(track, ms, 2)) continue;
-      at(sampleAt(t, s), k, route, ms);
-    }
-  }
-}
-
 /** An upright box from y0 to y1. */
 export function column(batch: Batch, mat: THREE.Material, x: number, z: number, y0: number, y1: number, w: number, yaw = 0, color?: RGB): void {
   batch.box(mat, w, y1 - y0, w, xf(x, (y0 + y1) / 2, z, yaw), color);
@@ -95,13 +83,6 @@ export function beacon(batch: Batch, m: ReactorMats, at: THREE.Vector3, seed: nu
   batch.geometry(m.neon, new THREE.CylinderGeometry(0.24, 0.28, 0.5, 8), xf(at.x, at.y + 0.25, at.z), red ? [1, 0.2, 0.1] : [1, 0.6, 0.1]);
   const base = red ? new THREE.Color(1.6, 0.25, 0.1) : new THREE.Color(1.6, 0.8, 0.15);
   return { at: at.clone().setY(at.y + 0.25), light: addPointLight(at.clone().setY(at.y + 0.3), base.clone(), 14), base, speed: 4 + (seed % 3), phase: seed * 1.7 };
-}
-
-/** A lamp box hung or mounted at `at`, glowing, with a light of its own a little below it. */
-export function lamp(batch: Batch, m: ReactorMats, mats: { lens: THREE.Material }, at: THREE.Vector3, yaw: number, color: THREE.Color, range: number, drop = 1.2): PointLight {
-  batch.box(m.paintIn, 1.4, 0.35, 0.8, xf(at.x, at.y + 0.18, at.z, yaw), [0.25, 0.26, 0.28]);
-  batch.geometry(mats.lens, new THREE.PlaneGeometry(1.2, 0.6), xf(at.x, at.y - 0.01, at.z, yaw, -Math.PI / 2));
-  return addPointLight(at.clone().setY(at.y - drop), color, range);
 }
 
 /** Railing posts with a top and a middle rail along one side of a stretch of track. */
@@ -213,18 +194,4 @@ export function pipe(batch: Batch, mat: THREE.Material, a: THREE.Vector3, b: THR
   const m = new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(UP, dir), new THREE.Vector3(1, 1, 1));
   batch.geometry(mat, g, m, color);
   g.dispose();
-}
-
-/** A strip along one side of a stretch of track, `o` beyond the barrier: a list of [o, h] corners, drawn outward. */
-export function strip(batch: Batch, t: Track, s0: number, s1: number, side: number, prof: [number, number][], material: (p: Sample) => THREE.Material | null, color?: RGB, spacing = 2): void {
-  const right = side > 0 ? prof : [...prof].reverse();
-  loft(batch, t, s0, s1, {
-    spacing,
-    vScale: 4,
-    uScale: 1,
-    outward: true,
-    color,
-    material,
-    profile: (p) => right.map(([o, h]) => [side * (limitOf(p) + o), h]),
-  });
 }

@@ -103,7 +103,7 @@ interface Part {
 
 /**
  * Rigid moving parts that share a material, drawn as one mesh: each frame every part's vertices are moved by its own
- * matrix. Robot arms, the rocket and the like, for one draw call instead of one each.
+ * matrix. Robot arms, orbiting rings and the like, for one draw call instead of one each.
  */
 export class Rig {
   readonly mesh: THREE.Mesh;
