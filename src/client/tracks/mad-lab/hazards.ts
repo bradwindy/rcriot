@@ -61,8 +61,8 @@ export function pendulum(track: Track, h: Hazard, batch: Batch, m: MadMats, grou
     for (const y of [-rod * 0.33, -rod * 0.66]) b.geometry(m.brass, new THREE.BoxGeometry(0.6, 0.3, 0.6), xf(0, y, 0));
     b.geometry(m.brass, ball(h.radius * 0.98, 1, 1, 1, 10), xf(0, -rod, 0));
     const band = new THREE.TorusGeometry(h.radius, 0.12, 4, 14);
-    b.geometry(m.iron, band, xf(0, -rod, 0, 0, Math.PI / 2));
-    b.geometry(m.iron, band, xf(0, -rod, 0));
+    b.geometry(m.orb, band, xf(0, -rod, 0, 0, Math.PI / 2));
+    b.geometry(m.orb, band, xf(0, -rod, 0));
   });
   const core = new THREE.Mesh(ball(h.radius * 0.55, 1, 1, 1, 8), m.orb);
   core.position.y = -rod;

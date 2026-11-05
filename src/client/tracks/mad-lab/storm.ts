@@ -131,9 +131,8 @@ function cloudRing(m: MadMats): THREE.Mesh {
 function rainCurtains(m: MadMats): THREE.Mesh {
   const parts: THREE.BufferGeometry[] = [];
   for (const [r, rep, tone] of [
-    [7, 7, 0.45],
-    [16, 11, 0.45],
-    [30, 16, 0.32],
+    [11, 16, 0.4],
+    [24, 26, 0.32],
   ]) {
     const g = new THREE.CylinderGeometry(r, r, 34, 12, 1, true);
     const uv = g.getAttribute('uv');
