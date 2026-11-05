@@ -7,6 +7,3 @@ dist/
 coverage/
 .wrangler/
 .dev.vars*
-.vite-work/
-.shots/
-dist/

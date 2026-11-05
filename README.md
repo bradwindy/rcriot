@@ -30,9 +30,9 @@ The tracks are movie sets in a theme park, grouped into worlds like RC Revenge's
 |---|---|---|---|
 | Pirate | Pirate Cove | 922 m | A beach: a pier over the lagoon, a wrecked galleon, a stunt ramp and a torch-lit smugglers' cave. |
 | Jungle | Inca Temple | 1,552 m | A jungle village, a gorge with a waterfall, a climb over a stepped pyramid, a torch-lit temple hall with a golden idol and a cave of glowing toadstools. |
-| Jungle | Lava Dig | LAVA_LEN | LAVA_SET |
+| Jungle | Lava Dig | 1,483 m | A dig inside a volcano: a cavern with a giant fossil and a jeep to drive under, a lava tube, and a magma chamber with a causeway across its lava lake. |
 | Horror | Graveyard | 1,528 m | A moonlit cemetery with a crypt and a vampire's lair. |
-| Horror | Mad Lab | MAD_LEN | MAD_SET |
+| Horror | Mad Lab | 1,475 m | A mad scientist's castle in a thunderstorm: a goo moat, a dungeon, a laboratory with a creature on the slab and a climb round a tower with a giant Tesla coil. |
 | Planet | Moon Base | 1,595 m | Dusty craters in low gravity, a lander, a crevasse and a ring of habitat domes with airlocks. |
 | Planet | Reactor | 1,580 m | A space-station reactor at night: a glowing core, a coolant hall and a neon plasma coil that climbs round a spire. |
 | Monster | Monster Docks | 1,558 m | A harbour where a sea monster has wrecked an ocean liner. |
