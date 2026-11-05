@@ -3,7 +3,7 @@ import type { Settings } from './lobby';
 import type { ResultRow } from './results';
 
 /** Bump when page, host or server messages change shape, so stale tabs are told to reload. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 /**
  * The most input samples one message may carry. Each message repeats every sample the host hasn't applied yet, about
  * a quarter of a second at most, so a lost message costs nothing.

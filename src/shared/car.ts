@@ -1,4 +1,5 @@
-import { limitOf, locate, sampleAt, surfaceY, type Cover, type Surface, type Track } from './track';
+import { follow, fromMain, routeTrack, toMain } from './course';
+import { limitOf, locate, sampleAt, SURFACE, surfaceY, wrapS, type Cover, type Surface, type Track } from './track';
 
 export const TICK = 1 / 60;
 export const GRAVITY = 26;
@@ -69,8 +70,13 @@ export interface Car {
   heading: number;
   /** Seconds since the wheels last touched the ground. */
   air: number;
+  /** Which way round the car is going: 0 the main track, 1 the fork. */
+  route: number;
+  /** Nearest sample on its route. */
   index: number;
+  /** Distance along the main track, which places and laps go by, and along the car's own route. */
   s: number;
+  rs: number;
   offset: number;
   surface: Surface;
   cover: Cover;
@@ -105,14 +111,19 @@ export interface Car {
   tumble: number;
   /** Seconds left of smoking tyres from the Heat Ray, for show. */
   burn: number;
+  /** Tick it last fell into lava, goo or a chasm and came back further on. */
+  sinkAt: number;
 }
 
 export function headingOf(tx: number, tz: number): number {
   return Math.atan2(-tx, -tz);
 }
 
-export function spawnCar(track: Track, s: number, offset: number): Car {
-  const p = sampleAt(track, s);
+/** A car at rest at main-track distance `s` on a route, facing the way round. */
+export function spawnCar(main: Track, s: number, offset: number, route = 0): Car {
+  const track = routeTrack(main, route);
+  const rs = fromMain(main, route, s);
+  const p = sampleAt(track, rs);
   const x = p.x - p.tz * offset;
   const z = p.z + p.tx * offset;
   const y = surfaceY(p, offset);
@@ -125,8 +136,10 @@ export function spawnCar(track: Track, s: number, offset: number): Car {
     vz: 0,
     heading: headingOf(p.tx, p.tz),
     air: 0,
-    index: locate(track, x, z).index,
-    s,
+    route,
+    index: locate(track, x, z, Math.round(rs / track.step) % track.samples.length).index,
+    s: toMain(main, route, rs),
+    rs,
     offset,
     surface: p.surface,
     cover: p.cover,
@@ -153,6 +166,7 @@ export function spawnCar(track: Track, s: number, offset: number): Car {
     bubble: 0,
     tumble: 0,
     burn: 0,
+    sinkAt: -1,
   };
 }
 
@@ -226,7 +240,9 @@ export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Trac
   if (onGround) {
     const boosting = car.boost > 0;
     const stunned = car.stun > 0 && !boosting;
-    const top = spec.topSpeed * (car.offroad && !boosting ? 0.62 : 1) * (boosting ? BOOST_TOP : 1) * (stunned ? 0.55 : 1);
+    const ground = SURFACE[car.surface];
+    const top =
+      spec.topSpeed * (car.offroad && !boosting ? 0.62 : 1) * (boosting ? BOOST_TOP : 1) * (stunned ? 0.55 : 1) * (boosting ? 1 : ground.top);
     const th = car.stall > 0 ? 0 : Math.max(-1, Math.min(1, input.throttle));
     if (boosting) {
       vf = Math.min(top, vf + BOOST_ACCEL * dt);
@@ -240,7 +256,7 @@ export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Trac
       vf -= Math.sign(vf) * Math.min(Math.abs(vf), COAST * dt);
     }
     if (Math.abs(vf) > top) vf -= (vf - Math.sign(vf) * top) * Math.min(1, 2.5 * dt);
-    vr *= Math.exp(-spec.grip * (car.slick > 0 ? SLICK_GRIP : 1) * dt);
+    vr *= Math.exp(-spec.grip * ground.grip * (car.slick > 0 ? SLICK_GRIP : 1) * dt);
     if (car.drift) {
       // A drift carries the car round on its own arc. Steering into it tightens the arc and steering out widens it.
       // Travel turns with the nose, so speed is kept, and the tail drifts a little wide. The angled-in look is drawn.
@@ -282,8 +298,8 @@ export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Trac
   car.x += car.vx * dt;
   car.z += car.vz * dt;
 
-  const loc = locate(track, car.x, car.z, car.index);
-  const p = sampleAt(track, loc.s);
+  const loc = follow(track, car.route, car.x, car.z, car.index, HALF_WIDTH);
+  const p = loc.p;
   const limit = limitOf(p) - HALF_WIDTH;
   if (Math.abs(loc.offset) > limit) {
     const side = Math.sign(loc.offset);
@@ -314,7 +330,7 @@ export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Trac
     car.vy = 0;
     car.air = 1;
   } else {
-    car.vy -= GRAVITY * dt;
+    car.vy -= GRAVITY * p.gravity * dt;
     car.y += car.vy * dt;
   }
   if (car.bubble > 0) {
@@ -334,16 +350,31 @@ export function stepCar(car: Car, controls: CarInput, spec: CarSpec, track: Trac
   }
 
   car.ground = ground;
+  car.route = loc.route;
   car.index = loc.index;
-  car.s = loc.s;
+  car.s = loc.ms;
+  car.rs = loc.s;
   car.offset = loc.offset;
   car.surface = p.surface;
   car.cover = p.cover;
   car.offroad = p.cover === 'open' && Math.abs(loc.offset) > p.width / 2 + 0.4;
+  if (SURFACE[p.surface].kill && car.air === 0) sink(car, track);
+}
+
+/** Seconds a car that fell in waits before it can drive off again. */
+const SINK_WAIT = 0.8;
+
+/** Lava, goo or a chasm: the car comes back stopped on the first solid ground past it, on the same route. */
+function sink(car: Car, main: Track): void {
+  const track = routeTrack(main, car.route);
+  let rs = car.rs;
+  for (let k = 0; k < 400 && SURFACE[sampleAt(track, rs).surface].kill; k++) rs += 1;
+  const age = car.age;
+  Object.assign(car, spawnCar(main, toMain(main, car.route, wrapS(track, rs + 4)), 0, car.route), { age, stall: SINK_WAIT, sinkAt: age });
 }
 
 /** Puts a car back on the centre line where it is, facing the right way, stopped. */
 export function resetCar(car: Car, track: Track): void {
   const age = car.age;
-  Object.assign(car, spawnCar(track, car.s, 0), { age });
+  Object.assign(car, spawnCar(track, car.s, 0, car.route), { age });
 }

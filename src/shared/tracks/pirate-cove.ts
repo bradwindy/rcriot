@@ -1,9 +1,13 @@
-import type { ControlPoint, Cover, Surface } from './track';
+import type { TrackDef } from '../course';
+import type { ControlPoint, Cover, Surface } from '../track';
 
 /** The layout is drawn at 1/K scale below and stretched by K, so the island and track can grow together. */
 export const K = 1.25;
 
-type Row = [x: number, z: number, y: number, width: number, shoulder: number, bank: number, surface: Surface, cover: Cover];
+type Stretch = 'open' | 'pier' | 'ship' | 'tunnel';
+type Row = [x: number, z: number, y: number, width: number, shoulder: number, bank: number, surface: Surface, stretch: Stretch];
+
+const COVER: Record<Stretch, [Cover, string]> = { open: ['open', ''], pier: ['deck', 'pier'], ship: ['indoor', 'ship'], tunnel: ['tunnel', 'cave'] };
 
 /** Pirate Cove: a counter-clockwise loop round a lagoon, along a pier, through a wreck and a smugglers' cave. */
 const ROWS: Row[] = [
@@ -33,7 +37,7 @@ const ROWS: Row[] = [
   [-14, 5, 1.1, 14, 4, 0, 'sand', 'open'],
 ];
 
-export const PIRATE_COVE: ControlPoint[] = ROWS.map(([x, z, y, width, shoulder, bank, surface, cover]) => ({
+const POINTS: ControlPoint[] = ROWS.map(([x, z, y, width, shoulder, bank, surface, stretch]) => ({
   x: x * K,
   z: z * K,
   y,
@@ -41,5 +45,8 @@ export const PIRATE_COVE: ControlPoint[] = ROWS.map(([x, z, y, width, shoulder, 
   shoulder,
   bank,
   surface,
-  cover,
+  cover: COVER[stretch][0],
+  zone: COVER[stretch][1],
 }));
+
+export const PIRATE_COVE: TrackDef = { points: POINTS, water: 0 };

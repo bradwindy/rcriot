@@ -1,6 +1,7 @@
 import { endDrift, startBoost, type Car, type CarInput } from './car';
 import { mulberry32 } from './rng';
-import { limitOf, locate, sampleAt, surfaceY, type Track } from './track';
+import { follow, routeTrack } from './course';
+import { limitOf, roofed, sampleAt, surfaceY, type Track } from './track';
 
 /** The eleven pick-ups, from the RC Revenge Pro manual. */
 export type ItemKind =
@@ -54,6 +55,8 @@ export interface Entity {
   out: boolean;
   /** When a resting mine next hops, in seconds of its age. */
   hopAt: number;
+  /** Route it is on and its nearest sample there, as for cars. */
+  route: number;
   index: number;
 }
 
@@ -244,7 +247,7 @@ export class Items {
     this.zapCooldown = new Array<number>(count).fill(0);
     this.burnCooldown = new Array<number>(count).fill(0);
     const L = track.length;
-    for (const s of [0.07, 0.3, 0.64, 0.86].map((f) => f * L)) {
+    for (const s of track.boxes.map((f) => f * L)) {
       const p = sampleAt(track, s);
       const room = p.width / 2 - 1.2;
       for (const f of [-0.75, -0.25, 0.25, 0.75]) {
@@ -465,8 +468,8 @@ export class Items {
     const car = field.cars[owner];
     const x = car.x + ox;
     const z = car.z + oz;
-    const loc = locate(field.track, x, z, car.index);
-    const ground = surfaceY(sampleAt(field.track, loc.s), loc.offset);
+    const loc = follow(field.track, car.route, x, z, car.index, 0);
+    const ground = surfaceY(loc.p, loc.offset);
     const onGround = vy === 0;
     this.entities.push({
       id: this.nextId++,
@@ -484,6 +487,7 @@ export class Items {
       landed: onGround,
       out: false,
       hopAt: 0.6 + this.rng() * 0.6,
+      route: loc.route,
       index: loc.index,
     });
   }
@@ -544,9 +548,10 @@ export class Items {
         e.x += e.vx * dt;
         e.y += e.vy * dt;
         e.z += e.vz * dt;
-        const loc = locate(track, e.x, e.z, e.index);
+        const loc = follow(track, e.route, e.x, e.z, e.index, 0.5);
+        e.route = loc.route;
         e.index = loc.index;
-        const p = sampleAt(track, loc.s);
+        const p = loc.p;
         const limit = limitOf(p) - 0.5;
         if (Math.abs(loc.offset) > limit) {
           const side = Math.sign(loc.offset);
@@ -606,21 +611,22 @@ export class Items {
     e.x += e.vx * dt;
     e.y += e.vy * dt;
     e.z += e.vz * dt;
-    const loc = locate(track, e.x, e.z, e.index);
+    const loc = follow(track, e.route, e.x, e.z, e.index, MINE_SIZE);
+    e.route = loc.route;
     e.index = loc.index;
-    const p = sampleAt(track, loc.s);
+    const p = loc.p;
     const edge = limitOf(p);
     const rim = surfaceY(p, Math.sign(loc.offset) * edge);
     if (e.out) {
       // Coming down outside the track: a splash off the pier, a puff anywhere else.
       if (e.y > rim - 0.3) return false;
-      if (p.cover === 'pier') this.events.push({ type: 'splash', x: e.x, y: Math.max(0, e.y), z: e.z });
+      if (p.cover === 'deck' && track.water !== null) this.events.push({ type: 'splash', x: e.x, y: Math.max(track.water, e.y), z: e.z });
       else this.events.push({ type: 'explode', x: e.x, y: e.y, z: e.z, strength: 0.4 });
       return true;
     }
     const limit = edge - MINE_SIZE;
     if (Math.abs(loc.offset) > limit) {
-      const wall = p.cover === 'tunnel' || p.cover === 'ship' ? Infinity : WALL_HEIGHT;
+      const wall = roofed(p.cover) ? Infinity : WALL_HEIGHT;
       if (e.y - MINE_SIZE > rim + wall) {
         e.out = true;
         return false;
@@ -673,7 +679,8 @@ export class Items {
       wantZ = (t.z - e.z) / d;
     } else {
       // Unlocked rockets follow the track, so they still fly the right way round bends.
-      const p = sampleAt(track, track.samples[e.index].s);
+      const own = routeTrack(track, e.route);
+      const p = sampleAt(own, own.samples[e.index].s);
       const along = dirX * p.tx + dirZ * p.tz >= 0 ? 1 : -1;
       wantX = p.tx * along;
       wantZ = p.tz * along;
@@ -687,9 +694,10 @@ export class Items {
     e.vz = dirZ * speed;
     e.x += e.vx * dt;
     e.z += e.vz * dt;
-    const loc = locate(track, e.x, e.z, e.index);
+    const loc = follow(track, e.route, e.x, e.z, e.index, -0.5);
+    e.route = loc.route;
     e.index = loc.index;
-    const p = sampleAt(track, loc.s);
+    const p = loc.p;
     e.y = surfaceY(p, loc.offset) + 0.7;
     if (Math.abs(loc.offset) > limitOf(p) + 0.5) {
       this.events.push({ type: 'explode', x: e.x, y: e.y, z: e.z, strength: 0.6 });

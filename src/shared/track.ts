@@ -1,6 +1,36 @@
-export type Surface = 'sand' | 'wood' | 'rock';
-/** What the track runs through: open ground, a pier over water, the shipwreck or the cave. */
-export type Cover = 'open' | 'pier' | 'ship' | 'tunnel';
+import type { Hazard } from './hazards';
+
+/** What the wheels run on. Lava, goo and void swallow a car that lands on them, and it comes back a little way behind. */
+export const SURFACES = [
+  'sand', 'wood', 'rock', 'dirt', 'grass', 'mud', 'stone', 'metal', 'asphalt', 'glass', 'dust', 'lava', 'goo', 'void',
+] as const;
+export type Surface = (typeof SURFACES)[number];
+
+export const SURFACE: Record<Surface, { grip: number; top: number; kill?: true }> = {
+  sand: { grip: 1, top: 1 },
+  wood: { grip: 1, top: 1 },
+  rock: { grip: 1, top: 1 },
+  dirt: { grip: 0.95, top: 1 },
+  grass: { grip: 0.9, top: 1 },
+  mud: { grip: 0.75, top: 0.86 },
+  stone: { grip: 1, top: 1 },
+  metal: { grip: 0.92, top: 1 },
+  asphalt: { grip: 1.08, top: 1 },
+  glass: { grip: 0.85, top: 1 },
+  dust: { grip: 0.85, top: 1 },
+  lava: { grip: 1, top: 1, kill: true },
+  goo: { grip: 1, top: 1, kill: true },
+  void: { grip: 1, top: 1, kill: true },
+};
+
+/**
+ * What the track runs through. Open ground: the terrain meets the road and the shoulders are rough. A deck: a bridge,
+ * pier or gantry, raised clear of the ground. Indoor: inside a building or hull. A tunnel: through rock or earth.
+ */
+export const COVERS = ['open', 'deck', 'indoor', 'tunnel'] as const;
+export type Cover = (typeof COVERS)[number];
+
+export const roofed = (c: Cover): boolean => c === 'indoor' || c === 'tunnel';
 
 export interface ControlPoint {
   x: number;
@@ -14,6 +44,12 @@ export interface ControlPoint {
   /** Surface and cover apply from this point to the next. */
   surface: Surface;
   cover: Cover;
+  /** The track's own name for this stretch, for its scenery: 'pier', 'temple', 'airlock'. */
+  zone?: string;
+  /** Dark enough for headlights. Defaults to true indoors and in tunnels. */
+  dark?: boolean;
+  /** Share of normal gravity, for low-gravity stretches. */
+  gravity?: number;
 }
 
 export interface Sample {
@@ -31,6 +67,9 @@ export interface Sample {
   bank: number;
   surface: Surface;
   cover: Cover;
+  zone: string;
+  dark: boolean;
+  gravity: number;
   s: number;
 }
 
@@ -40,6 +79,28 @@ export interface Track {
   step: number;
   /** Distance along the track of each control point. */
   marks: number[];
+  /** Other ways round, each a whole lap that leaves this one at a fork and joins it again. Route 0 is this track. */
+  routes: Route[];
+  /** Height of the sea or lake, where there is one. */
+  water: number | null;
+  hazards: Hazard[];
+  /** Rows of pick-up boxes, as shares of the lap. */
+  boxes: number[];
+}
+
+/**
+ * Another way round. Its distances map to the main track's: the same before the fork and after the join, and spread
+ * evenly between them. Cars may cross between routes only in the zones, where the two roads overlap.
+ */
+export interface Route {
+  track: Track;
+  /** Main-track distances where the fork starts and the join ends, and the same points along this route. */
+  from: number;
+  to: number;
+  rfrom: number;
+  rto: number;
+  /** Main-track distance ranges where the roads overlap at the fork and the join. */
+  zones: [number, number][];
 }
 
 /** Where a point sits relative to the track: nearest sample, distance along, and signed distance to the right. */
@@ -121,6 +182,9 @@ export function buildTrack(points: ControlPoint[], step = 1): Track {
       bank: ((p1.bank + (p2.bank - p1.bank) * t) * Math.PI) / 180,
       surface: p1.surface,
       cover: p1.cover,
+      zone: p1.zone ?? '',
+      dark: p1.dark ?? roofed(p1.cover),
+      gravity: (p1.gravity ?? 1) + ((p2.gravity ?? 1) - (p1.gravity ?? 1)) * t,
       s: target,
     });
   }
@@ -134,7 +198,7 @@ export function buildTrack(points: ControlPoint[], step = 1): Track {
     samples[i].tz = dz / len;
     samples[i].grade = (next.y - prev.y) / (2 * realStep);
   }
-  return { samples, length: total, step: realStep, marks };
+  return { samples, length: total, step: realStep, marks, routes: [], water: null, hazards: [], boxes: [] };
 }
 
 export function wrapS(track: Track, s: number): number {
@@ -166,6 +230,9 @@ export function sampleAt(track: Track, s: number): Sample {
     bank: a.bank + (b.bank - a.bank) * t,
     surface: a.surface,
     cover: a.cover,
+    zone: a.zone,
+    dark: a.dark,
+    gravity: a.gravity + (b.gravity - a.gravity) * t,
     s: w,
   };
 }
@@ -216,18 +283,28 @@ export function locate(track: Track, x: number, z: number, hint = -1): Locus {
   return { index: best, s: wrapS(track, a.s + bestT * track.step), offset };
 }
 
-/** Distance ranges along the track with the given cover, in order. */
-export function coverRanges(track: Track, cover: Cover): [number, number][] {
+/** Distance ranges along the track where `test` holds, in order. */
+export function ranges(track: Track, test: (p: Sample) => boolean): [number, number][] {
   const out: [number, number][] = [];
   const { samples, step } = track;
   let start = -1;
   samples.forEach((p, i) => {
-    if (p.cover === cover && start < 0) start = i;
-    if (p.cover !== cover && start >= 0) {
+    if (test(p) && start < 0) start = i;
+    if (!test(p) && start >= 0) {
       out.push([start * step, i * step]);
       start = -1;
     }
   });
   if (start >= 0) out.push([start * step, track.length]);
   return out;
+}
+
+/** Distance ranges along the track with the given cover, in order. */
+export function coverRanges(track: Track, cover: Cover): [number, number][] {
+  return ranges(track, (p) => p.cover === cover);
+}
+
+/** Distance ranges along the track in the named zone, in order. */
+export function zoneRanges(track: Track, zone: string): [number, number][] {
+  return ranges(track, (p) => p.zone === zone);
 }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { limitOf, locate, sampleAt, surfaceY, type Track } from '../shared/track';
+import { follow as onRoute } from '../shared/course';
+import { limitOf, roofed, surfaceY, type Track } from '../shared/track';
 
 export type CameraMode = 'chase' | 'far' | 'bumper';
 export const CAMERA_MODES: CameraMode[] = ['chase', 'far', 'bumper'];
@@ -20,6 +21,9 @@ export interface Follow {
   drift: number;
   boosting: boolean;
   lookBack: boolean;
+  /** The car's route and nearest sample, so the camera keeps to the same road at a fork. */
+  route: number;
+  index: number;
 }
 
 /** Follows a car from behind with a little lag, kept inside the barriers and under the cave and hull roofs. */
@@ -30,9 +34,18 @@ export class ChaseCamera {
   private yaw = 0;
   private swing = 0;
   private hint = -1;
+  private route = 0;
   private started = false;
 
-  constructor(private readonly track: Track) {}
+  constructor(private track: Track) {}
+
+  /** A new track: the camera finds itself on it again from scratch. */
+  setTrack(track: Track): void {
+    this.track = track;
+    this.hint = -1;
+    this.route = 0;
+    this.started = false;
+  }
 
   cycle(): void {
     this.mode = CAMERA_MODES[(CAMERA_MODES.indexOf(this.mode) + 1) % CAMERA_MODES.length];
@@ -53,10 +66,15 @@ export class ChaseCamera {
     const fz = -Math.cos(view);
     const want = new THREE.Vector3(target.x - fx * rig.back, target.y + rig.up, target.z - fz * rig.back);
 
-    const loc = locate(this.track, want.x, want.z, this.hint);
+    if (follow.route !== this.route || this.hint < 0) {
+      this.route = follow.route;
+      this.hint = follow.index;
+    }
+    const loc = onRoute(this.track, this.route, want.x, want.z, this.hint, 0.6);
     this.hint = loc.index;
-    const p = sampleAt(this.track, loc.s);
-    const indoor = p.cover === 'tunnel' || p.cover === 'ship';
+    this.route = loc.route;
+    const p = loc.p;
+    const indoor = roofed(p.cover);
     const limit = limitOf(p) - 0.6;
     if (indoor && Math.abs(loc.offset) > limit) {
       const push = Math.abs(loc.offset) - limit;

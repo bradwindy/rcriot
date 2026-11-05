@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_TICKS, driveFor } from './helpers';
 import { BOOST_TIME, driftLevel, spawnCar, stepCar, TICK } from '../src/shared/car';
-import { PIRATE_COVE } from '../src/shared/circuit';
 import { COUNTDOWN, Race } from '../src/shared/race';
 import { ROSTER, specOf, STAT_TOTAL } from '../src/shared/roster';
-import { buildTrack, limitOf, locate, sampleAt } from '../src/shared/track';
+import { limitOf, locate, sampleAt } from '../src/shared/track';
+import { courseOf } from '../src/shared/tracks';
 
-const track = buildTrack(PIRATE_COVE);
+const track = courseOf('pirate-cove');
 
 describe('track', () => {
   it('locates a point beside the road at the right distance and side', () => {

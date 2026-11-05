@@ -63,6 +63,7 @@ export function createMaterials() {
       scroll: [0.01, 0.006],
     }),
     sky: ps1Material({ map: tex.white(), vertexColors: true, lit: false, fog: 0, side: THREE.BackSide, depthWrite: false }),
+    stars: ps1Material({ map: tex.white(), vertexColors: true, lit: false, fog: 0, side: THREE.DoubleSide, depthWrite: false }),
     sun: ps1Material({ map: tex.sun(), lit: false, fog: 0, alphaTest: 0.5, depthWrite: false }),
     cloud: ps1Material({ map: tex.cloud(), lit: false, fog: 0, alphaTest: 0.5, side: THREE.DoubleSide, depthWrite: false, scroll: [0.003, 0] }),
     isles: ps1Material({ map: tex.rock(), vertexColors: true, fog: 0.72 }),

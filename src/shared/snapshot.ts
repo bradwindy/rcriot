@@ -1,7 +1,7 @@
 import { TICK, type Car } from './car';
 import { ITEM_KINDS, type Entity, type EntityKind } from './items';
 import type { Race } from './race';
-import type { Cover, Surface } from './track';
+import { COVERS, SURFACES } from './track';
 
 /**
  * Race state as a flat Float32Array, small enough to send every tick over an unreliable channel. Everything a guest
@@ -9,15 +9,13 @@ import type { Cover, Surface } from './track';
  * the dice) stay on the host.
  */
 const CAR_NUMBERS = [
-  'x', 'y', 'z', 'vx', 'vy', 'vz', 'heading', 'air', 'index', 's', 'offset', 'ground', 'drift', 'driftTime', 'boost',
-  'stall', 'age', 'hopAt', 'boostAt', 'boostPower', 'bumpAt', 'bump', 'landAt', 'land', 'wallAt', 'shield', 'slick',
-  'slickDir', 'stun', 'bubble', 'tumble', 'burn',
+  'x', 'y', 'z', 'vx', 'vy', 'vz', 'heading', 'air', 'route', 'index', 's', 'rs', 'offset', 'ground', 'drift',
+  'driftTime', 'boost', 'stall', 'age', 'hopAt', 'boostAt', 'boostPower', 'bumpAt', 'bump', 'landAt', 'land', 'wallAt',
+  'shield', 'slick', 'slickDir', 'stun', 'bubble', 'tumble', 'burn', 'sinkAt',
 ] as const satisfies readonly (keyof Car)[];
-const SURFACES: Surface[] = ['sand', 'wood', 'rock'];
-const COVERS: Cover[] = ['open', 'pier', 'ship', 'tunnel'];
 const ENTITY_KINDS: EntityKind[] = ['rocket', 'mine', 'water', 'oil', 'fake'];
 
-const VERSION = 1;
+const VERSION = 2;
 const HEADER = 9;
 const PER_RACER = CAR_NUMBERS.length + 3 + 16;
 const PER_ENTITY = 16;
@@ -90,7 +88,7 @@ export function encodeSnapshot(race: Race, n: number, acks: readonly number[]): 
     put((e.landed ? 1 : 0) | (e.out ? 2 : 0));
     put(e.hopAt);
     put(e.index);
-    put(0);
+    put(e.route);
   }
   return out.buffer;
 }
@@ -172,6 +170,7 @@ export function loadSnapshot(race: Race, buf: ArrayBuffer): void {
       landed: false,
       out: false,
       hopAt: 0,
+      route: 0,
       index: 0,
     };
     const flags = get();
@@ -179,7 +178,7 @@ export function loadSnapshot(race: Race, buf: ArrayBuffer): void {
     e.out = (flags & 2) !== 0;
     e.hopAt = get();
     e.index = get();
-    o++;
+    e.route = get();
     items.entities.push(e);
   }
 }

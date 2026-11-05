@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { mulberry32 } from '../../shared/rng';
-import { limitOf, sampleAt, type Track } from '../../shared/track';
-import { Batch, boulder, xf, type RGB } from './geometry';
-import type { Materials } from './materials';
-import { fbm } from './noise';
-import { addPointLight } from './ps1';
-import { frame, headingAt } from './road';
-import type { Terrain } from './terrain';
-import type { TrackIndex } from './trackindex';
+import { mulberry32 } from '../../../shared/rng';
+import { limitOf, sampleAt, type Track } from '../../../shared/track';
+import { Batch, boulder, xf, type RGB } from '../../render/geometry';
+import type { Materials } from '../../render/materials';
+import { fbm } from '../../render/noise';
+import { addPointLight } from '../../render/ps1';
+import { box, frame, headingAt } from '../../render/road';
+import type { Terrain } from '../../render/terrain';
+import type { TrackIndex } from '../../render/trackindex';
 
 function palm(batch: Batch, mats: Materials, base: THREE.Vector3, rng: () => number): void {
   const height = 9 + rng() * 5;
@@ -114,10 +114,6 @@ function filmLight(batch: Batch, mats: Materials, at: THREE.Vector3, target: THR
     const glow = at.clone().setY(at.y + 4).lerp(target, 0.35);
     addPointLight(glow, new THREE.Color(1.0, 0.95, 0.85), 26);
   }
-}
-
-function box(batch: Batch, mat: THREE.Material, w: number, h: number, d: number, m: THREE.Matrix4, color?: RGB): void {
-  batch.box(mat, w, h, d, m, color);
 }
 
 function crane(batch: Batch, mats: Materials, at: THREE.Vector3, yaw: number): void {

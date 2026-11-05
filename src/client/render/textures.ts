@@ -5,24 +5,24 @@ import { drawText, textWidth } from './font';
 
 /** Every texture is painted here at PS1 sizes (16 to 128 px), so there are no image files. */
 
-type RGBA = [number, number, number, number];
+export type RGBA = [number, number, number, number];
 
-function hex(c: string, a = 255): RGBA {
+export function hex(c: string, a = 255): RGBA {
   const n = parseInt(c.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255, a];
 }
 
-function scale(c: RGBA, f: number): RGBA {
+export function scale(c: RGBA, f: number): RGBA {
   return [Math.min(255, c[0] * f), Math.min(255, c[1] * f), Math.min(255, c[2] * f), c[3]];
 }
 
-function mixc(a: RGBA, b: RGBA, t: number): RGBA {
+export function mixc(a: RGBA, b: RGBA, t: number): RGBA {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t];
 }
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
-class Painter {
+export class Painter {
   readonly data: Uint8ClampedArray<ArrayBuffer>;
 
   constructor(
@@ -166,7 +166,7 @@ function coverageMips(data: Uint8ClampedArray<ArrayBuffer>, w: number, h: number
 }
 
 /** Cut-outs (leaves, flags, flames, clouds) carry hand-made mipmaps that keep their shape, and their own switch. */
-function make(w: number, h: number, seed: number, paint: (p: Painter) => void, repeat = true, cutout = !repeat): THREE.Texture {
+export function make(w: number, h: number, seed: number, paint: (p: Painter) => void, repeat = true, cutout = !repeat): THREE.Texture {
   const p = new Painter(w, h, mulberry32(seed));
   paint(p);
   const tex = new THREE.CanvasTexture(toCanvas(p.data, w, h));
@@ -197,12 +197,12 @@ export function setFiltering(pixelated: boolean, mipmaps: boolean, cutouts: bool
   }
 }
 
-function speckle(p: Painter, palette: RGBA[], cell: number, grain: number): void {
+export function speckle(p: Painter, palette: RGBA[], cell: number, grain: number): void {
   const n = p.noise(cell);
   p.each((x, y) => p.pick(palette, n(x, y) * (1 - grain) + p.rng() * grain));
 }
 
-function planks(p: Painter, palette: RGBA[], gap: RGBA, count: number, nails: boolean): void {
+export function planks(p: Painter, palette: RGBA[], gap: RGBA, count: number, nails: boolean): void {
   const ph = p.h / count;
   const grain = p.noise(6);
   for (let k = 0; k < count; k++) {
@@ -226,7 +226,7 @@ function planks(p: Painter, palette: RGBA[], gap: RGBA, count: number, nails: bo
   }
 }
 
-function cache<T>(f: () => T): () => T {
+export function cache<T>(f: () => T): () => T {
   let v: T | undefined;
   return () => (v ??= f());
 }
@@ -546,6 +546,18 @@ export const tex = {
         return [255, 255, 255, 255];
       });
     }, false),
+  ),
+
+  /** The pool of light headlamps throw on the road ahead, brightest near the car. */
+  beam: cache(() =>
+    make(32, 64, 61, (p) => {
+      p.each((x, y) => {
+        const across = Math.abs(x - 15.5) / 15.5;
+        const along = y / 63;
+        const v = Math.max(0, 1 - across / (0.35 + along * 0.65)) * (1 - along) ** 0.7;
+        return [255, 240, 205, Math.min(1, v * 1.4) * 255];
+      });
+    }, false, false),
   ),
 
   shadow: cache(() =>

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Fx } from '../settings';
-import { globals } from './ps1';
+import { globals, haze } from './ps1';
 
 /**
  * Renders the scene into a low-res buffer, then draws that buffer onto the screen. Colour is cut to 15 bits with the
@@ -296,8 +296,8 @@ export class Pipeline {
     document.body.dataset.crt = fx.crt;
     globals.uAffine.value = fx.affine ? 1 : 0;
     globals.uFog.value = fx.fog ? 1 : 0;
-    globals.uFogFar.value = fx.drawDistance;
-    globals.uFogNear.value = fx.drawDistance * 0.2;
+    globals.uFogFar.value = fx.drawDistance * haze.value;
+    globals.uFogNear.value = fx.drawDistance * haze.value * 0.2;
   }
 
   render(scene: THREE.Scene, camera: THREE.Camera): void {

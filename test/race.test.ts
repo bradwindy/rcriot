@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { botInput } from '../src/shared/bot';
 import { NO_INPUT, TICK } from '../src/shared/car';
-import { PIRATE_COVE } from '../src/shared/circuit';
 import { FINISH_WINDOW, Race } from '../src/shared/race';
 import { ROSTER } from '../src/shared/roster';
 import { encodeSnapshot, loadSnapshot, snapHead } from '../src/shared/snapshot';
-import { buildTrack } from '../src/shared/track';
+import { courseOf } from '../src/shared/tracks';
 
-const track = buildTrack(PIRATE_COVE);
+const track = courseOf('pirate-cove');
 
 describe('race', () => {
   it('ends a set time after the first person finishes, and places the rest by how far they got', () => {

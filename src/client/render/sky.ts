@@ -1,32 +1,19 @@
 import * as THREE from 'three';
+import type { Theme } from '../tracks/types';
 import type { Materials } from './materials';
-import { hash2, valueNoise } from './noise';
+import { hash2 } from './noise';
 import { globals } from './ps1';
-import type { Terrain } from './terrain';
 
-const ZENITH = new THREE.Color(0.24, 0.42, 0.74);
-const UPPER = new THREE.Color(0.55, 0.62, 0.86);
-const BELOW = new THREE.Color(0.86, 0.66, 0.52);
-
-/** The sky, sun and clouds ride with the camera. The far islands and the sea stay put. */
+/** The sky, sun, clouds and stars ride with the camera. Each track's theme colours them. */
 export class Sky {
   readonly group = new THREE.Group();
-  private readonly dome: THREE.Mesh;
+  private readonly dome: THREE.Mesh<THREE.SphereGeometry>;
   private readonly clouds: THREE.Mesh;
   private readonly sun: THREE.Mesh;
+  private readonly stars: THREE.Mesh;
 
   constructor(mats: Materials) {
-    const horizon = globals.uFogColor.value;
-    const dome = new THREE.SphereGeometry(900, 20, 12);
-    const pos = dome.getAttribute('position');
-    const colors: number[] = [];
-    for (let i = 0; i < pos.count; i++) {
-      const y = pos.getY(i) / 900;
-      const c = y < 0 ? BELOW.clone().lerp(horizon, Math.max(0, 1 + y * 4)) : y < 0.25 ? horizon.clone().lerp(UPPER, y / 0.25) : UPPER.clone().lerp(ZENITH, Math.min(1, (y - 0.25) / 0.5));
-      colors.push(c.r, c.g, c.b);
-    }
-    dome.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    this.dome = new THREE.Mesh(dome, mats.sky);
+    this.dome = new THREE.Mesh(new THREE.SphereGeometry(900, 20, 12), mats.sky);
     this.dome.renderOrder = -2;
 
     const band = new THREE.CylinderGeometry(820, 820, 170, 24, 1, true);
@@ -39,7 +26,35 @@ export class Sky {
     this.sun = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mats.sun);
     this.sun.renderOrder = -1;
 
-    this.group.add(this.dome, this.clouds, this.sun);
+    this.stars = new THREE.Mesh(starField(), mats.stars);
+    this.stars.renderOrder = -1;
+
+    this.group.add(this.dome, this.clouds, this.sun, this.stars);
+  }
+
+  /** Colours the dome from overhead to the horizon, which is the fog colour, and shows what the theme asks for. */
+  setTheme(theme: Theme): void {
+    const horizon = new THREE.Color(...theme.fog);
+    const zenith = new THREE.Color(...theme.zenith);
+    const upper = new THREE.Color(...theme.upper);
+    const below = new THREE.Color(...theme.below);
+    const dome = this.dome.geometry;
+    const pos = dome.getAttribute('position');
+    const colors: number[] = [];
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i) / 900;
+      const c =
+        y < 0
+          ? below.clone().lerp(horizon, Math.max(0, 1 + y * 4))
+          : y < 0.25
+            ? horizon.clone().lerp(upper, y / 0.25)
+            : upper.clone().lerp(zenith, Math.min(1, (y - 0.25) / 0.5));
+      colors.push(c.r, c.g, c.b);
+    }
+    dome.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    this.clouds.visible = theme.clouds;
+    this.sun.visible = theme.sun;
+    this.stars.visible = theme.stars;
   }
 
   update(camera: THREE.Camera, time: number): void {
@@ -50,66 +65,32 @@ export class Sky {
   }
 }
 
-/** A ragged ring of distant islands, mostly lost in the haze. */
-export function farIslands(mats: Materials): THREE.Mesh {
-  const n = 96;
+/** A few hundred specks scattered over the upper sky. */
+function starField(): THREE.BufferGeometry {
   const pos: number[] = [];
   const col: number[] = [];
   const uv: number[] = [];
-  const ring = (i: number) => {
-    const a = (i / n) * Math.PI * 2;
-    const r = 640 + valueNoise(i * 0.3, 1, 5) * 120;
-    const lump = valueNoise(i * 0.22, 3, 7);
-    const h = lump > 0.45 ? (lump - 0.45) * 160 + hash2(i, 0, 9) * 12 : -6;
-    return { x: Math.cos(a) * r, z: Math.sin(a) * r - 60, h };
-  };
-  for (let i = 0; i < n; i++) {
-    const a = ring(i);
-    const b = ring(i + 1);
-    const quad = [
-      [a.x, -8, a.z, i, 0],
-      [a.x, a.h, a.z, i, 1],
-      [b.x, -8, b.z, i + 1, 0],
-      [b.x, -8, b.z, i + 1, 0],
-      [a.x, a.h, a.z, i, 1],
-      [b.x, b.h, b.z, i + 1, 1],
-    ];
-    for (const [x, y, z, u, v] of quad) {
-      pos.push(x, y, z);
-      uv.push(u / 3, v * 3);
-      const shade = v ? 0.8 : 0.55;
-      col.push(shade * 0.85, shade, shade * 0.8);
+  for (let i = 0; i < 420; i++) {
+    const a = hash2(i, 1, 41) * Math.PI * 2;
+    const up = 0.08 + hash2(i, 2, 41) * 0.92;
+    const r = 860;
+    const flat = Math.sqrt(1 - up * up);
+    const centre = new THREE.Vector3(Math.cos(a) * flat * r, up * r, Math.sin(a) * flat * r);
+    const size = 1.6 + hash2(i, 3, 41) * 2.4;
+    const side = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(size);
+    const lift = new THREE.Vector3().crossVectors(centre.clone().normalize(), side).normalize().multiplyScalar(size);
+    const b = 0.55 + hash2(i, 4, 41) * 0.45;
+    const corners = [side.clone().negate().sub(lift), side.clone().sub(lift), side.clone().add(lift), side.clone().negate().add(lift)];
+    for (const k of [0, 1, 2, 0, 2, 3]) {
+      const v = centre.clone().add(corners[k]);
+      pos.push(v.x, v.y, v.z);
+      col.push(b, b, b * 1.05);
+      uv.push(0, 0);
     }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, mats.isles);
-  mesh.material.side = THREE.DoubleSide;
-  return mesh;
-}
-
-/** The sea and lagoon: one wavy sheet, turquoise over the shallows and deep blue further out. */
-export function water(mats: Materials, terrain: Terrain): THREE.Mesh {
-  const size = 1800;
-  const g = new THREE.PlaneGeometry(size, size, 120, 120);
-  g.rotateX(-Math.PI / 2);
-  g.translate(0, 0, -50);
-  const pos = g.getAttribute('position');
-  const uv = g.getAttribute('uv');
-  const shallow = new THREE.Color(0.42, 0.86, 0.84);
-  const deep = new THREE.Color(0.14, 0.34, 0.62);
-  const colors: number[] = [];
-  for (let i = 0; i < pos.count; i++) {
-    uv.setXY(i, uv.getX(i) * (size / 16), uv.getY(i) * (size / 16));
-    const depth = -terrain.height(pos.getX(i), pos.getZ(i));
-    const c = shallow.clone().lerp(deep, Math.max(0, Math.min(1, depth / 4.5)));
-    colors.push(c.r, c.g, c.b);
-  }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  const mesh = new THREE.Mesh(g, mats.water);
-  mesh.renderOrder = 1;
-  return mesh;
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  return g;
 }

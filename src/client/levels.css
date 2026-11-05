@@ -1,0 +1,6 @@
+/* Tall screens need the top right for the level select's header, so the effects toggle goes, as it does on the title. */
+@media (max-aspect-ratio: 1/1) {
+  .levels-on .panel-toggle {
+    display: none;
+  }
+}

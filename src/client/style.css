@@ -337,6 +337,29 @@ body {
   padding: 0;
 }
 
+.lobby-track {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--px) * 3);
+}
+
+/* The host's track button opens the level select. Guests see the same name and world with no button round it. */
+.lobby .lobby-pick {
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  padding: 0 calc(var(--px) * 2);
+}
+
+.lobby-pick > span + span {
+  margin-top: calc(var(--px) * -9);
+}
+
+.lobby .lobby-pick:disabled {
+  background: none;
+  border-color: transparent;
+}
+
 .lobby-input {
   position: absolute;
   left: 0;

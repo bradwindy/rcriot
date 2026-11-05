@@ -1,11 +1,10 @@
 import { NO_INPUT, type CarInput } from '../shared/car';
-import { PIRATE_COVE } from '../shared/circuit';
 import { unpackSample } from '../shared/lobby';
 import { MAX_SAMPLES, SAMPLE_SIZE, type HostMsg, type OverMsg } from '../shared/protocol';
 import { Race } from '../shared/race';
 import { ROSTER } from '../shared/roster';
 import { encodeSnapshot } from '../shared/snapshot';
-import { buildTrack } from '../shared/track';
+import { courseOf } from '../shared/tracks';
 import type { RaceInit } from './messages';
 
 export interface MatchIO {
@@ -37,8 +36,6 @@ interface Inputs {
   spare: number;
   watched: number;
 }
-
-const track = buildTrack(PIRATE_COVE);
 
 type Queued = Inputs['queue'][number];
 
@@ -74,7 +71,7 @@ export class RaceMatch {
     });
     const models = init.grid.map((g) => ROSTER.find((m) => m.id === g.car) ?? ROSTER[0]);
     const { settings } = init;
-    this.race = new Race(track, models, [...this.slots.values()], init.seed, settings.items, { laps: settings.laps, level: settings.level });
+    this.race = new Race(courseOf(settings.track), models, [...this.slots.values()], init.seed, settings.items, { laps: settings.laps, level: settings.level });
     this.linked = new Set([init.host, ...init.linked]);
     for (const [id, slot] of this.slots) this.race.racers[slot].auto = !this.linked.has(id);
   }
