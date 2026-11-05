@@ -52,10 +52,10 @@ export const moonBase: TrackArt = {
 
     return {
       flames: [...laser.flames, ...lander.flames],
-      update(time, _dt, clock, camera) {
-        openDoors(base.doors, camera.position);
-        laser.update(clock, time);
-        lander.update(clock, time);
+      update(time, _dt, clock, camera, cars) {
+        openDoors(base.doors, camera.position, cars);
+        laser.update(clock, time, camera.position);
+        lander.update(clock, time, camera.position);
         globe.position.copy(camera.position).addScaledVector(EARTH_DIR, 640);
         globe.rotation.y = 2.2 + time * 0.01;
         holo.rotation.y = time * 0.35;

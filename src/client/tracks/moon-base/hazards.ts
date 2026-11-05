@@ -11,7 +11,7 @@ import type { MoonMats } from './materials';
 
 export interface Rig {
   flames: THREE.Vector3[];
-  update(clock: number, time: number): void;
+  update(clock: number, time: number, eye: THREE.Vector3): void;
 }
 
 const LASER = new THREE.Color(1, 0.18, 0.1);
@@ -154,12 +154,17 @@ export function landerRig(track: Track, h: Hazard, batch: Batch, mats: Materials
   warm.position.set(nozzle.x, nozzle.y + 0.5, nozzle.z);
   group.add(plume, core, ring, warm);
   const flames = Array.from({ length: 4 }, () => new THREE.Vector3(0, AWAY, 0));
+  const tint = mm.exhaust.uniforms.uTint.value as THREE.Color;
+  const calm = (mm.exhaust.userData.calm ??= tint.clone()) as THREE.Color;
 
   return {
     flames,
-    update(clock, time) {
+    update(clock, time, eye) {
       const at = hazardAt(track, h, clock);
       const firing = at.live;
+      // Thins the exhaust as the camera goes into it, so stacked additive layers don't white out the screen.
+      const inside = eye.y < nozzle.y + 1 ? Math.hypot(eye.x - nozzle.x, eye.z - nozzle.z) : Infinity;
+      tint.copy(calm).multiplyScalar(Math.min(1, Math.max(0.12, (inside - 2) / 6)));
       // The last fifth of each cycle is the warm-up: the bell glows and the lamps race.
       const warmup = Math.max(0, (at.t - 0.8) / 0.2);
       const flicker = 0.85 + 0.3 * Math.sin(time * 53) * Math.sin(time * 31);

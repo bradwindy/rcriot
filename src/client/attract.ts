@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NO_INPUT, TICK } from '../shared/car';
+import { NO_INPUT, TICK, type Car } from '../shared/car';
 import { COUNTDOWN, Race, type Racer } from '../shared/race';
 import { ROSTER, type CarModel } from '../shared/roster';
 import { routeTrack } from '../shared/course';
@@ -65,6 +65,11 @@ export class Attract {
   /** The flyover race's clock, which the track's hazards run off. */
   get clock(): number | undefined {
     return this.race?.clock;
+  }
+
+  /** The flyover race's cars. */
+  get racerCars(): readonly Car[] {
+    return this.race?.racers.map((r) => r.car) ?? [];
   }
 
   get running(): boolean {

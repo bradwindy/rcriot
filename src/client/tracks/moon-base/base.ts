@@ -5,6 +5,7 @@ import type { Materials } from '../../render/materials';
 import { addPointLight, type PointLight } from '../../render/ps1';
 import { box, frame, headingAt } from '../../render/road';
 import type { MoonMats } from './materials';
+import type { Spot } from '../types';
 import { cap, eased, sweep, type Corner } from './sweep';
 
 interface Room {
@@ -196,10 +197,11 @@ function airlockDoors(track: Track, mm: MoonMats, batch: Batch, group: THREE.Gro
   return { panels, at: frame(p, 0, height / 2), p, half, height };
 }
 
-/** Opens doors when the camera comes near, so the way ahead always slides open in front of the player. */
-export function openDoors(doors: Door[], eye: THREE.Vector3): void {
+/** Opens doors when the camera or any car comes near, so no car drives through a closed door. */
+export function openDoors(doors: Door[], eye: THREE.Vector3, cars: readonly Spot[]): void {
   for (const d of doors) {
-    const near = d.at.distanceTo(eye);
+    let near = d.at.distanceTo(eye);
+    for (const c of cars) near = Math.min(near, Math.hypot(d.at.x - c.x, d.at.y - c.y, d.at.z - c.z));
     const t = Math.max(0, Math.min(1, (58 - near) / 26));
     const open = t * t * (3 - 2 * t) * (d.half + 0.3);
     d.panels.forEach((m, i) => {

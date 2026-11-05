@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Track } from '../../shared/track';
 import type { TrackId } from '../../shared/tracks';
 import { TRACK_ART } from '../tracks';
-import type { Art, Theme } from '../tracks/types';
+import type { Art, Spot, Theme } from '../tracks/types';
 import { Batch } from './geometry';
 import { createMaterials, type Materials } from './materials';
 import { valueNoise } from './noise';
@@ -77,9 +77,9 @@ export class World {
   }
 
   /** `clock` is the race clock, for the hazards. */
-  update(camera: THREE.Camera, time: number, dt: number, clock: number): void {
+  update(camera: THREE.Camera, time: number, dt: number, clock: number, cars: readonly Spot[]): void {
     this.sky.update(camera, time);
-    this.stage?.art.update?.(time, dt, clock, camera);
+    this.stage?.art.update?.(time, dt, clock, camera, cars);
     // Lanterns and film lights flicker a touch, like old bulbs.
     this.mats.lantern.uniforms.uTint.value.setScalar(0.85 + 0.2 * valueNoise(time * 5, 3, 7));
     this.mats.lens.uniforms.uTint.value.setScalar(0.92 + 0.1 * valueNoise(time * 9, 5, 2));

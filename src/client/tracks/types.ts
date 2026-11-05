@@ -37,9 +37,19 @@ export interface ArtContext {
   grid: { s: number; offset: number }[];
 }
 
+/** A point in the world. */
+export interface Spot {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface Art {
-  /** Each frame. `clock` is the race clock, which the hazards run off, so draw them with hazardAt(track, h, clock). */
-  update?(time: number, dt: number, clock: number, camera: THREE.Camera): void;
+  /**
+   * Each frame. `clock` is the race clock, which the hazards run off, so draw them with hazardAt(track, h, clock).
+   * `cars` are the racers' positions, for set pieces that react to cars rather than the camera.
+   */
+  update?(time: number, dt: number, clock: number, camera: THREE.Camera, cars: readonly Spot[]): void;
   /** Flame tips that shed embers. */
   flames?: THREE.Vector3[];
 }

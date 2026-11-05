@@ -894,7 +894,7 @@ function frame(now: number): void {
   }
 
   globals.uTime.value = time;
-  world.update(chase.camera, time, dt, s?.race.clock ?? attract.clock ?? time);
+  world.update(chase.camera, time, dt, s?.race.clock ?? attract.clock ?? time, s ? s.race.racers.map((r) => r.car) : attract.racerCars);
   for (const f of world.flames) {
     if (Math.random() < 5 * dt && f.distanceToSquared(chase.camera.position) < 80 * 80) {
       embers.spawn(f.x + (Math.random() - 0.5) * 0.3, f.y - 0.3, f.z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 1.2 + Math.random(), (Math.random() - 0.5) * 0.6, 0.06, 1.2 + Math.random() * 0.6, EMBER);
@@ -994,7 +994,7 @@ if (import.meta.env.DEV) {
      */
     shot: async (name: string, withHud = false) => {
       globals.uTime.value = time;
-      world.update(chase.camera, time, 0, session?.race.clock ?? attract.clock ?? time);
+      world.update(chase.camera, time, 0, session?.race.clock ?? attract.clock ?? time, session ? session.race.racers.map((r) => r.car) : attract.racerCars);
       const shown = session !== null && !results.open;
       hud.show(withHud && shown);
       draw();
