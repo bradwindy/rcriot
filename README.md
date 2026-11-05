@@ -2,14 +2,15 @@
 
 Low-poly RC car racing in the browser, drawn like a PlayStation 1 game. The influences are Mario Kart, RC Revenge and Re-Volt.
 
-This is round 4: online races. Make a party, send the link to your friends and race each other and bots, up to 12 cars, on a keyboard or a phone, with the pick-ups from RC Revenge. Practice races you alone against 7 bots over 3 laps. More tracks and a level select come in round 5.
+Make a party, send the link to your friends and race each other and bots, up to 12 cars, on a keyboard or a phone, on nine movie-set tracks with the pick-ups from RC Revenge. Practice races you alone against 7 bots over 3 laps.
 
-The game opens on an arcade title screen, with bots racing round the track behind the logo. Press any key or tap for the menu: CREATE PARTY, JOIN PARTY (type the 5-letter code), PRACTICE and EFFECTS. After every race a results board shows places and times, then awards and everyone's stats, a page at a time.
+The game opens on an arcade title screen, with bots racing round the track behind the logo. Press any key or tap for the menu: CREATE PARTY, JOIN PARTY (type the 5-letter code), PRACTICE and EFFECTS. Practice goes from the car select to the level select. After every race a results board shows places and times, then awards and everyone's stats, a page at a time.
 
 ## Racing online
 
 Pick Create party and send the link (COPY LINK in the party panel shares it on a phone). Everyone who opens it joins the lobby, picks a car and can change their name. Two people may drive the same car. The party host sets:
 
+- **Track**: any of the nine, from the TRACK row or with T. Everyone in the lobby sees the pick.
 - **Laps**: 1 to 9, 3 to start with.
 - **Bots**: how many bots join the grid after the people, up to 12 cars in all.
 - **Bot skill**: Easy, Normal or Hard. Easy bots drive slower and wider, Hard bots take corners faster and always get a rocket start.
@@ -21,9 +22,23 @@ People who open the link during a race watch it, following the leader, and race 
 
 The party host's browser runs the race, so the host keeps that tab open until it ends. A laptop or desktop makes the best host. If the host leaves or drops for 5 seconds, the race ends and everyone goes back to the lobby with a new host. The lobby shows everyone's ping to the host.
 
-## The track
+## The tracks
 
-Pirate Cove is a movie set on a beach. The lap starts on the sand under the start arch, with the film crew's lights and camera crane beside it. It runs along a pier over the lagoon, through a wrecked galleon, over a stunt ramp, through a torch-lit smugglers' cave and back down to the beach.
+The tracks are movie sets in a theme park, grouped into worlds like RC Revenge's. The level select picks a world, then a track. The highlighted track flies past behind the menu, with its length, map and your best lap on it, which the browser keeps.
+
+| World | Track | Length | The set |
+|---|---|---|---|
+| Pirate | Pirate Cove | 922 m | A beach: a pier over the lagoon, a wrecked galleon, a stunt ramp and a torch-lit smugglers' cave. |
+| Jungle | Inca Temple | 1,552 m | A jungle village, a gorge with a waterfall, a climb over a stepped pyramid, a torch-lit temple hall with a golden idol and a cave of glowing toadstools. |
+| Jungle | Lava Dig | LAVA_LEN | LAVA_SET |
+| Horror | Graveyard | 1,528 m | A moonlit cemetery with a crypt and a vampire's lair. |
+| Horror | Mad Lab | MAD_LEN | MAD_SET |
+| Planet | Moon Base | 1,595 m | Dusty craters in low gravity, a lander, a crevasse and a ring of habitat domes with airlocks. |
+| Planet | Reactor | 1,580 m | A space-station reactor at night: a glowing core, a coolant hall and a neon plasma coil that climbs round a spire. |
+| Monster | Monster Docks | 1,558 m | A harbour where a sea monster has wrecked an ocean liner. |
+| AKLM | Cartoon Farm | 1,529 m | A cartoon farm with barns, a pond and giant animals. |
+
+Every track but Pirate Cove has one fork: a risky shortcut, narrower and often over a pit, against a safer way round. Pits of lava, goo or the void swallow a car that drops in and put it back on the road past the pit after a short wait. Each of those tracks also has one or two timed hazards, such as a swinging noose, a rolling stone ball, a monster's bite or a plasma vent. They run off the race clock, so everyone online sees them in the same place. A hazard spins or launches the car it hits, unless the car is shielded or flying over it. Headlights come on in tunnels, buildings and on night tracks.
 
 ## Driving
 
@@ -105,7 +120,7 @@ The game is one Cloudflare Worker and the players' browsers. The party host's br
 - `src/shared` holds the code more than one side runs: the track spline and its queries, the car physics with drifts and boosts, the car roster and stats, the pick-ups (`items.ts`), the bots with their skill levels, the race with its countdown, laps, finish and stats (`race.ts`), the snapshot format (`snapshot.ts`), the lobby settings and grid (`lobby.ts`) and the message protocol. The sim runs on a fixed 1/60 s tick.
 - `src/host` is the race on the host's page. It runs in a Web Worker at 60 Hz, whose timers keep time when the tab is in the background.
 - `src/worker` holds the Worker and one Durable Object class, `Party`. Each party code maps to its own Durable Object. It keeps the lobby (players, names, cars, settings and who is host), builds each race's grid, relays WebRTC signalling and keeps the last race's results. It runs no physics.
-- `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer, bloom and the CRT pass. The world is built in code when the page loads: `terrain.ts` for the island, `road.ts` for the road, pier, cave and wreck (swept along the track spline), and `props.ts` for the palms, rocks and film crew. `render/cars.ts` builds the ten car bodies. `audio.ts` synthesises the sound, `touch.ts` draws the phone controls, `select.ts` is the car select screen and `lobby.ts` the party panel.
+- `src/client` is the browser game. It uses Three.js with custom shaders. `render/ps1.ts` holds the PS1 material and `render/post.ts` holds the low-res buffer, bloom and the CRT pass. Each track's layout (its spline, fork, hazards and pick-up rows) is a `TrackDef` in `src/shared/tracks/`, and `src/shared/course.ts` builds it, fork included, into the `Track` the sim and the page share. Each track's scenery is built in code from `src/client/tracks/<id>/`, on the kit in `render/road.ts` (the road, swept along the spline) and `render/terrain.ts` (the ground), and swapped when another track loads. `levels.ts` is the level select. `render/cars.ts` builds the ten car bodies. `audio.ts` synthesises the sound, `touch.ts` draws the phone controls, `select.ts` is the car select screen and `lobby.ts` the party panel.
 
 Every page keeps a WebSocket to its party. Each guest also opens a game link to the host: an `RTCPeerConnection` with a reliable `control` channel for pick-up events and the result, and an unreliable `state` channel, like UDP, for snapshots, inputs and pings. Snapshots go every tick as a flat block of 32-bit floats, about 3 kB for a full grid.
 
@@ -129,9 +144,31 @@ npm run dev
 npm run check
 ```
 
-`npm run dev` serves the game at http://localhost:5173 with the Worker and Durable Object running locally in `workerd`. Open it in two browser tabs to try a host and a guest on one machine. `npm run check` runs the type check, lint and tests. The tests run inside the Workers runtime. They check the drift boost, the rocket start and wheelspin, that every car laps inside the barriers, the pick-up odds by position, the Shield, Blue Lightning, the Ultimate Weapon, a homing rocket, the finish rules, that a snapshot predicts the cars as the host moves them, and a whole lobby, race and result over real sockets.
+`npm run dev` serves the game at http://localhost:5173 with the Worker and Durable Object running locally in `workerd`. Open it in two browser tabs to try a host and a guest on one machine. `npm run check` runs the type check, lint and tests. The tests run inside the Workers runtime. They check every track with a 12-bot race (length, the fork used both ways, jumps, a dark stretch), forks, pits and hazards, the drift boost, the rocket start and wheelspin, that every car laps inside the barriers, the pick-up odds by position, the Shield, Blue Lightning, the Ultimate Weapon, a homing rocket, the finish rules, that a snapshot predicts the cars as the host moves them, and a whole lobby, race and result over real sockets.
 
 After changing `wrangler.jsonc`, regenerate the binding types with `npm run types`.
+
+## Deploying
+
+Pushes to `main` deploy to https://rcriot.bradwindy.workers.dev through Workers Builds, Cloudflare's Git integration. Pushes to any other branch upload a preview version with its own Durable Objects, without touching the live site. To deploy by hand from a machine signed in with `npx wrangler login`:
+
+```bash
+npm run deploy
+```
+
+Every deploy restarts the Durable Objects, so every party socket drops and reconnects. Races run in the host's browser and the game links don't go through the Durable Object, so a race in play carries on if the host's page is back within 5 seconds. A deploy that bumps `PROTOCOL_VERSION` tells every page to reload, which ends the races in play.
+
+The repo has no secrets. The TURN key lives only in Cloudflare as two Worker secrets. Create a TURN key in the Cloudflare dashboard under Realtime, then set its ID and API token on the Worker:
+
+```bash
+npx wrangler secret put TURN_KEY_ID
+```
+
+```bash
+npx wrangler secret put TURN_KEY_API_TOKEN
+```
+
+Deploys keep secrets. Branch previews have their own secret settings, so without them a preview hands out STUN only. Locally, the dev server runs without a TURN key.
 
 ## Licence
 
