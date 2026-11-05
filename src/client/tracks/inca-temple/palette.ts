@@ -179,6 +179,13 @@ export const tx = {
     }),
   ),
 
+  /** Felt for the giant hat: soft diagonal twill. */
+  felt: cache(() =>
+    make(16, 16, 424, (p) => {
+      p.each((x, y) => hex((x + y) % 4 === 0 ? '#c8c0b4' : (x + y) % 4 === 2 ? '#e8e2d8' : '#d8d2c6'));
+    }),
+  ),
+
   /** Churned white water at the foot of a fall. */
   foam: cache(() =>
     make(32, 32, 422, (p) => {
@@ -414,6 +421,7 @@ export const incaMats = cache(() => {
     hedge: cutout(tx.hedge(), 0.12, [1, 0, 0]),
     trunk: lit(tx.trunk()),
     croc: lit(tx.croc()),
+    felt: lit(tx.felt()),
     trunkIndoor: lit(tx.trunk(), INDOOR),
     foam: ps1Material({ map: tx.foam(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, lit: false, sway: 0.3 }),
     thatch: lit(tx.thatch()),

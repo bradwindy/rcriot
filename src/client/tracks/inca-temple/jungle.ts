@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { toMain } from '../../../shared/course';
-import { HALL_Z, PYRAMID } from '../../../shared/tracks/inca-temple';
+import { PYRAMID } from '../../../shared/tracks/inca-temple';
 import { mulberry32 } from '../../../shared/rng';
 import { limitOf, sampleAt, type Track } from '../../../shared/track';
 import { Batch, xf, type RGB } from '../../render/geometry';
@@ -16,12 +16,14 @@ import type { IncaMats } from './palette';
 /** Zones where the road runs between jungle hedges. */
 const HEDGED = new Set(['jungle', 'start', 'village', 'gorge']);
 
-/** Places kept clear of trees: the pyramid and hall, the village huts and the start. */
-function clear(x: number, z: number): boolean {
-  if (Math.abs(x - PYRAMID.x) < 44 && z > PYRAMID.z - 44 && z < HALL_Z + 18) return true;
-  if (Math.abs(x - PYRAMID.x - 10) < 70 && Math.abs(z - HALL_Z) < 18) return true;
-  return false;
+/** Places kept clear of plants: the temple plaza and the village clearing, where the huts and film rigs stand. */
+function clear(x: number, z: number, keep: Spot[]): 'all' | 'trees' | null {
+  if (Math.max(Math.abs(x - PYRAMID.x - 20) / 135, Math.abs(z - PYRAMID.z - 20) / 85) < 0.8) return 'all';
+  if (keep.some((k) => Math.hypot(x - k.x, z - k.z) < k.r)) return 'all';
+  return Math.hypot((x + 148) / 36, (z + 88) / 64) < 1 ? 'trees' : null;
 }
+
+type Spot = { x: number; z: number; r: number };
 
 /** A head of leaves: a squashed icosahedron in the cut-out leaf texture, so it reads as a clump with holes in it. */
 function crown(batch: Batch, inca: IncaMats, at: THREE.Vector3, r: number, spin: number, tint?: RGB): void {
@@ -43,7 +45,7 @@ export function kapok(batch: Batch, inca: IncaMats, base: THREE.Vector3, size: n
   for (let k = 0; k < 3; k++) {
     const a = spin + (k / 3) * Math.PI * 2;
     const out = v3(Math.cos(a), 0, Math.sin(a));
-    batch.beam(inca.trunk, base.clone().addScaledVector(out, r * 2.8).setY(base.y - 0.3), base.clone().addScaledVector(out, r * 0.6).setY(base.y + h * 0.18), 0.25 * size, 1.4 * size, tint);
+    batch.beam(inca.trunk, base.clone().addScaledVector(out, r * 2.8).setY(base.y - 0.3), base.clone().addScaledVector(out, r * 0.6).setY(base.y + h * 0.12), 0.25 * size, 0.8 * size, [tint[0] * 0.8, tint[1] * 0.8, tint[2] * 0.75]);
   }
   for (let k = 0; k < 3; k++) {
     const a = spin + 1 + (k / 3) * Math.PI * 2 + rng() * 0.6;
@@ -124,14 +126,15 @@ function hedges(track: Track, batch: Batch, inca: IncaMats): void {
 }
 
 /** Ferns, broad leaves, palms and kapoks over the open ground, thick near the road and thinning into the haze. */
-function forest(batch: Batch, mats: Materials, inca: IncaMats, index: TrackIndex, terrain: Terrain): void {
+function forest(batch: Batch, mats: Materials, inca: IncaMats, index: TrackIndex, terrain: Terrain, keep: Spot[]): void {
   const rng = mulberry32(77);
   const step = 6;
   for (let z = BOUNDS.z0 + 4; z < BOUNDS.z1 - 4; z += step) {
     for (let x = BOUNDS.x0 + 4; x < BOUNDS.x1 - 4; x += step) {
       const px = x + (hash2(x, z, 1) - 0.5) * step;
       const pz = z + (hash2(x, z, 2) - 0.5) * step;
-      if (clear(px, pz)) continue;
+      const cleared = clear(px, pz, keep);
+      if (cleared === 'all') continue;
       const near = index.nearest(px, pz, 70);
       const gap = near ? near.d - limitOf(near.sample) : 70;
       if (gap < 1.6) continue;
@@ -145,7 +148,11 @@ function forest(batch: Batch, mats: Materials, inca: IncaMats, index: TrackIndex
       if (gap < 9) {
         if (roll < 0.5) cards(batch, inca.fern, at, 2.6, 1.7, roll * 20, 2, [0.85 + roll * 0.3, 1, 0.85]);
         else if (roll < 0.72) cards(batch, inca.leaf, at, 2.6, 2.4, roll * 30, 2);
-        else if (roll < 0.8 && gap > 4) palm(batch, mats, at, rng);
+        else if (roll < 0.8 && gap > 4 && !cleared) palm(batch, mats, at, rng);
+        continue;
+      }
+      if (cleared) {
+        if (roll < 0.25) cards(batch, inca.fern, at, 3, 2, roll * 20, 2);
         continue;
       }
       const odds = gap < 35 ? 0.12 + dense * 0.22 : gap < 110 ? 0.05 + dense * 0.12 : 0;
@@ -193,8 +200,8 @@ function boughs(track: Track, batch: Batch, inca: IncaMats, terrain: Terrain): v
   }
 }
 
-export function buildJungle(track: Track, batch: Batch, mats: Materials, inca: IncaMats, index: TrackIndex, terrain: Terrain): void {
+export function buildJungle(track: Track, batch: Batch, mats: Materials, inca: IncaMats, index: TrackIndex, terrain: Terrain, keep: Spot[]): void {
   hedges(track, batch, inca);
-  forest(batch, mats, inca, index, terrain);
+  forest(batch, mats, inca, index, terrain, keep);
   boughs(track, batch, inca, terrain);
 }

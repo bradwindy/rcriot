@@ -36,7 +36,7 @@ export function boulderTrap(track: Track, h: Hazard, inca: IncaMats, group: THRE
   const t = routeTrack(track, h.route);
   const r = h.radius;
   const ball = rig((b) => {
-    b.geometry(inca.carvedIndoor, faceted(new THREE.IcosahedronGeometry(r, 1)), undefined, [1.15, 1.05, 0.9]);
+    b.geometry(inca.carvedIndoor, faceted(new THREE.IcosahedronGeometry(r, 1)), undefined, [1.9, 1.7, 1.4]);
     // A band of gold round its middle, so the roll shows.
     b.geometry(inca.gold, new THREE.CylinderGeometry(r * 1.02, r * 1.02, 0.5, 12, 1, true), xf(0, 0, 0, 0, 0, Math.PI / 2));
   });

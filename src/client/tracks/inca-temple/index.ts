@@ -8,8 +8,10 @@ import { jungleGround } from './ground';
 import { buildGorge, river } from './gorge';
 import { buildJungle } from './jungle';
 import { incaMats } from './palette';
+import { buildPlaza } from './plaza';
 import { buildTemple } from './temple';
 import { boulderTrap, logTrap } from './traps';
+import { buildVillage, propSpots } from './village';
 
 export const incaTemple: TrackArt = {
   theme: {
@@ -52,8 +54,10 @@ export const incaTemple: TrackArt = {
     });
     startLine(track, batch, mats, grid);
     const fires = buildTemple(track, batch, mats, inca);
-    buildJungle(track, batch, mats, inca, index, terrain);
+    buildJungle(track, batch, mats, inca, index, terrain, propSpots(track));
     buildCave(track, batch, mats, inca, fires);
+    buildVillage(track, batch, mats, inca, terrain, fires);
+    buildPlaza(batch, mats, inca, index, terrain);
     buildGorge(track, batch, mats, inca, terrain, index);
     group.add(river(mats, terrain));
     const [ball, log] = track.hazards;
