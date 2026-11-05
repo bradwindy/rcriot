@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import type { Track } from '../../../shared/track';
+import { limitOf, type Track } from '../../../shared/track';
 import { xf, type Batch, type RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
 import { dynamicLight } from '../../render/ps1';
+import { frame } from '../../render/road';
 import type { Fx, Sparks } from './fx';
 import { cube, each } from './kit';
 import type { MadMats } from './materials';
@@ -37,6 +38,15 @@ export function towerFx(track: Track, batch: Batch, mats: Materials, m: MadMats,
     sconce(batch, mats, m, fx, at, Math.PI / 2 - a, out, 15);
   }, 6);
   const hum = fx.light(new THREE.Vector3(cx, 22, cz), [0.35, 0.5, 0.9], 30, 4, 0.3);
+  for (let k = 0; k < 3; k++) {
+    const a = k * 2.1;
+    fx.light(new THREE.Vector3(cx + Math.cos(a) * 11, 4 + k * 7, cz + Math.sin(a) * 11), [0.3, 0.45, 0.9], 20, 5, 0.35);
+  }
+  // Rail posts round the well, for the coil to arc to as cars climb past.
+  const rails: THREE.Vector3[] = [];
+  each(track, 9, (p, route) => route === 0 && p.zone === 'tower' && Math.hypot(p.x - cx, p.z - cz) < KEEP.inner, (p) => {
+    rails.push(frame(p, limitOf(p) + 0.3, 1.8));
+  }, 3);
   const ends = Array.from({ length: 10 }, (_, k) => {
     const a = (k / 10) * Math.PI * 2;
     return new THREE.Vector3(cx + Math.cos(a) * (KEEP.outer - 0.6), 37 + (k % 2), cz + Math.sin(a) * (KEEP.outer - 0.6));
@@ -49,6 +59,12 @@ export function towerFx(track: Track, batch: Batch, mats: Materials, m: MadMats,
       for (let k = 0; k < n; k++) {
         const end = ends[(tick * 3 + k * 7) % ends.length];
         sparks.fork(coil, end, 0.6 + wild, 3, 8, BLUE, 200 + k, tick, 2);
+      }
+      for (let k = 0; k < (wild > 0.1 ? 4 : 1); k++) {
+        if (!wild && (tick + k) % 4) continue;
+        const rail = rails[(tick * 7 + k * 5) % rails.length];
+        const from = new THREE.Vector3(cx, rail.y, cz).lerp(rail, 6.6 / Math.hypot(rail.x - cx, rail.z - cz));
+        sparks.fork(from, rail, 0.35 + wild * 0.3, 1.6, 7, BLUE, 220 + k, tick, 1);
       }
       if (wild > 0.1) dynamicLight(coil.x, coil.y, coil.z, COIL, 2.5 * wild, 60);
       hum.base.setRGB(0.35, 0.5, 0.9).multiplyScalar(1 + wild * 3);

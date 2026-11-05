@@ -87,7 +87,7 @@ export function storm(group: THREE.Group, m: MadMats, sparks: Sparks, coilTop: T
       rain.visible = !roofedAt(eye.x, eye.y, eye.z);
 
       m.flash.uniforms.uTint.value.copy(FLASH).multiplyScalar(f * 0.4);
-      m.cloud.uniforms.uTint.value.setScalar(1 + f * 2.2);
+      m.cloud.uniforms.uTint.value.setScalar(1 + f * 1.4);
       m.storm.uniforms.uTint.value.setScalar(1 + f * 2.4);
       m.storm.uniforms.uGlow.value = f * 0.9;
 
@@ -131,9 +131,9 @@ function cloudRing(m: MadMats): THREE.Mesh {
 function rainCurtains(m: MadMats): THREE.Mesh {
   const parts: THREE.BufferGeometry[] = [];
   for (const [r, rep, tone] of [
-    [7, 5, 0.8],
-    [16, 9, 0.55],
-    [30, 14, 0.35],
+    [7, 7, 0.45],
+    [16, 11, 0.45],
+    [30, 16, 0.32],
   ]) {
     const g = new THREE.CylinderGeometry(r, r, 34, 12, 1, true);
     const uv = g.getAttribute('uv');

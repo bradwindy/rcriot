@@ -311,7 +311,7 @@ function keep(track: Track, batch: Batch, m: MadMats): THREE.Vector3 {
   // The giant coil in the middle, rising out of the top of the tower to meet the storm.
   drum(batch, m.stoneTower, cx, FLOOR - 0.5, cz, 9.5, 8.5, 3, 16, 6);
   drum(batch, m.copper, cx, FLOOR + 2.5, cz, 6, 6, 32, 14, 3);
-  for (let y = FLOOR + 6; y < 34; y += 6) drum(batch, m.iron, cx, y, cz, 6.5, 6.5, 0.8, 14, 2);
+  for (let y = FLOOR + 6; y < 34; y += 6) drum(batch, m.orb, cx, y, cz, 6.5, 6.5, 0.8, 14, 2);
   const torus = new THREE.TorusGeometry(8, 1.8, 6, 18);
   torus.rotateX(Math.PI / 2);
   batch.geometry(m.iron, torus, xf(cx, 36, cz));
