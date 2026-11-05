@@ -11,6 +11,25 @@ export const RIM = 56;
 
 export const fromCrater = (x: number, z: number): number => Math.hypot(x - CALDERA.x, z - CALDERA.z);
 
+/** The lava river: it pours out of the cliff and runs straight away from the crater across the flats, under the road. */
+const FLOW_AT = { x: -172.5, z: -94.5 };
+const FLOW_LEN = Math.hypot(FLOW_AT.x - CALDERA.x, FLOW_AT.z - CALDERA.z);
+export const FLOW = {
+  dir: { x: (FLOW_AT.x - CALDERA.x) / FLOW_LEN, z: (FLOW_AT.z - CALDERA.z) / FLOW_LEN },
+  /** Along the river from the crater: where it leaves the cliff, and where it ends. */
+  from: CLIFF - 4,
+  to: FLOW_LEN + 140,
+  level: -1.6,
+  width: 7,
+};
+
+/** Distance along the river from the crater, and across it. */
+export function onFlow(x: number, z: number): { along: number; across: number } {
+  const dx = x - CALDERA.x;
+  const dz = z - CALDERA.z;
+  return { along: dx * FLOW.dir.x + dz * FLOW.dir.z, across: Math.abs(dx * FLOW.dir.z - dz * FLOW.dir.x) };
+}
+
 /**
  * The land before the road is cut in: ash flats, a ring of basalt cliffs, the volcano's cone, and inside the rim the
  * magma chamber: a sheer wall down to a ledge round the lava lake.
@@ -31,6 +50,11 @@ export function naturalHeight(x: number, z: number): number {
     const floor = r < CALDERA.lake ? lakeBed : r < CALDERA.lake + 6 ? lakeBed + (ledge - lakeBed) * smoothstep(CALDERA.lake, CALDERA.lake + 6, r) : ledge;
     const inner = floor + (RIM + 2 - floor) * wall ** 1.6 + (wall > 0.05 && wall < 0.95 ? jag * 0.5 : 0);
     h = h * (1 - inside) + inner * inside;
+  }
+  const f = onFlow(x, z);
+  if (f.along > FLOW.from - 6 && f.along < FLOW.to + 10) {
+    const bank = smoothstep(FLOW.width + 3, FLOW.width / 2, f.across) * smoothstep(FLOW.from - 6, FLOW.from, f.along) * smoothstep(FLOW.to + 10, FLOW.to, f.along);
+    h += (FLOW.level - 1.2 - h) * bank;
   }
   return h;
 }

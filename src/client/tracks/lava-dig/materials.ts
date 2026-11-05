@@ -279,6 +279,7 @@ export const lavaMats = cache(() => {
     ropeIn: wired(lit(tex.rope(), INDOOR), [0.3, 0.26, 0.18]),
     plasticIn: lit(tex.plastic(), INDOOR),
     lava: glow(lavaTex.lava(), 0.7, [0.012, 0.02], 0.12),
+    lavaVent: glow(lavaTex.lava(), 0.2, [0.03, 0.05]),
     lavaFlow: glow(lavaTex.lava(), 0.7, [0, -0.09]),
     fall: glow(lavaTex.fall(), 0.9, [0, 0.55]),
     bulb: ps1Material({ map: lavaTex.bulb(), vertexColors: true, lit: false, glow: 0.9 }),
