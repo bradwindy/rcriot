@@ -289,9 +289,34 @@ export function cart(batch: Batch, m: LavaMats, at: THREE.Matrix4, mat: THREE.Ma
   batch.geometry(m.rubbleIn, boulder(3, 1.6, 0.5), p(0, 1.85, 0));
 }
 
+/** The mine portal at the cave mouth: timber posts and a lintel, a striped board and two lamps. */
+function portal(track: Track, batch: Batch, m: LavaMats, hall: DigHall, lights: Lights): void {
+  const s = hall.a + 1;
+  const p = sampleAt(track, s);
+  const yaw = headingAt(p);
+  const L = limitOf(p) + 0.4;
+  const top = 6.4;
+  for (const side of [-1, 1]) {
+    const foot = frame(p, side * L, 0);
+    batch.box(m.timberIn, 0.8, top + 0.6, 0.8, xf(foot.x, foot.y + top / 2, foot.z, yaw));
+    const brace = frame(p, side * (L - 1.8), top - 0.2);
+    batch.beam(m.timberIn, foot.clone().setY(foot.y + top - 2), brace, 0.4);
+    const lamp = frame(p, side * (L - 0.6), top - 1.2);
+    block(batch, m.kitIn, 0.7, 0.6, 0.6, xf(lamp.x, lamp.y, lamp.z, yaw), 'black');
+    batch.box(m.bulb, 0.4, 0.4, 0.1, xf(lamp.x - p.tx * 0.32, lamp.y, lamp.z - p.tz * 0.32, yaw));
+  }
+  const l = frame(p, -L - 0.6, top);
+  const r = frame(p, L + 0.6, top);
+  batch.beam(m.timberIn, l, r, 0.9);
+  const board = frame(p, 0, top - 0.9).addScaledVector(new THREE.Vector3(p.tx, 0, p.tz), -0.5);
+  block(batch, m.kitIn, 7, 0.9, 0.12, xf(board.x, board.y, board.z, yaw), 'stripes');
+  lights.add(frame(p, 0, 3), LAMP_LIGHT.clone().multiplyScalar(1.2), 18, 0.05, 6);
+}
+
 /** Everything inside the dig's cavern. */
 export function buildDig(track: Track, batch: Batch, mats: Materials, m: LavaMats, hall: DigHall, lights: Lights): void {
   bulbs(track, batch, m, hall, lights);
+  portal(track, batch, m, hall, lights);
   fossil(track, batch, m, hall, mats.wire);
   trench(track, batch, m, hall);
   jeep(track, batch, m, hall, lights);

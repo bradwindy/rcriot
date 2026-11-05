@@ -4,6 +4,7 @@ import { CALDERA, LAVA_LEVEL } from '../../../shared/tracks/lava-dig';
 import { boulder, xf, type Batch } from '../../render/geometry';
 import { hash2 } from '../../render/noise';
 import { atJunction, frame, headingAt, loft } from '../../render/road';
+import { lavafall } from './caves';
 import { block, put } from './kit';
 import type { LavaMats } from './materials';
 import { along, Lights, LAMP_LIGHT, LAVA_LIGHT } from './util';
@@ -139,7 +140,7 @@ function edges(track: Track, batch: Batch, m: LavaMats, lights: Lights, flames: 
       }
     });
     // Lava glow from the lake beside the road, and a work lamp on the wall side, in turn.
-    along(t, a + 8, b - 4, 22, (p, _s, k) => {
+    along(t, a + 8, b - 4, 15, (p, _s, k) => {
       const lakeDir = causeway ? (k % 2 ? 1 : -1) : lakeSide(p);
       const L = limitOf(p);
       if (k % 2 === 0 || causeway) {
@@ -214,6 +215,19 @@ function bridge(track: Track, batch: Batch, m: LavaMats, lights: Lights): void {
   }
 }
 
+/** Lava pouring down the chamber wall behind the ledge, at bearings round the crater clear of the roads into it. */
+function wallFalls(batch: Batch, m: LavaMats, lights: Lights, flames: THREE.Vector3[]): void {
+  for (const deg of [95, 168, 202, 236]) {
+    const a = (deg * Math.PI) / 180;
+    const dir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+    const at = (r: number, y: number) => new THREE.Vector3(CALDERA.x, y, CALDERA.z).addScaledVector(dir, r);
+    lavafall(batch, m, at(CALDERA.wall + 3, 42), at(CALDERA.ledge + 12, 1.5), 3.2, dir.clone().negate(), 1.4);
+    const foot = at(CALDERA.ledge + 10, 3);
+    lights.add(foot, LAVA_LIGHT.clone().multiplyScalar(2.2), 30, 0.3, 2);
+    flames.push(foot.clone().setY(2));
+  }
+}
+
 /** The magma chamber: the lake, its roof and vent, the falling magma, the ledge, causeway, climb and bridge. */
 export function buildChamber(track: Track, batch: Batch, m: LavaMats, lights: Lights, flames: THREE.Vector3[]): void {
   lake(batch, m);
@@ -221,6 +235,7 @@ export function buildChamber(track: Track, batch: Batch, m: LavaMats, lights: Li
   column(batch, m, lights, flames);
   edges(track, batch, m, lights, flames);
   bridge(track, batch, m, lights);
+  wallFalls(batch, m, lights, flames);
   // A few crates and a canvas-covered dig table where the tube comes out into the chamber.
   const [ha] = zoneRanges(track, 'hall')[0];
   const p = sampleAt(track, ha + 4);
