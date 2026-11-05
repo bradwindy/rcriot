@@ -141,13 +141,73 @@ const T = {
       });
     }),
   ),
-  rocket: cache(() =>
-    make(32, 64, 116, (p) => {
+  /** White neon with a soft edge, tinted by vertex colour: strips, hoops, lamp lenses. */
+  neon: cache(() => make(8, 8, 116, (p) => p.each((_x, y) => (y === 0 || y === 7 ? hex('#b8b8b8') : y === 1 || y === 6 ? hex('#e4e4e4') : hex('#ffffff'))))),
+  /** Bright pulses running along a conduit, v along its length. */
+  pulse: cache(() =>
+    make(8, 32, 117, (p) => {
       p.each((x, y) => {
-        if (y > 52 && y < 56) return hex('#c8241c');
-        if (y > 8 && y < 24 && Math.floor(x / 8) % 2 === 0) return hex('#1a1a1c');
-        if (y > 30 && y < 34) return hex('#1a1a1c');
-        return x % 8 === 7 ? hex('#d8d8d2') : hex('#f2f2ec');
+        const d = Math.abs(y - 6) / 6;
+        const edge = x === 0 || x === 7 ? 0.7 : 1;
+        if (y < 12) return scale(mixc(hex('#ffffff'), hex('#606060'), Math.min(1, d)), edge);
+        return scale(hex(y % 4 < 2 ? '#3a3a3a' : '#4c4c4c'), edge);
+      });
+    }),
+  ),
+  /** The gas giant: soft bands of rust, cream and ochre with a storm. */
+  planet: cache(() =>
+    make(64, 32, 118, (p) => {
+      const bands = [hex('#c4703a'), hex('#e8c08a'), hex('#a85030'), hex('#f0d8a8'), hex('#d08848'), hex('#8a4428'), hex('#e0b070'), hex('#b86038')];
+      p.each((x, y) => {
+        const wob = Math.sin(x * 0.4 + y * 0.7) * 0.6;
+        const c = bands[Math.floor((y + wob) / 4) % bands.length];
+        const sx = (x - 40) / 6;
+        const sy = (y - 19) / 2.2;
+        if (sx * sx + sy * sy < 1) return hex('#7a2a1c');
+        if (sx * sx + sy * sy < 1.8) return hex('#e89a68');
+        return c;
+      });
+    }),
+  ),
+  /** The planet's ring: u across it, banded, with gaps. */
+  rings: cache(() =>
+    make(32, 4, 119, (p) => {
+      p.each((x) => {
+        if (x < 2 || x > 29 || x === 12 || x === 13) return [0, 0, 0, 0];
+        return x % 5 === 0 ? hex('#8a7058') : x < 12 ? hex('#d8c4a4') : hex('#b89c7c');
+      });
+    }, true, true),
+  ),
+  /** A control desk screen: graph bars and a scope trace in green on black. */
+  screen: cache(() =>
+    make(32, 16, 120, (p) => {
+      p.each((x, y) => (x === 0 || y === 0 || x === 31 || y === 15 ? hex('#3a4248') : hex('#04140c')));
+      for (let i = 0; i < 6; i++) {
+        const h = 2 + Math.floor(p.rng() * 9);
+        p.rect(2 + i * 2, 14 - h, 1, h, i % 2 ? hex('#40ff90') : hex('#ffd040'));
+      }
+      for (let x = 16; x < 30; x++) p.set(x, 8 + Math.round(Math.sin(x * 0.9) * 3), hex('#80fff0'));
+    }),
+  ),
+  /** Station walls at night: dark cladding with rows of lit windows. */
+  windows: cache(() =>
+    make(32, 32, 121, (p) => {
+      p.each((x) => (x % 8 === 0 ? hex("#1a1e24") : hex('#262c34')));
+      for (let wy = 4; wy < 32; wy += 10) {
+        for (let wx = 2; wx < 32; wx += 8) {
+          const lit = p.rng() < 0.6;
+          p.rect(wx, wy, 4, 4, lit ? (p.rng() < 0.3 ? hex('#a0ffe0') : hex('#ffe8a8')) : hex('#0c1014'));
+        }
+      }
+    }),
+  ),
+  /** A fuel tank: white with red and black hoops. */
+  tank: cache(() =>
+    make(32, 32, 122, (p) => {
+      p.each((x, y) => {
+        if (y > 4 && y < 8) return hex('#c8241c');
+        if (y > 24 && y < 27) return hex('#1a1a1c');
+        return x % 8 === 7 ? hex('#c8ccd0') : hex('#e8ecee');
       });
     }),
   ),
@@ -193,13 +253,20 @@ export const reactorMats = cache(() => ({
   paintIn: wired(lit(T.paint(), INDOOR), [0.3, 0.32, 0.34]),
   paintOut: wired(lit(T.paint()), [0.42, 0.44, 0.46]),
   barrel: lit(T.barrel(), INDOOR),
-  rocket: lit(T.rocket()),
+  tank: lit(T.tank()),
+  windows: glowing(T.windows(), 0.15),
+  screen: glowing(T.screen(), 0.5),
+  neon: glowing(T.neon(), 0.9),
+  pulse: glowing(T.pulse(), 0.8, { scroll: [0, -1.4] }),
+  planet: ps1Material({ map: T.planet(), fog: 0, lit: false, depthWrite: false }),
+  rings: ps1Material({ map: T.rings(), fog: 0, lit: false, depthWrite: false, alphaTest: 0.5, side: THREE.DoubleSide }),
   goo: glowing(T.goo(), 0.55, { scroll: [0.015, 0.008], wave: 0.05 }),
   gooFall: glowing(T.goo(), 0.7, { scroll: [0, 1.1] }),
   glow: glowing(T.glow(), 0.8),
   amber: glowing(T.amber(), 0.9),
   red: glowing(T.red(), 0.9),
-  core: glowing(T.core(), 0.7),
+  core: glowing(T.core(), 0.7, { scroll: [0, 0.35] }),
+  shine: ps1Material({ map: T.neon(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, glow: 0.5, fog: 0.4 }),
   beam: ps1Material({ map: tex.beam(), vertexColors: true, lit: false, additive: true, side: THREE.DoubleSide, glow: 0.3 }),
   spark: ps1Material({ map: tex.dust(), vertexColors: true, lit: false, additive: true, alphaTest: 0.5, glow: 1.2 }),
   smoke: ps1Material({ map: tex.dust(), vertexColors: true, lit: false, transparent: true, alphaTest: 0.5 }),

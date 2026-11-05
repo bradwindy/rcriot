@@ -131,3 +131,100 @@ export function overRoad(track: Track, x: number, z: number, y: number, margin =
   }
   return false;
 }
+
+const AB = new THREE.Vector3();
+const AC = new THREE.Vector3();
+
+/** One flat quad through four corners in order round its edge, facing `n` whichever way round they were given. */
+export function quad(batch: Batch, mat: THREE.Material, c: THREE.Vector3[], uv: [number, number][], n: THREE.Vector3, color?: RGB): void {
+  AB.subVectors(c[1], c[0]);
+  AC.subVectors(c[2], c[0]);
+  const order = AB.cross(AC).dot(n) >= 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2];
+  for (const k of order) batch.vertex(mat, c[k], n, uv[k][0], uv[k][1], color);
+}
+
+/**
+ * An upright wall face from (ax, az) to (bx, bz) between heights y0 and y1, facing `n`, cut into cells about `cell`
+ * across so point lights catch it. Texture repeats every `tile` units.
+ */
+export function wallFace(batch: Batch, mat: THREE.Material, ax: number, az: number, bx: number, bz: number, y0: number, y1: number, n: THREE.Vector3, tile = 8, cell = 4, color?: RGB): void {
+  const len = Math.hypot(bx - ax, bz - az);
+  const nu = Math.max(1, Math.round(len / cell));
+  const nv = Math.max(1, Math.round((y1 - y0) / cell));
+  for (let i = 0; i < nu; i++) {
+    for (let j = 0; j < nv; j++) {
+      const u0 = i / nu;
+      const u1 = (i + 1) / nu;
+      const h0 = y0 + ((y1 - y0) * j) / nv;
+      const h1 = y0 + ((y1 - y0) * (j + 1)) / nv;
+      const at = (u: number, h: number) => new THREE.Vector3(ax + (bx - ax) * u, h, az + (bz - az) * u);
+      quad(
+        batch,
+        mat,
+        [at(u0, h0), at(u1, h0), at(u1, h1), at(u0, h1)],
+        [
+          [(u0 * len) / tile, h0 / tile],
+          [(u1 * len) / tile, h0 / tile],
+          [(u1 * len) / tile, h1 / tile],
+          [(u0 * len) / tile, h1 / tile],
+        ],
+        n,
+        color,
+      );
+    }
+  }
+}
+
+/** A flat horizontal sheet over a rectangle at height y, facing up or down, cut into cells. */
+export function sheet(batch: Batch, mat: THREE.Material, x0: number, x1: number, z0: number, z1: number, y: number, up: boolean, tile = 8, cell = 4, color?: RGB): void {
+  const nx = Math.max(1, Math.round((x1 - x0) / cell));
+  const nz = Math.max(1, Math.round((z1 - z0) / cell));
+  const n = new THREE.Vector3(0, up ? 1 : -1, 0);
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < nz; j++) {
+      const xa = x0 + ((x1 - x0) * i) / nx;
+      const xb = x0 + ((x1 - x0) * (i + 1)) / nx;
+      const za = z0 + ((z1 - z0) * j) / nz;
+      const zb = z0 + ((z1 - z0) * (j + 1)) / nz;
+      quad(
+        batch,
+        mat,
+        [new THREE.Vector3(xa, y, za), new THREE.Vector3(xb, y, za), new THREE.Vector3(xb, y, zb), new THREE.Vector3(xa, y, zb)],
+        [
+          [xa / tile, za / tile],
+          [xb / tile, za / tile],
+          [xb / tile, zb / tile],
+          [xa / tile, zb / tile],
+        ],
+        n,
+        color,
+      );
+    }
+  }
+}
+
+/** A cylinder from a to b, its texture's v running along it once every `tile` units. */
+export function pipe(batch: Batch, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, r: number, sides = 8, tile = 6, color?: RGB): void {
+  const len = a.distanceTo(b);
+  const g = new THREE.CylinderGeometry(r, r, len, sides, 1, true);
+  const uv = g.getAttribute('uv');
+  for (let i = 0; i < uv.count; i++) uv.setY(i, (uv.getY(i) * len) / tile);
+  const dir = b.clone().sub(a).normalize();
+  const m = new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(UP, dir), new THREE.Vector3(1, 1, 1));
+  batch.geometry(mat, g, m, color);
+  g.dispose();
+}
+
+/** A strip along one side of a stretch of track, `o` beyond the barrier: a list of [o, h] corners, drawn outward. */
+export function strip(batch: Batch, t: Track, s0: number, s1: number, side: number, prof: [number, number][], material: (p: Sample) => THREE.Material | null, color?: RGB, spacing = 2): void {
+  const right = side > 0 ? prof : [...prof].reverse();
+  loft(batch, t, s0, s1, {
+    spacing,
+    vScale: 4,
+    uScale: 1,
+    outward: true,
+    color,
+    material,
+    profile: (p) => right.map(([o, h]) => [side * (limitOf(p) + o), h]),
+  });
+}

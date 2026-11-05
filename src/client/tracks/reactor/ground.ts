@@ -55,7 +55,7 @@ export function inHalls(x: number, z: number): boolean {
 }
 
 export function buildGround(index: TrackIndex, batch: Batch, m: ReactorMats): Terrain {
-  const tint = (inside: boolean) => (x: number, z: number, h: number, mat: unknown): RGB => {
+  const tint = (inside: boolean) => (x: number, z: number, _h: number, mat: unknown): RGB => {
     const v = 0.94 + valueNoise(x / 23, z / 23, 4) * 0.08;
     if (mat === m.concrete || mat === m.concreteIn) return [v * 0.9, v * 0.9, v * 0.88];
     if (inside) return [v * 0.86, v * 0.92, v * 0.95];

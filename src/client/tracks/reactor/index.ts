@@ -1,10 +1,12 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import type { Sample } from '../../../shared/track';
 import { BASE } from '../../../shared/tracks/reactor';
 import { paveRoad, startLine } from '../../render/road';
 import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
+import { Rig } from './fx';
 import { buildGround } from './ground';
+import { buildHall, placeRings, type Pulse } from './hall';
 import { reactorMats, type ReactorMats } from './materials';
 
 function roadOf(m: ReactorMats, p: Sample): THREE.Material | null {
@@ -56,7 +58,7 @@ export const reactor: TrackArt = {
     stars: true,
     night: true,
   },
-  build({ track, mats, batch, grid }) {
+  build({ track, mats, batch, group, grid }) {
     const m = reactorMats();
     const index = new TrackIndex(track);
     buildGround(index, batch, m);
@@ -71,6 +73,20 @@ export const reactor: TrackArt = {
       },
     });
     startLine(track, batch, mats, grid);
-    return {};
+    const neonRig = new Rig(m.neon);
+    const hall = buildHall(track, batch, m, neonRig);
+    const pulses: Pulse[] = [...hall.pulses];
+    group.add(neonRig.mesh);
+    return {
+      update(time) {
+        for (const p of pulses) {
+          if (!p.speed) continue;
+          const f = 1 - p.depth * (0.5 + 0.5 * Math.sin(time * p.speed + p.phase));
+          p.light.color.copy(p.base).multiplyScalar(f);
+        }
+        placeRings(neonRig, hall.rings, time);
+        neonRig.update();
+      },
+    };
   },
 };
