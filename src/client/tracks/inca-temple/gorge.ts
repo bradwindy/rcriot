@@ -40,10 +40,14 @@ export function river(mats: Materials, terrain: Terrain): THREE.Mesh {
 
 /** The falls at the head of the gorge: two drops off the cliff into a foaming pool, with mist. */
 function falls(batch: Batch, mats: Materials, inca: IncaMats, terrain: Terrain): void {
-  const x = RIVER.head + 4;
   const z = riverZ(RIVER.head);
-  const top = terrain.height(x + 10, z) + 0.5;
-  fallSheet(batch, inca, v3(x, 0, z), -Math.PI / 2, 16, top, RIVER.level - 0.2);
+  // The foot of the cliff: walk east up the gorge until the ground rises off the river bed.
+  let x = RIVER.head - 30;
+  while (x < RIVER.head + 20 && terrain.height(x, z) < RIVER.level + 2) x += 1;
+  x -= 1.5;
+  let top = RIVER.level;
+  for (let k = 0; k < 24; k++) top = Math.max(top, terrain.height(x + k, z));
+  fallSheet(batch, inca, v3(x, 0, z), -Math.PI / 2, 16, top + 0.5, RIVER.level - 0.2);
   fallSheet(batch, inca, v3(x - 0.8, 0, z + 1.5), -Math.PI / 2, 9, top - 2, RIVER.level - 0.2, [0.8, 0.9, 1]);
   for (let k = 0; k < 5; k++) foamAt(batch, inca, v3(x - 2 - hash2(k, 1, 3) * 3, RIVER.level - 0.4, z - 7 + k * 3.5), 4 + hash2(k, 2, 3) * 2, k);
   for (const side of [-1, 1]) {

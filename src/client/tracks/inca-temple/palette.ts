@@ -128,7 +128,7 @@ export const tx = {
         const cy = p.rng() * 64;
         p.each((x, y) => {
           const d = ((x - cx) / 7) ** 2 + ((y - cy) / 3) ** 2;
-          return d < 1 ? (d < 0.3 && x > cx ? hex('#b8c8b8') : hex('#7e8a80')) : null;
+          return d < 1 ? (d < 0.3 && x > cx ? hex('#8e9a8a') : hex('#6a6450')) : null;
         });
       }
     }),
