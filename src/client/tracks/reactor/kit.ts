@@ -92,7 +92,7 @@ export interface Beacon {
 
 export function beacon(batch: Batch, m: ReactorMats, at: THREE.Vector3, seed: number, red = false): Beacon {
   batch.geometry(m.paintOut, new THREE.CylinderGeometry(0.32, 0.38, 0.25, 8), xf(at.x, at.y - 0.12, at.z), [0.2, 0.2, 0.22]);
-  batch.geometry(red ? m.red : m.amber, new THREE.CylinderGeometry(0.24, 0.28, 0.5, 8), xf(at.x, at.y + 0.25, at.z));
+  batch.geometry(m.neon, new THREE.CylinderGeometry(0.24, 0.28, 0.5, 8), xf(at.x, at.y + 0.25, at.z), red ? [1, 0.2, 0.1] : [1, 0.6, 0.1]);
   const base = red ? new THREE.Color(1.6, 0.25, 0.1) : new THREE.Color(1.6, 0.8, 0.15);
   return { at: at.clone().setY(at.y + 0.25), light: addPointLight(at.clone().setY(at.y + 0.3), base.clone(), 14), base, speed: 4 + (seed % 3), phase: seed * 1.7 };
 }

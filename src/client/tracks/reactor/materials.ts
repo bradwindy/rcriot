@@ -258,7 +258,7 @@ export const reactorMats = cache(() => ({
   screen: glowing(T.screen(), 0.5),
   neon: glowing(T.neon(), 0.9),
   pulse: glowing(T.pulse(), 0.8, { scroll: [0, -1.4] }),
-  planet: ps1Material({ map: T.planet(), fog: 0, lit: false, depthWrite: false }),
+  planet: ps1Material({ map: T.planet(), fog: 0, lit: false }),
   rings: ps1Material({ map: T.rings(), fog: 0, lit: false, depthWrite: false, alphaTest: 0.5, side: THREE.DoubleSide }),
   goo: glowing(T.goo(), 0.55, { scroll: [0.015, 0.008], wave: 0.05 }),
   gooFall: glowing(T.goo(), 0.7, { scroll: [0, 1.1] }),
