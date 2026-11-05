@@ -132,7 +132,7 @@ export function countryside(track: Track, terrain: Terrain, batch: Batch, mats: 
   const mo = left(mp);
   const mill = new THREE.Vector3(mp.x, 0, mp.z).addScaledVector(mo, limitOf(mp) + 10);
   mill.y = ground(mill.x, mill.z) - 0.3;
-  const sails = windmill(batch, mats, m, fx, mill, Math.atan2(-mo.x, -mo.z) + Math.PI);
+  const sails = windmill(batch, mats, m, fx, mill, headingAt(mp) + Math.PI);
   group.add(sails);
   taken.push([mill.x, mill.z, 8]);
 
@@ -193,7 +193,7 @@ function cottage(batch: Batch, m: MadMats, x: number, y: number, z: number, yaw:
   for (const side of [-1, 1]) {
     const run = d / 2 + 0.6;
     const rise = 2.6;
-    cube(batch, m.thatch, w + 1, 0.4, Math.hypot(run, rise), base.clone().multiply(xf(0, h + rise / 2, (side * run) / 2, 0, -side * Math.atan2(rise, run))), 3);
+    cube(batch, m.thatch, w + 1, 0.4, Math.hypot(run, rise), base.clone().multiply(xf(0, h + rise / 2, (side * run) / 2, 0, side * Math.atan2(rise, run))), 3);
   }
   for (const side of [-1, 1]) {
     for (let i = 0; i < 3; i++) {
@@ -274,6 +274,7 @@ function windmill(batch: Batch, mats: Materials, m: MadMats, fx: Fx, at: THREE.V
     b.geometry(m.timber, new THREE.BoxGeometry(0.35, 11, 0.35), r.clone().multiply(xf(0, 5.5, -0.5)));
     for (let j = 1; j < 6; j++) b.geometry(m.timber, new THREE.BoxGeometry(2.2, 0.12, 0.12), r.clone().multiply(xf(0.9, 1 + j * 1.8, -0.5)));
     b.geometry(m.timber, new THREE.BoxGeometry(0.12, 9.5, 0.12), r.clone().multiply(xf(2, 6, -0.5)));
+    b.geometry(m.sail, new THREE.PlaneGeometry(1.9, 8.6), r.clone().multiply(xf(1.05, 6.2, -0.45)), [0.9, 0.85, 0.75]);
   }
   for (const mesh of b.meshes()) spin.add(mesh);
   outer.add(spin);

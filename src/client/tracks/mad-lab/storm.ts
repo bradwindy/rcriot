@@ -86,7 +86,7 @@ export function storm(group: THREE.Group, m: MadMats, sparks: Sparks, coilTop: T
       rain.position.copy(eye);
       rain.visible = !roofedAt(eye.x, eye.y, eye.z);
 
-      m.flash.uniforms.uTint.value.copy(FLASH).multiplyScalar(f * 0.55);
+      m.flash.uniforms.uTint.value.copy(FLASH).multiplyScalar(f * 0.4);
       m.cloud.uniforms.uTint.value.setScalar(1 + f * 2.2);
       m.storm.uniforms.uTint.value.setScalar(1 + f * 2.4);
       m.storm.uniforms.uGlow.value = f * 0.9;

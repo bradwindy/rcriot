@@ -179,7 +179,7 @@ function lab(batch: Batch, m: MadMats): void {
     const run = (LAB.z1 - LAB.z0) / 2 + 3;
     const pitch = Math.atan2(ridge - eave, run);
     const slope = Math.hypot(run, ridge - eave);
-    const m4 = xf(cx, (eave + ridge) / 2, midZ + (side * run) / 2, 0, -side * pitch);
+    const m4 = xf(cx, (eave + ridge) / 2, midZ + (side * run) / 2, 0, side * pitch);
     cube(batch, m.slate, len, 0.5, slope, m4, 4);
     cube(batch, m.timberIn, len, 0.3, slope, m4.clone().multiply(xf(0, -0.4, 0)), 4);
   }

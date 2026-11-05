@@ -287,6 +287,7 @@ export const madMats = cache(() => ({
   skin: lit(tex.skin(), INDOOR),
   sheetIn: lit(tex.sheet(), INDOOR),
   sheet: lit(tex.sheet(), 0.5),
+  sail: ps1Material({ map: tex.sheet(), vertexColors: true, side: THREE.DoubleSide }),
   slate: lit(tex.slate()),
   plaster: lit(tex.plaster()),
   thatch: lit(tex.thatch()),

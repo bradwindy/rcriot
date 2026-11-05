@@ -13,6 +13,7 @@ import { madMats } from './materials';
 import { storm } from './storm';
 import { castle } from './structures';
 import { towerFx } from './tower';
+import { courtyard } from './yard';
 
 export const madLab: TrackArt = {
   theme: {
@@ -43,6 +44,7 @@ export const madLab: TrackArt = {
     crags(batch, m);
     group.add(moat(m));
     const lab = laboratory(track, batch, m, fx, group, sparks);
+    courtyard(track, batch, mats, m, fx);
     const hall = halls(track, batch, mats, m, fx);
     const land = countryside(track, terrain, batch, mats, m, fx, group);
     const tower = towerFx(track, batch, mats, m, fx, sparks, coil);
