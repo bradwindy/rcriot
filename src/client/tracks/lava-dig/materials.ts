@@ -4,6 +4,7 @@ import type { RGB } from '../../render/geometry';
 import { INDOOR } from '../../render/materials';
 import { ps1Material, type Ps1Material } from '../../render/ps1';
 import { cache, hex, make, mixc, scale, tex, type Painter, type RGBA } from '../../render/textures';
+import { atlas } from './kit';
 
 const pal = (...c: string[]): RGBA[] => c.map((v) => hex(v));
 
@@ -267,6 +268,8 @@ export const lavaMats = cache(() => {
     tyre: lit(tex.tyre(), INDOOR),
     hub: lit(tex.hub(), INDOOR),
     crate: lit(tex.crate(), INDOOR),
+    kit: wired(lit(atlas()), [0.4, 0.4, 0.4]),
+    kitIn: wired(lit(atlas(), INDOOR), [0.18, 0.18, 0.18]),
     stripes: lit(lavaTex.stripes()),
     stripesIn: lit(lavaTex.stripes(), INDOOR),
     banner: ps1Material({ map: lavaTex.banner(), vertexColors: true, side: THREE.DoubleSide }),

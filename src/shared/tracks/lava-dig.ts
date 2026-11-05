@@ -66,8 +66,8 @@ const MAIN: Row[] = [
   [68, -410, 12.5, 12, 1, -2, 'rock', 'climb'],
   [58, -393, 13.5, 11, 0.8, 0, 'rock', 'bridge', 'bridge'], // a rock bridge over the lake
   [36, -379, 14, 11, 0.8, 0, 'rock', 'bridge'],
-  [22, -370, 14.4, 11, 0.8, 0, 'rock', 'bridge'],
-  [15, -365.5, 16.4, 11, 0.8, 0, 'rock', 'bridge', 'crest'],
+  [22, -370, 14.4, 11, 0.8, 0, 'wood', 'bridge'], // a plank kicker built onto the span
+  [15, -365.5, 16.4, 11, 0.8, 0, 'wood', 'bridge', 'crest'],
   [-3, -354, 12.6, 11, 0.8, 0, 'rock', 'bridge'],
   [-20, -344, 12.8, 11, 0.8, 0, 'rock', 'bridge'],
   [-40, -331, 13, 11, 0.8, 0, 'rock', 'bridge'],

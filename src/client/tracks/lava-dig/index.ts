@@ -4,6 +4,7 @@ import { buildTerrain } from '../../render/terrain';
 import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
 import { buildDigHall, buildExitTunnel, buildTube, digHall } from './caves';
+import { buildChamber } from './chamber';
 import { volcanoGround } from './ground';
 import { lavaMats } from './materials';
 import { Lights } from './util';
@@ -30,8 +31,8 @@ export const lavaDig: TrackArt = {
     const index = new TrackIndex(track);
     buildTerrain(index, batch, volcanoGround(m));
     paveRoad(track, batch, {
-      road: (p) => (p.surface === 'lava' ? null : p.zone === 'dig' ? m.digRoad : p.cover === 'open' || p.cover === 'deck' ? m.road : m.roadIn),
-      verge: (p) => (p.surface === 'lava' ? null : p.zone === 'dig' ? m.digFloor : p.cover === 'open' || p.cover === 'deck' ? m.rubbleOut : m.rubbleIn),
+      road: (p) => (p.surface === 'lava' ? null : p.surface === 'wood' ? (p.cover === 'open' ? mats.planks : m.timberIn) : p.zone === 'dig' ? m.digRoad : p.cover === 'open' ? m.road : m.roadIn),
+      verge: (p) => (p.surface === 'lava' ? null : p.zone === 'dig' ? m.digFloor : p.cover === 'open' ? m.rubbleOut : m.rubbleIn),
       skirt: (p) => (p.cover === 'open' ? { mat: m.rubbleOut, drop: 1.2, out: 2.5 } : null),
     });
     startLine(track, batch, mats, grid);
@@ -40,6 +41,7 @@ export const lavaDig: TrackArt = {
     buildDigHall(track, batch, m, digHall(track));
     buildTube(track, batch, m, lights, flames);
     buildExitTunnel(track, batch, m, lights, flames);
+    buildChamber(track, batch, m, lights, flames);
     return {
       flames,
       update(time) {
