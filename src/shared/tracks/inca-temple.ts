@@ -23,6 +23,8 @@ const COVER: Record<Stretch, Cover> = {
 
 /** The pyramid's centre, its stairs run east-west through it. The temple hall lies along its south side. */
 export const PYRAMID = { x: 120, z: -300 };
+/** The river's surface. The ford under the bridge runs a hand's depth under it. */
+export const RIVER_LEVEL = -7.25;
 export const HALL_Z = -254;
 
 /**
@@ -42,7 +44,7 @@ const ROWS: Row[] = [
   [-160, -184, 2, 14, 1.5, 0, 'dirt', 'gorge'],
   [-180, -194, 2, 14, 1.5, 0, 'dirt', 'gorge'],
   [-190, -212, -2, 15, 2, 0, 'dirt', 'river'],
-  [-176, -233, -7, 15, 2, 0, 'mud', 'river'],
+  [-176, -233, -7.2, 15, 2, 0, 'mud', 'river'], // the ford
   [-152, -246, -7.6, 15, 2, 0, 'mud', 'river'], // under the bridge
   [-125, -258, -6, 15, 2, 0, 'dirt', 'river'],
   [-110, -274, -1.5, 15, 2, 0, 'dirt', 'river'],
@@ -140,5 +142,6 @@ export const INCA_TEMPLE: TrackDef = {
   points: ROWS.map(point),
   fork: { from: 7, to: 17, points: BRIDGE.map(point) },
   hazards: HAZARDS,
+  water: RIVER_LEVEL,
   boxes: [0.05, 0.3, 0.64, 0.86],
 };

@@ -117,21 +117,68 @@ export const tx = {
     }),
   ),
 
+  /** Wet river mud: brown bands with dark tyre-churned ruts and a few flat puddles of sky. */
   mud: cache(() =>
     make(64, 64, 405, (p) => {
       const n = p.noise(16);
-      p.each((x, y) => (n(x, y) > 0.62 ? hex('#4a3420') : n(x, y) > 0.45 ? hex('#6b4b2c') : hex('#7a5734')));
-      for (let i = 0; i < 9; i++) {
+      p.each((x, y) => (n(x, y) > 0.6 ? hex('#5a3e24') : n(x, y) > 0.42 ? hex('#6b4b2c') : hex('#7a5734')));
+      for (const x0 of [14, 44]) for (let y = 0; y < 64; y++) p.rect(x0 + Math.round(Math.sin(y / 9) * 1.5), y, 5, 1, hex('#4a3420'));
+      for (let i = 0; i < 4; i++) {
         const cx = p.rng() * 64;
         const cy = p.rng() * 64;
-        const r = 2 + p.rng() * 3;
         p.each((x, y) => {
-          const d = ((x - cx) / (r * 1.8)) ** 2 + ((y - cy) / r) ** 2;
-          if (d < 1) return d < 0.15 ? hex('#a8b8a0') : hex('#3a2c20');
-          return null;
+          const d = ((x - cx) / 7) ** 2 + ((y - cy) / 3) ** 2;
+          return d < 1 ? (d < 0.3 && x > cx ? hex('#b8c8b8') : hex('#7e8a80')) : null;
         });
       }
     }),
+  ),
+
+  /**
+   * A ragged wall of jungle leaves with a cut-out top, for the hedges lofted along the road. Painted on its side: u runs
+   * up the hedge (the leafy top at u = 1) and v along the road.
+   */
+  hedge: cache(() =>
+    make(32, 64, 420, (p) => {
+      const greens = ['#2c5a1c', '#3a7224', '#478a2c', '#336a20', '#56a034'].map((c) => hex(c));
+      const put = (along: number, up: number, c: RGBA) => up >= 0 && up < 32 && p.set(up, along, c);
+      for (let y = 0; y < 64; y++) for (let x = 0; x < 20; x++) p.set(x, y, hex(x < 5 ? '#1e3a14' : '#264e18'));
+      for (let i = 0; i < 90; i++) {
+        const ca = p.rng() * 64;
+        const cu = 2 + p.rng() * 26;
+        const a = Math.PI / 2 + (p.rng() - 0.5) * 2.2;
+        const len = 3 + p.rng() * 4;
+        const c = greens[Math.floor(p.rng() * greens.length)];
+        for (let t = 0; t <= len; t += 0.5) {
+          const w = Math.sin((t / len) * Math.PI) * 1.8;
+          for (let k = -w; k <= w; k += 0.5) put(ca + Math.cos(a) * t - Math.sin(a) * k, cu + Math.sin(a) * t + Math.cos(a) * k, Math.abs(k) < 0.5 ? scale(c, 1.25) : c);
+        }
+      }
+    }, true, true),
+  ),
+
+  /** Pale kapok bark with moss up one side and long vertical folds. */
+  trunk: cache(() =>
+    make(32, 64, 421, (p) => {
+      p.each((x, y) => {
+        const fold = (x + Math.round(Math.sin(y / 7 + x) * 1.2)) % 8;
+        let c = hex(fold === 0 ? '#6e6a58' : fold === 1 ? '#a8a48c' : '#8e8a74');
+        if (x > 18 && x < 28 && (y * 7 + x * 3) % 11 < 6) c = hex(x < 23 ? '#4f7a2c' : '#5f8a34');
+        return c;
+      });
+    }),
+  ),
+
+  /** Churned white water at the foot of a fall. */
+  foam: cache(() =>
+    make(32, 32, 422, (p) => {
+      p.each((x, y) => {
+        const r = Math.hypot(x - 15.5, (y - 20) * 1.4);
+        const lump = 11 + Math.sin(Math.atan2(y - 20, x - 15.5) * 7) * 2.5;
+        if (r > lump || y > 29) return [0, 0, 0, 0];
+        return (x * 5 + y * 3) % 7 < 2 ? hex('#cfe8f0') : hex('#ffffff');
+      });
+    }, false),
   ),
 
   thatch: cache(() =>
@@ -354,6 +401,10 @@ export const incaMats = cache(() => {
     stair: lit(tx.stair()),
     ground: lit(tx.ground()),
     mud: lit(tx.mud()),
+    hedge: cutout(tx.hedge(), 0.12, [1, 0, 0]),
+    trunk: lit(tx.trunk()),
+    trunkIndoor: lit(tx.trunk(), INDOOR),
+    foam: ps1Material({ map: tx.foam(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, lit: false, sway: 0.3 }),
     thatch: lit(tx.thatch()),
     wattle: lit(tx.wattle()),
     totem: lit(tx.totem()),

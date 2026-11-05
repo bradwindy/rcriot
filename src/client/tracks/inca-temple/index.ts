@@ -4,20 +4,21 @@ import { valueNoise } from '../../render/noise';
 import { paveRoad, startLine } from '../../render/road';
 import type { TrackArt } from '../types';
 import { jungleGround } from './ground';
+import { buildJungle } from './jungle';
 import { incaMats } from './palette';
 import { buildTemple } from './temple';
 
 export const incaTemple: TrackArt = {
   theme: {
-    zenith: [0.16, 0.42, 0.58],
-    upper: [0.48, 0.74, 0.74],
-    below: [0.3, 0.4, 0.24],
-    fog: [0.8, 0.86, 0.6],
-    haze: 0.85,
+    zenith: [0.1, 0.42, 0.72],
+    upper: [0.42, 0.74, 0.86],
+    below: [0.34, 0.5, 0.3],
+    fog: [0.78, 0.9, 0.8],
+    haze: 0.8,
     sunDir: [0.35, 0.78, -0.35],
-    sunColor: [1.0, 0.88, 0.56],
-    skyLight: [0.42, 0.58, 0.46],
-    groundLight: [0.3, 0.34, 0.16],
+    sunColor: [1.05, 0.92, 0.62],
+    skyLight: [0.44, 0.6, 0.56],
+    groundLight: [0.3, 0.38, 0.18],
     sun: true,
     clouds: true,
     stars: false,
@@ -26,7 +27,7 @@ export const incaTemple: TrackArt = {
   build({ track, mats, batch, grid }) {
     const inca = incaMats();
     const index = new TrackIndex(track);
-    buildTerrain(index, batch, jungleGround(track, mats, inca));
+    const terrain = buildTerrain(index, batch, jungleGround(track, mats, inca));
     paveRoad(track, batch, {
       road: (p) => {
         if (p.surface === 'void') return null;
@@ -48,6 +49,7 @@ export const incaTemple: TrackArt = {
     });
     startLine(track, batch, mats, grid);
     const fires = buildTemple(track, batch, mats, inca);
+    buildJungle(track, batch, mats, inca, index, terrain);
     return {
       flames: fires.map((f) => f.light.position),
       update(time) {

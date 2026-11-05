@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import { PYRAMID } from '../../../shared/tracks/inca-temple';
+import { PYRAMID, RIVER_LEVEL } from '../../../shared/tracks/inca-temple';
 import type { Track } from '../../../shared/track';
 import type { RGB } from '../../render/geometry';
 import type { Materials } from '../../render/materials';
@@ -9,7 +9,7 @@ import type { IncaMats } from './palette';
 
 export const BOUNDS = { x0: -330, x1: 350, z0: -470, z1: 270 };
 /** The river runs west from the falls at the head of the gorge, under the bridge. */
-export const RIVER = { level: -8.6, bed: -9.8, head: -84 };
+export const RIVER = { level: RIVER_LEVEL, bed: -9.8, head: -84 };
 
 export function riverZ(x: number): number {
   return -232 + 7 * Math.sin((x + 140) / 38);
