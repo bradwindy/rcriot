@@ -169,6 +169,16 @@ export const tx = {
     }),
   ),
 
+  /** Crocodile hide: rows of knobbly scutes. */
+  croc: cache(() =>
+    make(16, 16, 423, (p) => {
+      p.each((x, y) => {
+        const edge = x % 4 === 0 || y % 4 === 0;
+        return hex(edge ? '#2c3a1c' : (x + y) % 8 < 2 ? '#7a8a4a' : '#56683a');
+      });
+    }),
+  ),
+
   /** Churned white water at the foot of a fall. */
   foam: cache(() =>
     make(32, 32, 422, (p) => {
@@ -403,6 +413,7 @@ export const incaMats = cache(() => {
     mud: lit(tx.mud()),
     hedge: cutout(tx.hedge(), 0.12, [1, 0, 0]),
     trunk: lit(tx.trunk()),
+    croc: lit(tx.croc()),
     trunkIndoor: lit(tx.trunk(), INDOOR),
     foam: ps1Material({ map: tx.foam(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, lit: false, sway: 0.3 }),
     thatch: lit(tx.thatch()),

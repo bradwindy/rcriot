@@ -3,10 +3,13 @@ import { TrackIndex } from '../../render/trackindex';
 import { valueNoise } from '../../render/noise';
 import { paveRoad, startLine } from '../../render/road';
 import type { TrackArt } from '../types';
+import { buildCave } from './cave';
 import { jungleGround } from './ground';
+import { buildGorge, river } from './gorge';
 import { buildJungle } from './jungle';
 import { incaMats } from './palette';
 import { buildTemple } from './temple';
+import { boulderTrap, logTrap } from './traps';
 
 export const incaTemple: TrackArt = {
   theme: {
@@ -24,7 +27,7 @@ export const incaTemple: TrackArt = {
     stars: false,
     night: false,
   },
-  build({ track, mats, batch, grid }) {
+  build({ track, mats, batch, group, grid }) {
     const inca = incaMats();
     const index = new TrackIndex(track);
     const terrain = buildTerrain(index, batch, jungleGround(track, mats, inca));
@@ -50,9 +53,15 @@ export const incaTemple: TrackArt = {
     startLine(track, batch, mats, grid);
     const fires = buildTemple(track, batch, mats, inca);
     buildJungle(track, batch, mats, inca, index, terrain);
+    buildCave(track, batch, mats, inca, fires);
+    buildGorge(track, batch, mats, inca, terrain, index);
+    group.add(river(mats, terrain));
+    const [ball, log] = track.hazards;
+    const traps = [boulderTrap(track, ball, inca, group), logTrap(track, log, mats, inca, batch, group, fires)];
     return {
       flames: fires.map((f) => f.light.position),
-      update(time) {
+      update(time, _dt, clock) {
+        for (const t of traps) t.update(clock);
         for (const f of fires) f.light.color.copy(f.base).multiplyScalar(0.8 + 0.35 * valueNoise(time * 7 + f.seed, f.seed, 1));
       },
     };
