@@ -218,6 +218,37 @@ export const tex = {
   ),
   bark: cache(() => make(16, 32, 325, (p) => p.each((x, y) => hex((x + Math.floor(y / 5)) % 5 === 0 ? '#1e1a17' : x % 4 === 1 ? '#3e3732' : '#2f2925')))),
   tile: cache(() => make(32, 32, 326, (p) => p.each((x, y) => (x % 16 === 0 || y % 16 === 0 ? hex('#15161a') : (Math.floor(x / 16) + Math.floor(y / 16)) % 2 ? hex('#2c2f36') : hex('#4a4e57'))))),
+  /** Falling rain: thin blue-white streaks on black, drawn additively round the camera. */
+  rain: cache(() =>
+    make(32, 64, 328, (p) => {
+      p.each(() => hex('#000000'));
+      for (let k = 0; k < 14; k++) {
+        const x = Math.floor(p.rng() * 32);
+        const y = Math.floor(p.rng() * 64);
+        const len = 6 + Math.floor(p.rng() * 10);
+        for (let i = 0; i < len; i++) p.set(x, y + i, mixc(hex('#202838'), hex('#8a9cc0'), i / len));
+      }
+    }),
+  ),
+  white: cache(() => make(4, 4, 329, (p) => p.each(() => hex('#ffffff')))),
+  /** A charged electrode's skin: pale blue-white with a darker crackle. */
+  orb: cache(() =>
+    make(16, 16, 330, (p) => {
+      p.each((x, y) => hex(Math.abs(Math.sin(x * 0.9 + y * 0.4)) < 0.18 ? '#4a7ad8' : (x * 7 + y * 3) % 11 === 0 ? '#ffffff' : '#a8d4ff'));
+    }),
+  ),
+  /** A green warning lamp lens and a red one, side by side. */
+  lamp: cache(() => make(16, 8, 331, (p) => p.each((x, y) => hex(Math.hypot((x % 8) - 3.5, y - 3.5) > 3.4 ? '#202020' : x < 8 ? '#ff4a2a' : '#7aff4a')))),
+  /** The creature's grey-green hide, with a stitched seam. */
+  skin: cache(() =>
+    make(16, 16, 332, (p) => {
+      p.each((x, y) => hex((x + y * 2) % 13 === 0 ? '#5e7a52' : '#6e8c5e'));
+      for (let x = 2; x < 14; x++) p.set(x, 8, hex('#2a3226'));
+      for (let x = 3; x < 14; x += 3) for (const y of [7, 9]) p.set(x, y, hex('#2a3226'));
+    }),
+  ),
+  /** A searchlight's beam: bright at the lamp, fading to nothing far up, drawn additively. */
+  beam: cache(() => make(4, 32, 333, (p) => p.each((_x, y) => mixc(hex('#000000'), hex('#6a7490'), Math.pow(1 - y / 31, 1.6))))),
   coal: cache(() => make(16, 16, 327, (p) => p.each((x, y) => hex((x * 5 + y * 3) % 7 === 0 ? '#ffb03a' : (x + y) % 3 === 0 ? '#c8401a' : '#5a1a0c')))),
 };
 
@@ -251,6 +282,10 @@ export const madMats = cache(() => ({
   ironIn: wired(lit(tex.iron(), INDOOR), [0.16, 0.17, 0.2]),
   copper: lit(tex.copper(), 0.6),
   brass: lit(tex.brass(), 0.6),
+  copperIn: lit(tex.copper(), INDOOR),
+  brassIn: lit(tex.brass(), INDOOR),
+  skin: lit(tex.skin(), INDOOR),
+  sheetIn: lit(tex.sheet(), INDOOR),
   sheet: lit(tex.sheet(), 0.5),
   slate: lit(tex.slate()),
   plaster: lit(tex.plaster()),
@@ -267,6 +302,16 @@ export const madMats = cache(() => ({
   arc: ps1Material({ map: tex.arc(), vertexColors: true, lit: false, glow: 1.2, additive: true, side: THREE.DoubleSide, fog: 0.3 }),
   goo: ps1Material({ map: tex.goo(), vertexColors: true, lit: false, glow: 0.15, wave: 0.12, scroll: [0.012, 0.008] }),
   cloud: ps1Material({ map: tex.cloud(), vertexColors: true, lit: false, fog: 0, alphaTest: 0.5, side: THREE.DoubleSide, depthWrite: false }),
+  /** The pendulum's electrode and the coils' toroids when charged: their glow is turned up and down as they work. */
+  orb: glow(tex.orb(), 0.6),
+  orbCoil: glow(tex.orb(), 0.3),
+  lamp: glow(tex.lamp(), 0.8),
+  /** Plain white for things coloured by their vertex colours alone: the villagers' clothes and faces. */
+  paint: lit(tex.white()),
+  beam: ps1Material({ map: tex.beam(), vertexColors: true, lit: false, fog: 0.4, additive: true, side: THREE.DoubleSide }),
+  rain: ps1Material({ map: tex.rain(), vertexColors: true, lit: false, fog: 0, additive: true, side: THREE.DoubleSide, scroll: [0, 1.6] }),
+  /** Washes the sky white-blue in a lightning flash: added over the dome, black the rest of the time. */
+  flash: ps1Material({ map: tex.white(), vertexColors: true, lit: false, fog: 0, additive: true, side: THREE.BackSide }),
   banner: ps1Material({ map: tex.banner(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, sway: 0.35, swayWeight: [0, -1, 1] }),
 }));
 

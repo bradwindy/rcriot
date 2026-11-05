@@ -1,10 +1,18 @@
+import * as THREE from 'three';
 import { buildTerrain } from '../../render/terrain';
 import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
-import { edges, pave } from './edges';
+import { CEILING, edges, pave } from './edges';
+import { Fx, Sparks } from './fx';
+import { countryside } from './country';
 import { crags, grounds, moat } from './ground';
+import { halls } from './halls';
+import { pendulum, teslaTrap, type Rig } from './hazards';
+import { laboratory } from './lab';
 import { madMats } from './materials';
+import { storm } from './storm';
 import { castle } from './structures';
+import { towerFx } from './tower';
 
 export const madLab: TrackArt = {
   theme: {
@@ -24,13 +32,35 @@ export const madLab: TrackArt = {
   },
   build({ track, mats, batch, group, grid }) {
     const m = madMats();
+    const fx = new Fx();
+    const sparks = new Sparks(m.arc);
+    group.add(sparks.mesh);
     const index = new TrackIndex(track);
-    buildTerrain(index, batch, grounds(m));
+    const terrain = buildTerrain(index, batch, grounds(m));
     pave(track, batch, mats, m, grid);
     edges(track, batch, m);
-    castle(track, batch, m);
+    const { coil } = castle(track, batch, m);
     crags(batch, m);
     group.add(moat(m));
-    return {};
+    const lab = laboratory(track, batch, m, fx, group, sparks);
+    const hall = halls(track, batch, mats, m, fx);
+    const land = countryside(track, terrain, batch, mats, m, fx, group);
+    const tower = towerFx(track, batch, mats, m, fx, sparks, coil);
+    const rigs: Rig[] = track.hazards.map((h) => (h.kind === 'sweep' ? pendulum(track, h, batch, m, group, sparks) : teslaTrap(track, h, batch, m, sparks, CEILING)));
+    const sky = storm(group, m, sparks, coil.clone().setY(coil.y + 11));
+    return {
+      flames: fx.flames,
+      update(time, _dt, clock, camera: THREE.Camera) {
+        sparks.begin();
+        fx.flicker(time);
+        sky.update(time, camera);
+        lab.update(time, sky);
+        tower.update(time, sky);
+        hall.update(time, sparks);
+        land.update(time, sparks);
+        for (const r of rigs) r.update(clock, time);
+        sparks.end();
+      },
+    };
   },
 };

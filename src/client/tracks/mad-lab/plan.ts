@@ -41,3 +41,10 @@ export function groundHeight(x: number, z: number): number {
   const bank = 0.7 + Math.max(0, hills);
   return MOAT.bed + (bank - MOAT.bed) * land(x, z);
 }
+
+/** Under a roof or underground: the laboratory, the gatehouse passage and the dungeon, where no rain falls. */
+export function roofedAt(x: number, y: number, z: number): boolean {
+  const inLab = x > LAB.x0 && x < LAB.x1 + 1 && z > LAB.z0 - 1 && z < LAB.z1 + 1 && Math.hypot(x - TOWER.x, z - TOWER.z) > KEEP.outer;
+  const inGate = Math.abs(x - GATE.x) < 10 && z > GATE.z0 && z < GATE.z1 - 2;
+  return (inLab && y < 18) || (inGate && y < 8) || (outside(x, z) <= 0 && y < FLOOR - 0.6);
+}
