@@ -5,6 +5,7 @@ import { TrackIndex } from '../../render/trackindex';
 import type { TrackArt } from '../types';
 import { buildDigHall, buildExitTunnel, buildTube, digHall } from './caves';
 import { buildChamber } from './chamber';
+import { buildDig } from './dig';
 import { volcanoGround } from './ground';
 import { lavaMats } from './materials';
 import { Lights } from './util';
@@ -38,7 +39,9 @@ export const lavaDig: TrackArt = {
     startLine(track, batch, mats, grid);
     const lights = new Lights();
     const flames: THREE.Vector3[] = [];
-    buildDigHall(track, batch, m, digHall(track));
+    const hall = digHall(track);
+    buildDigHall(track, batch, m, hall);
+    buildDig(track, batch, mats, m, hall, lights);
     buildTube(track, batch, m, lights, flames);
     buildExitTunnel(track, batch, m, lights, flames);
     buildChamber(track, batch, m, lights, flames);
