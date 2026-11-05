@@ -361,6 +361,8 @@ export class Hud {
     const Y = Math.max(0, Math.round((r.top - this.view.y) * k));
     const W = Math.min(this.canvas.width, Math.round((r.right - this.view.x) * k)) - X;
     const H = Math.min(this.canvas.height, Math.round((r.bottom - this.view.y) * k)) - Y;
+    // A page with no size yet (a hidden tab or frame) gets its layout on the resize that gives it one.
+    if (W < 1 || H < 1) return;
     const ctx = this.ctx;
     this.glyphs.clear();
     const touch = document.body.classList.contains('touch-on');
