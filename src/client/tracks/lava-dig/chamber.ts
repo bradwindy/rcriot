@@ -30,7 +30,7 @@ function lake(batch: Batch, m: LavaMats): void {
   for (let j = 0; j < rings.length - 1; j++) {
     for (let k = 0; k < n; k++) {
       const quad = [at(rings[j], k), at(rings[j + 1], k), at(rings[j], k + 1), at(rings[j], k + 1), at(rings[j + 1], k), at(rings[j + 1], k + 1)];
-      for (const v of quad) batch.vertex(m.lava, v, up, v.x / 9, v.z / 9);
+      for (const v of quad) batch.vertex(m.lava, v, up, v.x / 16, v.z / 16);
     }
   }
 }
@@ -38,6 +38,7 @@ function lake(batch: Batch, m: LavaMats): void {
 /** The roof of the magma chamber, a rough dome over the lake, open at its vent. */
 function dome(batch: Batch, m: LavaMats): void {
   const rings: [number, number][] = [
+    [CALDERA.wall + 14, 38],
     [CALDERA.wall + 4, 50],
     [CALDERA.wall - 2, 64],
     [78, 72],

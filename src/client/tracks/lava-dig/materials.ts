@@ -3,7 +3,7 @@ import { textWidth } from '../../render/font';
 import type { RGB } from '../../render/geometry';
 import { INDOOR } from '../../render/materials';
 import { ps1Material, type Ps1Material } from '../../render/ps1';
-import { cache, hex, make, mixc, scale, tex, type Painter, type RGBA } from '../../render/textures';
+import { cache, hex, make, scale, tex, type Painter, type RGBA } from '../../render/textures';
 import { atlas } from './kit';
 
 const pal = (...c: string[]): RGBA[] => c.map((v) => hex(v));
@@ -152,51 +152,10 @@ export const lavaTex = {
     }),
   ),
 
-  bone: cache(() =>
-    make(32, 32, 509, (p) => {
-      p.each((x, y) => {
-        const band = Math.sin(y * 0.4 + Math.sin(x * 0.3)) * 0.5 + 0.5;
-        return mixc(hex('#efe4c6'), hex('#cbb68e'), band * 0.6);
-      });
-      for (let i = 0; i < 10; i++) p.set(p.rng() * 32, p.rng() * 32, hex('#a89068'));
-    }),
-  ),
 
-  canvas: cache(() =>
-    make(32, 32, 510, (p) => {
-      p.each((x, y) => (x % 16 === 0 ? hex('#5e5838') : scale(hex(y % 8 < 4 ? '#8e8858' : '#868050'), 1)));
-      p.rect(20, 18, 7, 6, hex('#a69a62'));
-      for (let i = 20; i < 27; i++) {
-        p.set(i, 18, hex('#5e5838'));
-        p.set(i, 23, hex('#5e5838'));
-      }
-    }),
-  ),
 
-  /** Army olive paint with panel lines. */
-  olive: cache(() =>
-    make(32, 32, 511, (p) => {
-      p.each((x, y) => (x === 0 || y === 0 ? hex('#3c4224') : hex(y > 26 ? '#4c5430' : '#5a6438')));
-      p.rect(24, 4, 4, 2, hex('#3c4224'));
-    }),
-  ),
 
-  /** A white star in a ring on olive, for the jeep's bonnet and doors. */
-  star: cache(() =>
-    make(32, 32, 512, (p) => {
-      p.each((x, y) => {
-        const dx = x - 15.5;
-        const dy = y - 15.5;
-        const r = Math.hypot(dx, dy);
-        if (r > 13 && r < 15) return hex('#e8e4d8');
-        const a = Math.atan2(dy, dx) + Math.PI / 2;
-        const spike = 0.38 + 0.62 * Math.max(0, Math.cos(((a % ((Math.PI * 2) / 5)) - Math.PI / 5) * 2.5)) ** 2;
-        return r < 11.5 * spike ? hex('#e8e4d8') : hex('#5a6438');
-      });
-    }),
-  ),
 
-  stripes: cache(() => make(16, 16, 513, (p) => p.each((x, y) => hex((x + y) % 16 < 8 ? '#f2c12e' : '#1c1a18')))),
 
   banner: cache(() =>
     make(64, 16, 514, (p) => {
@@ -253,7 +212,6 @@ export const lavaMats = cache(() => {
     groundRubble: lit(lavaTex.rubble()),
     road: lit(lavaTex.road()),
     roadIn: lit(lavaTex.road(), INDOOR),
-    ashIn: lit(lavaTex.ash(), INDOOR),
     basaltOut: lit(lavaTex.basalt()),
     basaltIn: lit(lavaTex.basalt(), INDOOR, THREE.DoubleSide),
     rubbleIn: lit(lavaTex.rubble(), INDOOR),
@@ -261,23 +219,13 @@ export const lavaMats = cache(() => {
     digFloor: lit(lavaTex.digFloor(), INDOOR),
     digRoad: lit(tex.dirt(), INDOOR),
     strata: lit(lavaTex.strata(), INDOOR, THREE.DoubleSide),
-    bone: lit(lavaTex.bone(), INDOOR),
-    canvas: ps1Material({ map: lavaTex.canvas(), vertexColors: true, shade: INDOOR, side: THREE.DoubleSide }),
-    olive: lit(lavaTex.olive(), INDOOR),
-    star: lit(lavaTex.star(), INDOOR),
-    tyre: lit(tex.tyre(), INDOOR),
-    hub: lit(tex.hub(), INDOOR),
-    crate: lit(tex.crate(), INDOOR),
     kit: wired(lit(atlas()), [0.4, 0.4, 0.4]),
     kitIn: wired(lit(atlas(), INDOOR), [0.18, 0.18, 0.18]),
-    stripes: lit(lavaTex.stripes()),
-    stripesIn: lit(lavaTex.stripes(), INDOOR),
     banner: ps1Material({ map: lavaTex.banner(), vertexColors: true, side: THREE.DoubleSide }),
     steelIn: wired(lit(tex.metal(), INDOOR), [0.16, 0.16, 0.18]),
     steel: wired(lit(tex.metal()), [0.42, 0.43, 0.46]),
     timberIn: wired(lit(tex.planks(), INDOOR), [0.2, 0.14, 0.09]),
     ropeIn: wired(lit(tex.rope(), INDOOR), [0.3, 0.26, 0.18]),
-    plasticIn: lit(tex.plastic(), INDOOR),
     lava: glow(lavaTex.lava(), 0.7, [0.012, 0.02], 0.12),
     lavaVent: glow(lavaTex.lava(), 0.2, [0.03, 0.05]),
     lavaFlow: glow(lavaTex.lava(), 0.7, [0, -0.09]),
@@ -285,7 +233,6 @@ export const lavaMats = cache(() => {
     bulb: ps1Material({ map: lavaTex.bulb(), vertexColors: true, lit: false, glow: 0.9 }),
     lamp: ps1Material({ map: tex.lens(), vertexColors: true, lit: false, glow: 0.7 }),
     smoke: ps1Material({ map: lavaTex.puff(), vertexColors: true, lit: false, alphaTest: 0.5, side: THREE.DoubleSide, fog: 0.6 }),
-    heat: ps1Material({ map: lavaTex.puff(), vertexColors: true, lit: false, additive: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }),
     spout: ps1Material({ map: lavaTex.spout(), vertexColors: true, lit: false, alphaTest: 0.5, side: THREE.DoubleSide, glow: 1.1, scroll: [0, 1.6] }),
   };
 });
