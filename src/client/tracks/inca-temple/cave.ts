@@ -33,7 +33,7 @@ function toadstools(batch: Batch, inca: IncaMats, at: THREE.Vector3, seed: numbe
     const size = 0.6 + hash2(seed, k, 3) * (k ? 0.8 : 1.6);
     const x = at.x + Math.cos(a) * d;
     const z = at.z + Math.sin(a) * d;
-    batch.geometry(inca.cap, new THREE.CylinderGeometry(size * 0.18, size * 0.24, size * 1.3, 5), xf(x, at.y + size * 0.65, z), [0.55, 0.62, 0.6]);
+    batch.geometry(inca.cap, new THREE.CylinderGeometry(size * 0.18, size * 0.24, size * 1.3, 5), xf(x, at.y + size * 0.65, z), [0.32, 0.38, 0.36]);
     batch.geometry(inca.cap, new THREE.ConeGeometry(size * 0.75, size * 0.6, 7), xf(x, at.y + size * 1.5, z, a), tint);
   }
 }

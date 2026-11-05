@@ -5,6 +5,7 @@ import { paveRoad, startLine } from '../../render/road';
 import type { TrackArt } from '../types';
 import { buildCave } from './cave';
 import { jungleGround } from './ground';
+import { flock } from './flock';
 import { buildGorge, river } from './gorge';
 import { buildJungle } from './jungle';
 import { incaMats } from './palette';
@@ -60,12 +61,15 @@ export const incaTemple: TrackArt = {
     buildPlaza(batch, mats, inca, index, terrain);
     buildGorge(track, batch, mats, inca, terrain, index);
     group.add(river(mats, terrain));
+    const birds = flock(inca);
+    group.add(birds.mesh);
     const [ball, log] = track.hazards;
     const traps = [boulderTrap(track, ball, inca, group), logTrap(track, log, mats, inca, batch, group, fires)];
     return {
       flames: fires.map((f) => f.light.position),
       update(time, _dt, clock) {
         for (const t of traps) t.update(clock);
+        birds.update(time);
         for (const f of fires) f.light.color.copy(f.base).multiplyScalar(0.8 + 0.35 * valueNoise(time * 7 + f.seed, f.seed, 1));
       },
     };

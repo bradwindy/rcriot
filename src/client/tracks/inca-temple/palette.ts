@@ -186,6 +186,9 @@ export const tx = {
     }),
   ),
 
+  /** Feathers: plain white, coloured per vertex. */
+  plain: cache(() => make(4, 4, 425, (p) => p.each(() => hex('#ffffff')))),
+
   /** Churned white water at the foot of a fall. */
   foam: cache(() =>
     make(32, 32, 422, (p) => {
@@ -422,6 +425,7 @@ export const incaMats = cache(() => {
     trunk: lit(tx.trunk()),
     croc: lit(tx.croc()),
     felt: lit(tx.felt()),
+    bird: ps1Material({ map: tx.plain(), vertexColors: true, side: THREE.DoubleSide }),
     trunkIndoor: lit(tx.trunk(), INDOOR),
     foam: ps1Material({ map: tx.foam(), vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide, lit: false, sway: 0.3 }),
     thatch: lit(tx.thatch()),
