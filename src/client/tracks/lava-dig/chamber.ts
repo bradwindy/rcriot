@@ -229,6 +229,29 @@ function wallFalls(batch: Batch, m: LavaMats, lights: Lights, flames: THREE.Vect
   }
 }
 
+/**
+ * Rock heaped over the two tunnel mouths in the chamber wall. The ground is cut open round a tunnel mouth, and up a wall
+ * this steep the cut would show sky through the rock.
+ */
+function plugs(track: Track, batch: Batch, m: LavaMats): void {
+  const [, tubeEnd] = zoneRanges(track, 'tube')[0];
+  const [exitStart] = zoneRanges(track, 'exit')[0];
+  for (const [s, into] of [[tubeEnd + 3.6, -1], [exitStart - 3.6, 1]] as const) {
+    const p = sampleAt(track, s);
+    const back = new THREE.Vector3(p.tx * into, 0, p.tz * into);
+    let k = 0;
+    for (const d of [1, 7]) {
+      for (const h of [15, 25, 35, 45]) {
+        for (const o of [-10, 0, 10]) {
+          const at = frame(p, o, h).addScaledVector(back, d + h * 0.15);
+          batch.geometry(m.basaltIn, boulder(k * 7 + Math.round(s), 16, 0.8), xf(at.x, at.y, at.z, k));
+          k++;
+        }
+      }
+    }
+  }
+}
+
 /** The magma chamber: the lake, its roof and vent, the falling magma, the ledge, causeway, climb and bridge. */
 export function buildChamber(track: Track, batch: Batch, m: LavaMats, lights: Lights, flames: THREE.Vector3[]): void {
   lake(batch, m);
@@ -237,6 +260,7 @@ export function buildChamber(track: Track, batch: Batch, m: LavaMats, lights: Li
   edges(track, batch, m, lights, flames);
   bridge(track, batch, m, lights);
   wallFalls(batch, m, lights, flames);
+  plugs(track, batch, m);
   // A few crates and a canvas-covered dig table where the tube comes out into the chamber.
   const [ha] = zoneRanges(track, 'hall')[0];
   const p = sampleAt(track, ha + 4);

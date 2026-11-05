@@ -70,7 +70,7 @@ export function volcanoGround(m: LavaMats): GroundSpec {
     height: naturalHeight,
     paint: ({ steep, top, low }) => (steep ? m.groundRock : low < -1.5 || (top < 3 && low < 0.3) ? m.groundRubble : m.ground),
     cliffs: [m.groundRock],
-    headwall: m.basaltOut,
+    headwall: m.basaltIn,
     tint: (x, z, h, mat): RGB => {
       const r = fromCrater(x, z);
       const inside = smoothstep(CALDERA.wall + 14, CALDERA.wall + 4, r);

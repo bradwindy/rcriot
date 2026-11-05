@@ -77,18 +77,19 @@ function fossil(track: Track, batch: Batch, m: LavaMats, hall: DigHall, wire: TH
   // The skull, on the floor by the right-hand wall, jaws agape towards the oncoming cars.
   const p = sampleAt(track, mid - 26);
   const at = onFloor(p, limitOf(p) + 4.2, hall);
-  const yaw = headingAt(p) + Math.PI - 0.9;
+  const yaw = headingAt(p) + Math.PI / 2 + 0.25;
   const skull = (x: number, y: number, z: number) => new THREE.Matrix4().makeRotationY(yaw).setPosition(at).multiply(xf(x, y, z));
   batch.geometry(m.strata, boulder(7, 7, 0.3), skull(0, 0, -1));
   put(batch, m.kitIn, taper(4.0, 4.6, 3.0, 3.0, 3.4), skull(0, 0.9, 0.4), 'bone');
   put(batch, m.kitIn, taper(3.0, 5.6, 2.0, 4.6, 2.3), skull(0, 1.4, -4.4), 'bone');
-  put(batch, m.kitIn, taper(2.6, 6.4, 2.2, 6.0, 0.8), skull(0, 0.9, -3.6).multiply(xf(0, 0, 0, 0, 0.3)), 'bone');
+  put(batch, m.kitIn, taper(2.6, 6.4, 2.2, 6.0, 0.8), skull(0, 0.5, -3.6).multiply(xf(0, 0, 0, 0, 0.42)), 'bone');
+  block(batch, m.kitIn, 2.0, 1.6, 4.2, skull(0, 1.6, -4.2).multiply(xf(0, 0, 0, 0, 0.2)), 'black');
   for (const side of [-1, 1]) {
     block(batch, m.kitIn, 0.3, 1.3, 1.4, skull(side * 1.55, 3.0, 0.6), 'black');
     block(batch, m.kitIn, 0.3, 0.8, 1.0, skull(side * 1.25, 2.4, -2.7), 'black');
     for (let k = 0; k < 5; k++) {
-      put(batch, m.kitIn, new THREE.ConeGeometry(0.24, 0.9, 4), skull(side * 0.95, 1.05, -6.4 + k * 0.85).multiply(xf(0, 0, 0, 0, Math.PI)), 'bone');
-      put(batch, m.kitIn, new THREE.ConeGeometry(0.2, 0.7, 4), skull(side * 0.9, 0.75 - k * 0.22, -6.2 + k * 0.85), 'bone');
+      put(batch, m.kitIn, new THREE.ConeGeometry(0.34, 1.3, 4), skull(side * 1.0, 1.0, -6.4 + k * 0.85).multiply(xf(0, 0, 0, 0, Math.PI)), 'bone');
+      put(batch, m.kitIn, new THREE.ConeGeometry(0.3, 1.1, 4), skull(side * 0.9, 1.0 - k * 0.3, -6.0 + k * 0.85), 'bone');
     }
   }
   // Neck bones from the skull back up to the spine.

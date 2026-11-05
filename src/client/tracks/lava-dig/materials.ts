@@ -212,7 +212,6 @@ export const lavaMats = cache(() => {
     groundRubble: lit(lavaTex.rubble()),
     road: lit(lavaTex.road()),
     roadIn: lit(lavaTex.road(), INDOOR),
-    basaltOut: lit(lavaTex.basalt()),
     basaltIn: lit(lavaTex.basalt(), INDOOR, THREE.DoubleSide),
     rubbleIn: lit(lavaTex.rubble(), INDOOR),
     rubbleOut: lit(lavaTex.rubble()),
